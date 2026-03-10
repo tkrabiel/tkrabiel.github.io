@@ -17,6 +17,7 @@
         .btn-project { background: #004a99; } /* Dark Blue */
         .btn-edu { background: #2c3e50; }     /* Slate Gray */
         .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+.btn-home { background: #6c757d; flex: 0.5; }
         .status { margin-top: 25px; font-weight: bold; color: #28a745; min-height: 24px; }
         label { display: block; margin-bottom: 10px; font-weight: bold; color: #555; }
     </style>
@@ -24,11 +25,16 @@
 <body>
 
 <div class="container">
+    <div class="controls">
+        <a href="index.html" class="btn btn-home">HOME</a>
+</div>
+
+<div class="container">
     <div class="card">
         <h1>Export Portal</h1>
         
         <div class="upload-section">
-            <label>Step 1: Upload your CST Master JSON</label>
+            <label>Step 1: Upload your Master JSON</label>
             <input type="file" id="jsonInput" accept=".json">
         </div>
 
