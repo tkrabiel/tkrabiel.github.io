@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Export Forms</title>
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 40px; color: #333; }
+        .container { max-width: 900px; margin: auto; text-align: center; }
+        .card { background: white; padding: 40px; border-radius: 12px; border: 2px solid #004a99; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: #004a99; text-transform: uppercase; margin-bottom: 25px; }
+        .upload-section { border: 2px dashed #ccc; padding: 30px; margin-bottom: 30px; border-radius: 8px; background: #fafafa; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .btn { padding: 18px 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; color: white; font-size: 13px; }
+        .btn-excel { background: #1d6f42; } /* Green */
+        .btn-project { background: #004a99; } /* Dark Blue */
+        .btn-edu { background: #2c3e50; }     /* Slate Gray */
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+        .status { margin-top: 25px; font-weight: bold; color: #28a745; min-height: 24px; }
+        label { display: block; margin-bottom: 10px; font-weight: bold; color: #555; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h1>CST Master Export Portal</h1>
+        
+        <div class="upload-section">
+            <label>Step 1: Upload your CST Master JSON</label>
+            <input type="file" id="jsonInput" accept=".json">
+        </div>
+
+        <label>Step 2: Choose your export format</label>
+        <div class="btn-group">
+            <button class="btn btn-excel" onclick="generateExcel()">Download Experience CSV</button>
+            <button class="btn btn-project" onclick="generateWordDocs('PE')">Generate Project (PE) Docs</button>
+            <button class="btn btn-edu" onclick="generateWordDocs('EE')">Generate Education (EE) Docs</button>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+</div>
+
+<script>
+    let activeData = null;
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } = docx;
+
+    document.getElementById('jsonInput').onchange = function(e) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                activeData = JSON.parse(event.target.result);
+                document.getElementById('status').innerText = "JSON File Loaded Successfully!";
+            } catch (err) { alert("Invalid JSON file."); }
+        };
+        reader.readAsText(e.target.files[0]);
+    };
+
+    // --- CSV GENERATOR ---
+    function generateExcel() {
+        if (!activeData) return alert("Please upload a JSON file first.");
+        const headers = ["Engagement Number", "Title and Organization", "Start Date (mm/yyyy)", "End Date (mm/yyyy)", "Months", "Non-Related or Education", "Surveying, Engineering, Not Hydrography", "Hydrography", "Hydrography in Technical Charge", "Hydrography in Field", "Total Months"];
+        let csvRows = [headers.join(",")];
+        let totals = { edu: 0, surv: 0, hydro: 0, charge: 0, field: 0, all: 0 };
+
+        for (let i = 1; i <= 20; i++) {
+            const eng = activeData.data ? activeData.data.find(e => parseInt(e.e_number) === i) : null;
+            if (eng) {
+                const num = (v) => parseFloat(v) || 0;
+                const rowTotal = num(eng.Edu_number) + num(eng.not_hydro_eng) + num(eng.Hydro_time);
+                csvRows.push([i, `"${eng.j_title} - ${eng.f_name}"`, eng.d_from, eng.d_to, rowTotal, num(eng.Edu_number), num(eng.not_hydro_eng), num(eng.Hydro_time), num(eng.H_charge), num(eng.H_in_field), rowTotal].join(","));
+                totals.edu += num(eng.Edu_number); totals.surv += num(eng.not_hydro_eng); totals.hydro += num(eng.Hydro_time); totals.charge += num(eng.H_charge); totals.field += num(eng.H_in_field); totals.all += rowTotal;
+            } else { csvRows.push(`${i},,,,0,0,0,0,0,0,0`); }
+        }
+        csvRows.push(["Candidate Total", "", "", "", totals.all, totals.edu, totals.surv, totals.hydro, totals.charge, totals.field, totals.all].join(","));
+        saveAs(new Blob([csvRows.join("\n")], { type: 'text/csv' }), `Experience_Summary_${activeData.applicant}.csv`);
+    }
+
+    // --- TARGETED WORD GENERATOR ---
+    async function generateWordDocs(filterType) {
+        if (!activeData) return alert("Please upload a JSON file first.");
+        
+        // Filter data based on the button clicked (PE or EE)
+        const targetEngagements = activeData.data.filter(e => e.engagement_type === filterType);
+        
+        if (targetEngagements.length === 0) {
+            return alert(`No engagements of type ${filterType} found in this file.`);
+        }
+
+        document.getElementById('status').innerText = `Generating ${filterType} Documents...`;
+
+        for (const eng of targetEngagements) {
+            const isEdu = (filterType === 'EE');
+            const children = [];
+
+            // Header Section
+            children.push(new Paragraph({ text: isEdu ? "EDUCATIONAL ENGAGEMENT DETAIL" : "PROJECT ENGAGEMENT DETAIL", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }));
+            children.push(new Paragraph({ text: `Engagement #${eng.e_number} | Applicant: ${activeData.applicant}`, alignment: AlignmentType.CENTER }));
+            children.push(new Paragraph({ text: "", spacing: { before: 200 } }));
+
+            // Organization / Contact Table
+            children.push(new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                    new TableRow({
+                        children: [
+                            new TableCell({ children: [
+                                new Paragraph({ text: isEdu ? "INSTITUTION" : "FIRM", bold: true }),
+                                new Paragraph(eng.f_name || ""), new Paragraph(eng.f_addr || ""), new Paragraph(eng.f_email || ""), new Paragraph(eng.f_tel || "")
+                            ]}),
+                            new TableCell({ children: [
+                                new Paragraph({ text: isEdu ? "CONTACT" : "SUPERVISOR", bold: true }),
+                                new Paragraph(eng.s_name || ""), new Paragraph(eng.s_addr || ""), new Paragraph(eng.s_email || ""), new Paragraph(eng.s_tel || "")
+                            ]}),
+                        ],
+                    }),
+                ],
+            }));
+
+            // Period and Shared Fields
+            children.push(new Paragraph({ children: [new TextRun({ text: "\nFROM: ", bold: true }), new TextRun(eng.d_from || ""), new TextRun({ text: "    TO: ", bold: true }), new TextRun(eng.d_to || "")], spacing: { before: 200 } }));
+            if(eng.d_gaps) children.push(new Paragraph({ children: [new TextRun({ text: "BREAKS/GAPS: ", bold: true }), new TextRun(eng.d_gaps)] }));
+
+            // Form-Specific Fields
+            if (isEdu) {
+                children.push(new Paragraph({ children: [new TextRun({ text: "\nPROGRAM TITLE: ", bold: true }), new TextRun(eng.j_title || "")], spacing: { before: 200 } }));
+                children.push(new Paragraph({ children: [new TextRun({ text: "CERTIFICATE AWARDED: ", bold: true }), new TextRun(eng.j_cert || "")] }));
+                children.push(new Paragraph({ text: "\nDETAILED DESCRIPTION OF PROGRAM:", bold: true }));
+                children.push(new Paragraph(eng.j_proj || ""));
+                children.push(new Paragraph({ text: "\nADDITIONAL COMMENTS:", bold: true }));
+                children.push(new Paragraph(eng.j_comments || "N/A"));
+            } else {
+                children.push(new Paragraph({ children: [new TextRun({ text: "\nJOB TITLE: ", bold: true }), new TextRun(eng.j_title || "")], spacing: { before: 200 } }));
+                children.push(new Paragraph({ text: "\nRESPONSIBILITIES & DUTIES:", bold: true }));
+                children.push(new Paragraph(eng.j_resp || ""));
+                children.push(new Paragraph({ text: "\nDETAILED PROJECT DESCRIPTION:", bold: true }));
+                children.push(new Paragraph(eng.j_proj || ""));
+                children.push(new Paragraph({ text: "\nEQUIPMENT USED:", bold: true }));
+                children.push(new Paragraph(eng.j_equip || ""));
+                children.push(new Paragraph({ text: "SOFTWARE USED:", bold: true }));
+                children.push(new Paragraph(eng.j_soft || ""));
+            }
+
+            const doc = new Document({ sections: [{ children }] });
+            const blob = await Packer.toBlob(doc);
+            saveAs(blob, `Eng_${eng.e_number}_${isEdu ? 'Education' : 'Project'}.docx`);
+        }
+        document.getElementById('status').innerText = "Downloads Complete!";
+    }
+</script>
+</body>
+</html>
