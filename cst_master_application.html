@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NSPS CST Master Application Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: auto; }
+        .controls { 
+            position: sticky; top: 0; background: white; padding: 15px; 
+            border: 2px solid #333; z-index: 1000; display: flex; gap: 10px; 
+            margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .card { background: white; padding: 30px; border: 1px solid #000; margin-bottom: 20px; }
+        h2 { text-align: center; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        .engagement-block { border: 2px solid #004a99; margin-top: 30px; background: #fff; }
+        .engagement-header { 
+            background: #004a99; color: white; padding: 10px 15px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            font-weight: bold;
+        }
+        .row { display: flex; gap: 20px; margin-bottom: 15px; padding: 0 15px; }
+        .col { flex: 1; }
+        .table-box { border: 1px solid #999; padding: 10px; flex: 1; background: #fdfdfd; }
+        .box-title { font-weight: bold; background: #eee; display: block; padding: 5px; margin: -10px -10px 10px -10px; border-bottom: 1px solid #999; text-align: center; font-size: 12px; }
+        label { display: block; font-weight: bold; font-size: 11px; margin-top: 8px; text-transform: uppercase; }
+        input, textarea, select { width: 100%; padding: 6px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; }
+        .btn { padding: 12px 20px; cursor: pointer; border: none; font-weight: bold; color: white; border-radius: 4px; text-decoration: none; text-align: center; }
+        .btn-home { background: #6c757d; flex: 0.5; }
+        .btn-add { background: #28a745; flex: 2; }
+        .btn-save { background: #004a99; flex: 1; }
+        .btn-upload { background: #555; flex: 1; }
+        .btn-delete { background: #dc3545; padding: 5px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="controls">
+        <a href="index.html" class="btn btn-home">HOME</a>
+        <button class="btn btn-add" onclick="addProjectEngagement()">+ Add New Project Engagement</button>
+        <button class="btn btn-add" onclick="addEducationalEngagement()">+ Add New Educational Engagement</button>
+        <button class="btn btn-save" onclick="saveAllToJSON()">Save Master File (.JSON)</button>
+        <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">Upload Previous Work</button>
+        <input type="file" id="fileInput" hidden accept=".json" onchange="loadFromJSON(event)">
+    </div>
+
+    <div class="card">
+        <h2>Applicant Information</h2>
+        <div class="row">
+            <div class="col"><label>Full Name:</label><input type="text" id="master_name"></div>
+	    <div class="col"><label>Email:</label><input type="text" id="email"></div>	
+            <div class="col">
+                <label>Level Seeking:</label>
+                <select id="master_level">
+                    <option value="Level I">Level I</option>
+                    <option value="Level II">Level II</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="engagement-list"></div>
+</div>
+
+<script>
+let counter = 0;
+
+function calculateMonths(d1, d2) {
+    if (!d1 || !d2) return 0;
+    const start = new Date(d1);
+    const end = new Date(d2);
+    let months = (end.getFullYear() - start.getFullYear()) * 12;
+    months += end.getMonth() - start.getMonth();
+    if (end.getDate() < start.getDate()) months--;
+    return Math.max(0, months);
+}
+
+function addEducationalEngagement(data = null) {
+    counter++;
+    const list = document.getElementById('engagement-list');
+    const id = counter;
+
+    const template = `
+        <div class="engagement-block educational-bg" id="eng_${id}" data-type="EE">
+            <div class="engagement-header" style="background: #2c3e50;">
+                <span>EDUCATIONAL ENGAGEMENT DETAIL # <span class="display_e_number">${id}</span></span>
+                <button class="btn btn-delete" onclick="removeEng(${id})">Remove Engagement</button>
+            </div>
+            
+            <div class="inner-padding" style="padding: 15px;">
+                <div class="row">
+                    <div class="table-box">
+                        <span class="box-title">INSTITUTION</span>
+                        <label>Name:</label> <input type="text" class="f_name" value="${data?.f_name || ''}">
+                        <label>Address:</label> <input type="text" class="f_addr" value="${data?.f_addr || ''}">
+                        <label>Email:</label> <input type="email" class="f_email" value="${data?.f_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="f_tel" value="${data?.f_tel || ''}">
+                    </div>
+                    <div class="table-box">
+                        <span class="box-title">CONTACT</span>
+                        <label>Name:</label> <input type="text" class="s_name" value="${data?.s_name || ''}">
+                        <label>Address:</label> <input type="text" class="s_addr" value="${data?.s_addr || ''}">
+                        <label>Email:</label> <input type="email" class="s_email" value="${data?.s_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="s_tel" value="${data?.s_tel || ''}">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>From Date:</label> 
+                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration('eng_${id}')">
+                    </div>
+                    <div class="col">
+                        <label>To Date:</label> 
+                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration('eng_${id}')">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
+                        <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
+                        <span id="duration_eng_${id}" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
+                            ${data ? calculateMonths(data.d_from, data.d_to) : '0'}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col"><label>Detail of any breaks or gaps during this period:</label> 
+                    <textarea class="d_gaps" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.d_gaps || ''}</textarea></div>
+                </div>
+
+                <div class="row">
+                    <div class="col"><label>Program Title:</label> 
+                    <textarea class="j_title" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_title || ''}</textarea></div>
+                </div>
+                <div class="row">
+		   <div class="col"><label>Certificate Awarded:</label> 
+                    <textarea class="j_cert" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_cert || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Detailed Description of Program:</label> <textarea class="j_proj" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_proj || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Additional Comments:</label> <textarea class="j_comments" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_comments || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="table-box">
+                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" value="${data?.Edu_number || ''}"></div>
+                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" value="${data?.not_hydro_eng || ''}"></div>
+                    </div>                    
+                </div>
+            </div>
+        </div>`;
+    list.insertAdjacentHTML('beforeend', template);
+}
+
+function addProjectEngagement(data = null) {
+    counter++;
+    const list = document.getElementById('engagement-list');
+    const id = counter;
+
+    const template = `
+        <div class="engagement-block project-bg" id="eng_${id}" data-type="PE">
+            <div class="engagement-header">
+                <span>PROJECT ENGAGEMENT DETAIL # <span class="display_e_number">${id}</span></span>
+                <button class="btn btn-delete" onclick="removeEng(${id})">Remove Engagement</button>
+            </div>
+            
+            <div class="inner-padding" style="padding: 15px;">
+                <div class="row">
+                    <div class="table-box">
+                        <span class="box-title">FIRM</span>
+                        <label>Name:</label> <input type="text" class="f_name" value="${data?.f_name || ''}">
+                        <label>Address:</label> <input type="text" class="f_addr" value="${data?.f_addr || ''}">
+                        <label>Email:</label> <input type="email" class="f_email" value="${data?.f_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="f_tel" value="${data?.f_tel || ''}">
+                    </div>
+                    <div class="table-box">
+                        <span class="box-title">SUPERVISOR</span>
+                        <label>Name:</label> <input type="text" class="s_name" value="${data?.s_name || ''}">
+                        <label>Address:</label> <input type="text" class="s_addr" value="${data?.s_addr || ''}">
+                        <label>Email:</label> <input type="email" class="s_email" value="${data?.s_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="s_tel" value="${data?.s_tel || ''}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>From Date:</label> 
+                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration('eng_${id}')">
+                    </div>
+                    <div class="col">
+                        <label>To Date:</label> 
+                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration('eng_${id}')">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
+                        <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
+                        <span id="duration_eng_${id}" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
+                            ${data ? calculateMonths(data.d_from, data.d_to) : '0'}
+                        </span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Detail of gaps during this period:</label> <textarea class="d_gaps" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.d_gaps || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Job Title:</label> <textarea class="j_title" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_title || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Responsibilities & Duties:</label> <textarea class="j_resp" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_resp || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Detailed Project Descriptions:</label> <textarea class="j_proj" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_proj || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Equipment Used:</label> <textarea class="j_equip" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_equip || ''}</textarea></div>
+                    <div class="col"><label>Software Used:</label> <textarea class="j_soft" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_soft || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="table-box">
+                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" value="${data?.Edu_number || ''}"></div>
+                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" value="${data?.not_hydro_eng || ''}"></div>
+                        <div class="col"><label>Hydrography:</label> <input type="number" class="Hydro_time" min="0" value="${data?.Hydro_time || ''}"></div>
+                        <div class="col"><label>Hydrography in Field:</label> <input type="number" class="H_in_field" min="0" value="${data?.H_in_field || ''}"></div>
+                        <div class="col"><label>Hydrography in Technical Charge:</label> <input type="number" class="H_charge" min="0" value="${data?.H_charge || ''}"></div>
+                    </div>                
+                </div>
+            </div>
+        </div>`;
+    list.insertAdjacentHTML('beforeend', template);
+}
+
+function removeEng(id) {
+    if(confirm("Are you sure you want to delete this engagement record?")) {
+        const element = document.getElementById(`eng_${id}`);
+        element.remove();
+        reindexEngagements();
+    }
+}
+
+function reindexEngagements() {
+    const blocks = document.querySelectorAll('.engagement-block');
+    counter = blocks.length;
+    blocks.forEach((block, index) => {
+        const newNumber = index + 1;
+        block.id = `eng_${newNumber}`;
+        const displaySpan = block.querySelector('.display_e_number');
+        if (displaySpan) displaySpan.innerText = newNumber;
+        const delBtn = block.querySelector('.btn-delete');
+        if (delBtn) delBtn.setAttribute('onclick', `removeEng(${newNumber})`);
+        
+        const headerSpan = block.querySelector('.engagement-header span');
+        const typeLabel = block.getAttribute('data-type') === 'EE' ? 'EDUCATIONAL' : 'PROJECT';
+        headerSpan.innerHTML = `${typeLabel} ENGAGEMENT DETAIL # <span class="display_e_number">${newNumber}</span>`;
+    });
+}
+
+function saveAllToJSON() {
+    const blocks = document.querySelectorAll('.engagement-block');
+    const engagements = Array.from(blocks).map(block => {
+        const type = block.getAttribute('data-type') || 'PE';
+        let entry = {
+            e_number: block.querySelector('.display_e_number').innerText,
+            engagement_type: type,
+            f_name: block.querySelector('.f_name').value,
+            f_addr: block.querySelector('.f_addr').value,
+            s_name: block.querySelector('.s_name').value,
+            s_addr: block.querySelector('.s_addr').value,
+            d_from: block.querySelector('.d_from').value,
+            d_to: block.querySelector('.d_to').value,
+            j_title: block.querySelector('.j_title').value,
+            j_proj: block.querySelector('.j_proj').value,
+            d_gaps: block.querySelector('.d_gaps').value,
+            f_email: block.querySelector('.f_email').value,
+            f_tel: block.querySelector('.f_tel').value,
+            s_email: block.querySelector('.s_email').value,
+            s_tel: block.querySelector('.s_tel').value,
+            Edu_number: block.querySelector('.Edu_number').value,
+            not_hydro_eng: block.querySelector('.not_hydro_eng').value
+        };
+
+        if (type === 'EE') {
+            entry.j_cert = block.querySelector('.j_cert').value;
+            entry.j_comments = block.querySelector('.j_comments').value;
+        } else {
+            entry.j_resp = block.querySelector('.j_resp').value;
+            entry.j_equip = block.querySelector('.j_equip').value;
+            entry.j_soft = block.querySelector('.j_soft').value;
+            entry.Hydro_time = block.querySelector('.Hydro_time').value;
+            entry.H_in_field = block.querySelector('.H_in_field').value;
+            entry.H_charge = block.querySelector('.H_charge').value;
+        }
+        return entry;
+    });
+
+    const output = {
+        applicant: document.getElementById('master_name').value,
+        level: document.getElementById('master_level').value,
+        data: engagements
+    };
+
+    const blob = new Blob([JSON.stringify(output, null, 4)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `CST_Application_${output.applicant || 'Export'}.json`;
+    link.click();
+}
+
+function loadFromJSON(event) {
+    const reader = new FileReader();
+    reader.onload = function(e) { populateForm(JSON.parse(e.target.result)); };
+    reader.readAsText(event.target.files[0]);
+}
+
+function calculateDuration(blockId) {
+    const block = document.getElementById(blockId);
+    const fromVal = block.querySelector('.d_from').value;
+    const toVal = block.querySelector('.d_to').value;
+    const displaySpan = document.getElementById(`duration_${blockId}`);
+
+    if (!fromVal || !toVal) return;
+
+    const totalMonths = calculateMonths(fromVal, toVal);
+
+    if (displaySpan) displaySpan.innerText = totalMonths;
+
+    const numInputs = block.querySelectorAll('input[type="number"]');
+    numInputs.forEach(input => {
+        input.max = totalMonths;
+        input.onchange = function() {
+            if (parseInt(this.value) > totalMonths) {
+                alert(`Error: Value cannot exceed the total duration (${totalMonths} months).`);
+                this.value = totalMonths;
+            }
+        };
+    });
+}
+
+function autoExpand(textarea) {
+    textarea.style.height = 'inherit';
+    const computed = window.getComputedStyle(textarea);
+    const height = textarea.scrollHeight + 
+                   parseInt(computed.getPropertyValue('border-top-width')) + 
+                   parseInt(computed.getPropertyValue('border-bottom-width'));
+    textarea.style.height = height + 'px';
+}
+
+function populateForm(json) {
+    document.getElementById('master_name').value = json.applicant || '';
+    document.getElementById('master_level').value = json.level || '';
+    document.getElementById('engagement-list').innerHTML = ''; 
+    counter = 0;
+    if (json.data && json.data.length > 0) {
+        json.data.forEach(item => {
+            if(item.engagement_type === 'EE') addEducationalEngagement(item);
+            else addProjectEngagement(item);
+        });
+    } else {
+        addProjectEngagement();
+    }
+}
+
+window.onload = function() {
+    const transferData = localStorage.getItem('cst_data_transfer');
+    if (transferData) {
+        try {
+            const parsedData = JSON.parse(transferData);
+            populateForm(parsedData);
+            
+            // Clean up memory after loading so it doesn't 
+            // re-load old data if you refresh the page later
+            localStorage.removeItem('cst_data_transfer');
+        } catch (e) {
+            console.error("Error parsing transferred data:", e);
+            addProjectEngagement();
+        }
+    } else {
+        // Default behavior if no data is being passed
+        addProjectEngagement();
+    }
+};</script>
+
+</body>
+</html>
