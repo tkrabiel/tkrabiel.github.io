@@ -2,71 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CST Portal - Welcome</title>
+    <title>NSPS Master Application Portal</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .welcome-card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center; max-width: 450px; border-top: 6px solid #004a99; }
-        h1 { color: #004a99; margin-top: 0; }
-        p { color: #555; margin-bottom: 30px; font-size: 1.1em; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 40px; color: #333; line-height: 1.6; }
+        .container { max-width: 900px; margin: auto; }
+        .card { background: white; padding: 40px; border-radius: 12px; border: 2px solid #004a99; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         
-        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
-        .btn-upload { background: #004a99; color: white; }
-        .btn-new { background: #28a745; color: white; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        h1 { color: #004a99; margin-top: 0; text-transform: uppercase; border-bottom: 2px solid #004a99; padding-bottom: 10px; }
+        h2 { color: #2c3e50; font-size: 1.2rem; margin-top: 30px; }
         
-        #fileInput { display: none; }
+        .info-box { background: #e9ecef; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #004a99; }
+        .warning-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; color: #856404; margin-top: 20px; font-size: 0.9rem; }
+        
+        .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
+        .nav-btn { 
+            display: block; text-align: center; padding: 25px; background: #004a99; color: white; 
+            text-decoration: none; font-weight: bold; border-radius: 8px; transition: 0.3s;
+        }
+        .nav-btn:hover { background: #003366; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .nav-btn.secondary { background: #6c757d; }
+
+        .levels { list-style: none; padding: 0; }
+        .levels li { background: #fff; margin: 5px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .levels strong { color: #004a99; }
+
+        .external-link { display: inline-block; margin-top: 10px; color: #004a99; font-weight: bold; text-decoration: underline; }
     </style>
 </head>
 <body>
 
-<div class="welcome-card">
-    <h1>WELCOME SCREEN!!!l</h1>
-    <p>Have you previously filled this out and gotten a JSON?</p>
-    
-    <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">
-        I HAVE A JSON FILE TO UPLOAD
-    </button>
-    <input type="file" id="fileInput" accept=".json" onchange="handleFileUpload(event)">
+<div class="container">
+    <div class="card">
+        <h1>NSPS-THSOA Hydrographer Certification Portal</h1>
+        
+        <p>This site is designed to streamline the application process for professional hydrographer certifications. The <strong>U.S. Hydrographer Certification program</strong>, administered by the NSPS-THSOA Hydrographer Board, provides professional recognition for hydrographers who meet established education, training, and experience standards.</p>
 
-    <div style="margin: 20px 0; font-weight: bold; color: #999; position: relative;">
-        <span style="background: white; padding: 0 10px;">OR</span>
+        <div class="info-box">
+            <h2>Available Certification Levels:</h2>
+            <ul class="levels">
+                <li><strong>Level 1</strong> - Certified Master Hydrographer (CMH)</li>
+                <li><strong>Level 2</strong> - Certified Hydrographer (CH)</li>
+            </ul>
+            <p>Both levels require documentation of education, training, and experience, as well as ongoing professional development.</p>
+            <a href="https://nsps.us.com/page/Certification" target="_blank" class="external-link">For more information go to the NSPS Certification Website</a>
+        </div>
+
+        <div class="warning-box">
+            <strong>Important Data Notice:</strong> 
+            This portal does not store your information on a server. You will be saving your data as a <strong>.json</strong> file. You are responsible for managing this file. After filling out your application or when you wish to save your progress, export the Master JSON file to your computer. You must upload this file next time to continue working.
+        </div>
+
+        <div class="nav-grid">
+            <a href="cst_master_application.html" class="nav-btn">GO TO APPLICATION EDITOR</a>
+            <a href="export.html" class="nav-btn secondary">GO TO EXPORT PORTAL</a>
+        </div>
     </div>
-
-    <button class="btn btn-new" onclick="startFresh()">
-        DON'T HAVE A SAVED FILE YET
-    </button>
 </div>
-
-<script>
-    function handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                // 1. Validate it's actually JSON
-                const content = e.target.result;
-                JSON.parse(content); 
-
-                // 2. "Hand-off": Save to localStorage so Master Page can see it
-                localStorage.setItem('cst_data_transfer', content);
-
-                // 3. Move to the Master Page
-                window.location.href = 'cst_master_application.html';
-            } catch (err) {
-                alert("Error: The file selected is not a valid JSON file.");
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    function startFresh() {
-        // Ensure no old data is hanging around
-        localStorage.removeItem('cst_data_transfer');
-        window.location.href = 'cst_master_application.html';
-    }
-</script>
 
 </body>
 </html>
