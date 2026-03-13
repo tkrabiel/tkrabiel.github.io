@@ -3,69 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hydrographic Resource Hub | Master Library</title>
+    <title>The Hydrographic Master Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #005a9c; 
-            --secondary: #38bdf8;
-            --bg: #f8f9fa;
-            --sidebar-bg: #1e293b;
-            --text: #334155;
-            --border: #e2e8f0;
-            --white: #ffffff;
-            --accent: #f59e0b;
-            --noaa: #00467f;
-            --usace: #b30000;
+            --primary: #005a9c; --secondary: #38bdf8; --bg: #0f172a; --sidebar-bg: #1e293b;
+            --text: #e2e8f0; --border: #334155; --white: #1e293b; --accent: #f59e0b;
+            --noaa-blue: #00aeef; --usace-red: #ef4444; --success: #10b981;
         }
-
         * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; display: flex; margin: 0; background-color: var(--bg); color: var(--text); line-height: 1.6; }
-
-        /* Sidebar Navigation */
-        .sidebar { width: 280px; background: var(--sidebar-bg); color: white; height: 100vh; position: fixed; padding: 30px 20px; overflow-y: auto; z-index: 100; border-right: 4px solid var(--secondary); }
-        .sidebar h2 { color: var(--secondary); font-size: 1.2rem; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-        .sidebar ul { list-style: none; padding: 0; }
-        .sidebar ul li { margin-bottom: 10px; }
-        .sidebar ul li a { color: #cbd5e1; text-decoration: none; font-weight: 500; display: block; padding: 10px 12px; border-radius: 6px; transition: 0.2s; font-size: 0.9rem; }
-        .sidebar ul li a:hover { background: rgba(255,255,255,0.1); color: white; transform: translateX(5px); }
-
-        /* Main Content */
-        .content { margin-left: 280px; padding: 40px 60px; max-width: 1300px; width: 100%; }
-        section { margin-bottom: 100px; scroll-margin-top: 40px; }
-        h1 { font-size: 2.8rem; color: #0f172a; margin-bottom: 10px; }
-        h2 { font-size: 2rem; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-top: 50px; }
+        body { font-family: 'Inter', sans-serif; display: flex; margin: 0; background-color: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden; }
         
-        /* Search */
-        .search-container { position: sticky; top: 0; background: var(--bg); padding: 20px 0; z-index: 50; }
-        .search-box { width: 100%; padding: 18px 25px; border: 2px solid var(--border); border-radius: 12px; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); outline: none; transition: 0.3s; }
-        .search-box:focus { border-color: var(--secondary); box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2); }
+        /* Sidebar */
+        .sidebar { width: 280px; background: var(--sidebar-bg); color: white; height: 100vh; position: fixed; padding: 25px 20px; overflow-y: auto; z-index: 100; border-right: 3px solid var(--secondary); }
+        .sidebar h2 { font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px; color: var(--secondary); border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .sidebar ul { list-style: none; padding: 0; }
+        .sidebar ul li a { color: #cbd5e1; text-decoration: none; padding: 8px 10px; display: block; border-radius: 5px; font-size: 0.9rem; margin-bottom: 5px; }
+        .sidebar ul li a:hover { background: #334155; color: white; border-left: 3px solid var(--secondary); }
+
+        /* Content Area */
+        .content { margin-left: 280px; padding: 40px 60px; max-width: 1400px; width: 100%; }
+        section { margin-bottom: 80px; scroll-margin-top: 50px; }
+        h1 { font-size: 2.8rem; margin-bottom: 10px; color: white; }
+        h2 { font-size: 1.8rem; color: var(--secondary); border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 30px; margin-top: 50px; }
+        h3 { color: #f8fafc; font-size: 1.2rem; margin-top: 0; }
+
+        /* Search Bar */
+        .search-sticky { position: sticky; top: 0; background: var(--bg); padding: 20px 0; z-index: 90; }
+        .search-box { width: 100%; padding: 15px 25px; border-radius: 10px; border: 2px solid var(--border); background: #1e293b; color: white; font-size: 1.1rem; outline: none; transition: 0.3s;}
+        .search-box:focus { border-color: var(--secondary); }
 
         /* Grid & Cards */
-        .resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-top: 25px; }
-        .card { background: var(--white); border: 1px solid var(--border); padding: 25px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); display: flex; flex-direction: column; position: relative; overflow: hidden; }
-        .card:hover { transform: translateY(-5px); transition: 0.3s ease; box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
-        
-        .btn-link { display: inline-block; background: var(--primary); color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-size: 0.9rem; font-weight: 700; margin-top: auto; text-align: center; transition: 0.2s; }
+        .resource-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: var(--white); border: 1px solid var(--border); padding: 25px; border-radius: 12px; transition: 0.3s; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-3px); border-color: var(--secondary); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .btn-link { background: var(--primary); color: white; text-decoration: none; padding: 12px; text-align: center; border-radius: 6px; margin-top: auto; font-weight: bold; font-size: 0.9rem; transition: 0.2s;}
         .btn-link:hover { filter: brightness(1.2); }
         .btn-accent { background: var(--accent); }
         
-        .rationale { background: #f0f9ff; padding: 15px; border-radius: 8px; font-size: 0.88rem; margin: 15px 0; border-left: 5px solid var(--secondary); color: #0c4a6e; }
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: var(--white); border-radius: 8px; overflow: hidden; }
+        th, td { text-align: left; padding: 15px; border-bottom: 1px solid var(--border); }
+        th { background: #0f172a; font-weight: 700; color: var(--secondary); }
         
-        /* Badges */
-        .tag { padding: 4px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; display: inline-block; }
-        .tag-theory { background: #e0f2fe; color: #0369a1; }
-        .tag-support { background: #fee2e2; color: #991b1b; }
-        .tag-net { background: #ede9fe; color: #5b21b6; }
-        .tag-ops { background: #dcfce7; color: #166534; }
-        .tag-tbd { background: #f1f5f9; color: #94a3b8; border: 1px dashed #cbd5e1; }
+        /* General ASCII Styling */
+        .ascii { font-family: 'JetBrains Mono', monospace; white-space: pre; background: #000; padding: 20px; border-radius: 8px; font-size: 11px; margin-bottom: 20px; border: 1px solid #334155; overflow-x: auto; line-height: 1.2;}
+        .ping-anim { animation: ping-pulse 1.5s infinite; color: #fbbf24; }
+        @keyframes ping-pulse { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
 
-        /* Special Contact Box */
-        .contact-section { background: #1e293b; color: white; padding: 40px; border-radius: 20px; margin-top: 50px; text-align: center; }
-        .email-btn { display: inline-block; background: var(--secondary); color: #1e293b; padding: 15px 30px; border-radius: 10px; font-weight: 800; text-decoration: none; margin-top: 20px; font-family: 'JetBrains Mono'; }
+        /* EPIC PEYTON ANIMATIONS */
+        .epic-fire { animation: epic-flicker 0.1s infinite; color: #ff4500; font-weight: 900; text-shadow: 0 0 15px #ff0000, 0 0 30px #ff4500; }
+        @keyframes epic-flicker { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.02); opacity: 0.8; } 100% { transform: scale(1); opacity: 1; } }
+        
+        .shake-text { animation: shake 0.5s infinite; display: inline-block; text-shadow: 4px 4px 0px #ef4444, -4px -4px 0px #38bdf8; }
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+
+        .tag { font-size: 0.7rem; font-weight: bold; padding: 4px 8px; border-radius: 4px; margin-bottom: 10px; display: inline-block; text-transform: uppercase; }
+        .tag-blue { background: #1e40af; color: white; }
+        .tag-green { background: #065f46; color: white; }
+        .tag-gold { background: #92400e; color: white; }
+        .tag-tbd { background: #334155; color: #94a3b8; border: 1px dashed #64748b; }
+        
+        .rationale { font-size: 0.85rem; color: #cbd5e1; background: #0f172a; padding: 12px; border-radius: 6px; margin: 15px 0; border-left: 4px solid var(--accent); }
+
+        .contact-box { background: #000; padding: 30px; border-radius: 12px; text-align: center; border: 1px solid var(--secondary); }
 
         @media (max-width: 900px) {
-            .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 4px solid var(--secondary); }
+            .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 3px solid var(--secondary);}
             .content { margin-left: 0; padding: 20px; }
             body { flex-direction: column; }
         }
@@ -74,26 +78,42 @@
 <body>
 
     <nav class="sidebar">
-        <h2>Hydro Hub Library</h2>
+        <h2>Hydro Library</h2>
         <ul>
-            <li><a href="#home">Home Index</a></li>
-            <li><a href="#blog">Tech Blog</a></li>
-            <li><a href="#theory">Theory & Physics</a></li>
-            <li><a href="#sss">Side Scan Sonar</a></li>
-            <li><a href="#industry">Industry Support</a></li>
-            <li><a href="#networking">Networking & Code</a></li>
-            <li><a href="#standards">Standards & Specs</a></li>
-            <li><a href="#contribute">Contact & Submit</a></li>
+            <li><a href="#home">00. Home / Index</a></li>
+            <li><a href="#blog">01. Tech Blog</a></li>
+            <li><a href="#theory">02. Theory & Ops</a></li>
+            <li><a href="#sat">03. Sonar Acceptance</a></li>
+            <li><a href="#sops">04. SOP Library</a></li>
+            <li><a href="#sss">05. Side Scan Sonar</a></li>
+            <li><a href="#industry">06. Mfr Support Links</a></li>
+            <li><a href="#netcode">07. Network & Code</a></li>
+            <li><a href="#standards">08. Standards & Specs</a></li>
+            <li><a href="#noaa">09. NOAA & Exploration</a></li>
+            <li><a href="#gis">10. GIS (ESRI/QGIS)</a></li>
+            <li><a href="#contribute">11. Submit / Contact</a></li>
+            <li><a href="#peyton" style="color:#ff4500; font-weight:900; text-shadow: 0 0 5px #ff4500;">12. FOR PEYTON</a></li>
         </ul>
     </nav>
 
     <main class="content">
-        
         <section id="home">
-            <h1>Master Resource Hub</h1>
-            <p>Unified directory for Hydrographic Surveying, Ocean Science, and Marine Networking.</p>
-            <div class="search-container">
-                <input type="text" class="search-box" id="masterSearch" placeholder="Type to search anything (e.g. 'NOAA', 'UDP', 'EdgeTech', 'Python')...">
+            <div class="ascii" style="color:var(--secondary)">
+   _~
+  ( )   <span style="color:white">SURVEY VESSEL 1</span>
+   H    <span style="color:#64748b">~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+  _H_   <span style="color:#64748b">~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+ |___|      <span class="ping-anim">/</span>      \          <span style="color:#64748b">_</span>
+ /   \     <span class="ping-anim">/</span> (ping) \        <span style="color:#64748b">/ \</span>   <span style="color:white">[ TOWFISH ]</span>
+          <span class="ping-anim">/</span>          \      <span style="color:#64748b">(---)</span>----------O (SSS)
+         <span class="ping-anim">/____________\</span>      <span style="color:#64748b">\_/</span>
+            </div>
+            <h1>The Hydrographic Resource Hub</h1>
+            <div class="rationale" style="border-left-color: var(--secondary); font-size: 1rem;">
+                <strong>How to use this Hub:</strong> This site serves as a "library" and gatekeeper. The answers may not be directly hosted on this site, but we will link to the official industry authorities (IHO, NOAA, Manufacturers) and explain <em>why</em> we are linking to them.
+            </div>
+            <div class="search-sticky">
+                <input type="text" id="search" class="search-box" placeholder="Search across all resources (e.g. 'Patch Test', 'CARIS', 'Python', 'UDP')...">
             </div>
         </section>
 
@@ -101,115 +121,202 @@
             <h2>Survey Tech Blog</h2>
             <div class="resource-grid">
                 <div class="card">
-                    <span class="tag" style="background: #fef3c7; color: #92400e;">Latest Post</span>
-                    <h3>Navigating Multibeam Backscatter</h3>
-                    <p>Understanding the difference between relative and absolute backscatter in R2Sonic and Kongsberg systems.</p>
-                    <a href="#" class="btn-link btn-accent">Read Article</a>
+                    <span class="tag tag-gold">Latest Post</span>
+                    <h3>Multi-Sensor Time Sync</h3>
+                    <p>Why PPS and NMEA strings are the heartbeat of your survey.</p>
+                    <a href="#" class="btn-link btn-accent">Read Blog</a>
                 </div>
                 <div class="card">
-                    <span class="tag" style="background: #fef3c7; color: #92400e;">Field Story</span>
-                    <h3>Why your Subnet Mask matters</h3>
-                    <p>Real-world mobilization story: Solving IP conflicts on a multi-sensor research vessel.</p>
-                    <a href="#" class="btn-link btn-accent">Read Article</a>
+                    <span class="tag tag-gold">Field Story</span>
+                    <h3>Patch Testing in Heavy Seas</h3>
+                    <p>Techniques for mitigating environmental noise during calibration.</p>
+                    <a href="#" class="btn-link btn-accent">Read Blog</a>
                 </div>
             </div>
         </section>
 
         <section id="theory">
-            <h2>Theory & Science</h2>
+            <h2>Theory & Operations</h2>
+            <p>The operational application of acoustic and geodetic science.</p>
             <div class="resource-grid">
                 <div class="card">
-                    <span class="tag tag-theory">Research</span>
+                    <span class="tag tag-blue">Research</span>
                     <h3>UNH CCOM / JHC</h3>
-                    <p>The global authority for bathymetric research and seafloor characterization.</p>
-                    <div class="rationale">Find the science behind CUBE, Geocoder, and Uncertainty models.</div>
+                    <p>Academic research on multibeam processing, uncertainty, and seafloor characterization.</p>
+                    <div class="rationale"><strong>Why:</strong> The definitive academic source for understanding algorithms like CUBE.</div>
                     <a href="https://ccom.unh.edu/publications" target="_blank" class="btn-link">CCOM Publications</a>
                 </div>
                 <div class="card">
-                    <span class="tag tag-theory">Acoustics</span>
+                    <span class="tag tag-blue">Acoustics</span>
                     <h3>R2Sonic Knowledge Hub</h3>
-                    <p>Deep-dives into pulse widths, frequencies, and the physics of "Sonic" sonar systems.</p>
+                    <p>Deep dives into pulse width, absorption, and acoustic physics.</p>
+                    <div class="rationale"><strong>Why:</strong> Translates complex sonar physics into operational field settings.</div>
                     <a href="https://r2sonic.com/knowledge-hub/" target="_blank" class="btn-link">R2Sonic Education</a>
                 </div>
+                <div class="card">
+                    <span class="tag tag-green">Operations</span>
+                    <h3>MAC Community Wiki</h3>
+                    <p>Operational workflows, BIST checks, and system health monitoring.</p>
+                    <div class="rationale"><strong>Why:</strong> The "boots-on-the-ground" guide for cross-platform best practices.</div>
+                    <a href="https://github.com/oceanmapping/community/wiki" target="_blank" class="btn-link">Ocean Mapping Wiki</a>
+                </div>
             </div>
+        </section>
+
+        <section id="sat">
+            <div class="ascii ascii-multibeam" style="color:var(--success)">
+    <span style="color:white">Vessel</span>
+      |
+  ____|____
+ /         \
+ \_________/
+   \  |  /      <span style="color:#fbbf24">.</span>
+    \ | /      <span style="color:#fbbf24">. .</span>    <span style="color:white">MULTIBEAM PING</span>
+     \|/      <span style="color:#fbbf24">. . .</span>
+<span style="color:#64748b">~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+   /  |  \    <span style="color:var(--success)">(SWATH)</span>
+  /   |   \
+ /____|____\  <span style="color:var(--success)">SEAFLOOR</span>
+            </div>
+            <h2>Sonar Acceptance Tests (SAT/HAT)</h2>
+            <p>Why we perform calibrations: To verify system integration, sensor offsets, and ensure data integrity meets specifications.</p>
+            
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>The Patch Test Workflow</h3>
+                <ul style="color: #cbd5e1; padding-left: 20px;">
+                    <li><strong>1. Lever Arms:</strong> Physical measurement of the INS/GNSS phase center to the sonar acoustic center.</li>
+                    <li><strong>2. Latency & Pitch:</strong> Run reciprocal lines over a distinct slope at varying speeds.</li>
+                    <li><strong>3. Roll:</strong> Run reciprocal lines over a flat bottom to detect rotational misalignment.</li>
+                    <li><strong>4. Yaw:</strong> Run parallel offset lines over a distinct feature.</li>
+                </ul>
+            </div>
+
+            <div class="resource-grid">
+                <div class="card">
+                    <span class="tag tag-gold">SAT Tools</span>
+                    <h3>MAC SAT Procedures</h3>
+                    <p>Standardized testing tools for Extinction tests and target detection.</p>
+                    <div class="rationale"><strong>Why:</strong> Provides open-source tools to objectively graph and prove your sonar's performance.</div>
+                    <a href="https://github.com/oceanmapping/community/wiki/SAT-Standard-Testing" target="_blank" class="btn-link">View MAC SAT Tools</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="sops">
+            <h2>SOP Library</h2>
+            <p>Downloadable Standard Operating Procedures and checklists.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>SOP ID</th>
+                        <th>Task / Title</th>
+                        <th>Category</th>
+                        <th>Status / Link</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>SOP-MBES-01</td>
+                        <td>Daily System Confidence Check</td>
+                        <td>Operations</td>
+                        <td><a href="#" style="color:var(--secondary)">Download PDF</a></td>
+                    </tr>
+                    <tr>
+                        <td>SOP-SVP-02</td>
+                        <td>Sound Velocity Profiler Cast Protocol</td>
+                        <td>Operations</td>
+                        <td><a href="#" style="color:var(--secondary)">Download PDF</a></td>
+                    </tr>
+                    <tr>
+                        <td>SOP-SSS-01</td>
+                        <td>Towfish Deployment & Catenary Check</td>
+                        <td>Side Scan</td>
+                        <td><span class="tag tag-tbd">TBD / Pending Auth</span></td>
+                    </tr>
+                    <tr>
+                        <td>SOP-DATA-01</td>
+                        <td>End of Day Data Backup & Verification</td>
+                        <td>Processing</td>
+                        <td><span class="tag tag-tbd">TBD / Under Review</span></td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
 
         <section id="sss">
             <h2>Side Scan Sonar (SSS)</h2>
             <div class="resource-grid">
                 <div class="card">
-                    <span class="tag tag-support">Support</span>
+                    <span class="tag tag-blue">Theory</span>
+                    <h3>Understanding SSS</h3>
+                    <p>How acoustic backscatter creates imagery, the "10% of range" altitude rule, and calculating shadow heights.</p>
+                    <div class="rationale"><strong>Why:</strong> Fundamental for interpreting targets and differentiating bathymetry from imagery.</div>
+                    <a href="https://iho.int/en/m-13-manual-hydrography" target="_blank" class="btn-link">Read IHO M-13 (Ch. 4)</a>
+                </div>
+                <div class="card">
+                    <span class="tag tag-green">Support</span>
                     <h3>EdgeTech Support</h3>
-                    <p>Access manuals and software for 4125 and 4200 series towfish.</p>
+                    <p>Manuals and Discover software support for 4125/4200 series.</p>
                     <a href="https://www.edgetech.com/support/" target="_blank" class="btn-link">EdgeTech Portal</a>
                 </div>
                 <div class="card">
-                    <span class="tag tag-support">Support</span>
+                    <span class="tag tag-green">Support</span>
                     <h3>Klein Support</h3>
-                    <p>Documentation for Klein 4000/5000 high-resolution side scan sonars.</p>
+                    <p>Documentation for Klein 4000/5000 multi-beam side scan systems.</p>
                     <a href="https://mind-technology.com/klein/support/" target="_blank" class="btn-link">Klein Portal</a>
                 </div>
-                <div class="card">
-                    <span class="tag tag-theory">Theory</span>
-                    <h3>SSS Fundamentals</h3>
-                    <p>Understanding the "10% of range" altitude rule and shadow analysis.</p>
-                    
-                    <a href="https://iho.int/en/m-13-manual-hydrography" target="_blank" class="btn-link">IHO M-13 Chapter 4</a>
+                <div class="card" style="border-color: #64748b; background: #1e293b;">
+                    <span class="tag tag-tbd">TBD</span>
+                    <h3>SSS Processing Workflows</h3>
+                    <p>Steps for slant-range correction, layback calculations, and mosaicking.</p>
+                    <div class="rationale" style="background: #0f172a;">Pending open-source/non-proprietary guides.</div>
+                    <a href="#" class="btn-link" style="background:#475569; pointer-events:none;">Awaiting Content</a>
                 </div>
             </div>
         </section>
 
         <section id="industry">
-            <h2>Industry & Hardware Support</h2>
+            <h2>Industry Links & Manufacturer Support</h2>
             <div class="resource-grid">
+                <div class="card"><h3>Kongsberg Discovery</h3><a href="https://www.kongsberg.com/discovery/support/" target="_blank" class="btn-link">Kongsberg Portal</a></div>
+                <div class="card"><h3>Applanix Support</h3><a href="https://www.applanix.com/support/" target="_blank" class="btn-link">Applanix Portal</a></div>
+                <div class="card"><h3>Teledyne CARIS</h3><a href="https://www.teledynecaris.com/en/support/" target="_blank" class="btn-link">CARIS Portal</a></div>
+                <div class="card"><h3>QPS (Qimera/QINSy)</h3><a href="https://confluence.qps.nl/qimera" target="_blank" class="btn-link">QPS Confluence</a></div>
+                <div class="card"><h3>R2Sonic Support</h3><a href="https://r2sonic.com/knowledge-hub/" target="_blank" class="btn-link">R2Sonic Portal</a></div>
                 <div class="card">
-                    <span class="tag tag-support">Hardware</span>
-                    <h3>Kongsberg Discovery</h3>
-                    <p>EM Series MBES support, SIS software, and BIST code definitions.</p>
-                    <a href="https://www.kongsberg.com/discovery/support/" target="_blank" class="btn-link">Kongsberg Support</a>
+                    <span class="tag tag-blue">ADCP</span>
+                    <h3>Univ. of Hawaii ADCP</h3>
+                    <a href="https://currents.soest.hawaii.edu/docs/adcp_doc/" target="_blank" class="btn-link">UH UHDAS Docs</a>
                 </div>
-                <div class="card">
-                    <span class="tag tag-support">Positioning</span>
-                    <h3>Applanix (Trimble)</h3>
-                    <p>POS MV firmware, POSPac processing, and GNSS/Inertial tight-coupling.</p>
-                    <a href="https://www.applanix.com/support/" target="_blank" class="btn-link">Applanix Support</a>
+                <div class="card" style="border: 1px dashed #64748b; background: transparent;">
+                    <span class="tag tag-tbd">Open Slot</span>
+                    <h3 style="color:#94a3b8;">Future Sensor Mfr</h3>
+                    <p style="color:#64748b;">Reserved for additional INS/Sonar manufacturers.</p>
                 </div>
-                <div class="card">
-                    <span class="tag tag-support">Processing</span>
-                    <h3>QPS Qimera & QINSy</h3>
-                    <p>Knowledge base for acquisition and bathymetric processing.</p>
-                    <a href="https://confluence.qps.nl/qimera" target="_blank" class="btn-link">QPS Knowledge Base</a>
-                </div>
-                <div class="card">
-                    <span class="tag tag-support">Software</span>
-                    <h3>Teledyne CARIS</h3>
-                    <p>Support for HIPS & SIPS and BASE surface workflows.</p>
-                    <a href="https://www.teledynecaris.com/en/support/" target="_blank" class="btn-link">CARIS Support Portal</a>
+                <div class="card" style="border: 1px dashed #64748b; background: transparent;">
+                    <span class="tag tag-tbd">Open Slot</span>
+                    <h3 style="color:#94a3b8;">Future Software Mfr</h3>
+                    <p style="color:#64748b;">Reserved for additional acquisition software support.</p>
                 </div>
             </div>
         </section>
 
-        <section id="networking">
-            <h2>Networking & Ocean Programming</h2>
-            
+        <section id="netcode">
+            <h2>Networking & Programming</h2>
             <div class="resource-grid">
                 <div class="card">
-                    <span class="tag tag-net">Fundamentals</span>
-                    <h3>GeeksforGeeks: Networking</h3>
-                    <p>Master IP Addressing, Subnetting, and the UDP/TCP protocols used in sonar data strings.</p>
-                    <a href="https://www.geeksforgeeks.org/computer-network-tutorials/" target="_blank" class="btn-link">GeeksforGeeks Hub</a>
+                    <span class="tag tag-gold">Networking</span>
+                    <h3>GeeksforGeeks Basics</h3>
+                    <p>Understanding IP Subnetting, ping troubleshooting, and UDP vs TCP.</p>
+                    <div class="rationale"><strong>Why:</strong> Crucial for setting up the sensor network to ensure data strings actually reach your acquisition PC.</div>
+                    <a href="https://www.geeksforgeeks.org/computer-network-tutorials/" target="_blank" class="btn-link">Networking Guide</a>
                 </div>
                 <div class="card">
-                    <span class="tag tag-net">Ocean Code</span>
-                    <h3>UNH CCOM GitHub</h3>
-                    <p>Free and open-source programming resources for ocean science and bathymetric processing.</p>
-                    <a href="https://github.com/ccom-jhc" target="_blank" class="btn-link">CCOM Open Source</a>
-                </div>
-                <div class="card">
-                    <span class="tag tag-net">Currents</span>
-                    <h3>UH ADCP Support</h3>
-                    <p>University of Hawaii's definitive guides for shipboard ADCP and UHDAS processing.</p>
-                    <a href="https://currents.soest.hawaii.edu/docs/adcp_doc/" target="_blank" class="btn-link">UH ADCP Documentation</a>
+                    <span class="tag tag-green">Code</span>
+                    <h3>UNH CCOM Open Source</h3>
+                    <p>Programming for ocean science.</p>
+                    <div class="rationale"><strong>Why:</strong> Access free tools and scripts written in Python/C++ for processing oceanographic data.</div>
+                    <a href="https://github.com/ccom-jhc" target="_blank" class="btn-link">CCOM GitHub</a>
                 </div>
             </div>
         </section>
@@ -217,50 +324,129 @@
         <section id="standards">
             <h2>Standards & Specifications</h2>
             <div class="resource-grid">
-                <div class="card" style="border-left: 6px solid var(--noaa);">
-                    <span class="tag tag-ops">NOAA</span>
-                    <h3>NOAA HSSD & FPM</h3>
-                    <p>The definitive Specs and Field Manuals for high-standard hydrography.</p>
-                    <a href="https://nauticalcharts.noaa.gov/publications/standards-and-requirements.html" target="_blank" class="btn-link">NOAA Standards</a>
-                </div>
-                <div class="card" style="border-left: 6px solid var(--usace);">
-                    <span class="tag tag-ops">USACE</span>
-                    <h3>USACE EM 1110-2-1003</h3>
-                    <p>U.S. Army Corps of Engineers engineering manual for hydrographic surveying.</p>
-                    <a href="https://www.publications.usace.army.mil/Portals/76/Publications/EngineerManuals/EM_1110-2-1003.pdf" target="_blank" class="btn-link">Download EM Manual</a>
+                <div class="card" style="border-left: 5px solid var(--usace-red);">
+                    <span class="tag" style="background:var(--usace-red); color:white;">USACE</span>
+                    <h3>EM 1110-2-1003</h3>
+                    <p>Army Corps Engineering Manual for Hydrographic Surveying.</p>
+                    <div class="rationale"><strong>Why:</strong> The standard for dredging and civil works engineering surveys.</div>
+                    <a href="https://www.publications.usace.army.mil/Portals/76/Publications/EngineerManuals/EM_1110-2-1003.pdf" target="_blank" class="btn-link">USACE Manual (PDF)</a>
                 </div>
                 <div class="card">
-                    <span class="tag tag-ops">Global</span>
-                    <h3>IHO Standards Hub</h3>
-                    <p>The global parent standards for hydrography (S-44, M-13, S-32).</p>
+                    <span class="tag tag-gold">Global</span>
+                    <h3>IHO Standards</h3>
+                    <p>S-44 (Standards), M-13 (Manual), and S-32 (Dictionary).</p>
+                    <div class="rationale"><strong>Why:</strong> The international parent standards that dictate survey "Orders" (1a, Special, etc).</div>
                     <a href="https://iho.int/en/standards-and-specifications" target="_blank" class="btn-link">IHO Portal</a>
                 </div>
             </div>
         </section>
 
+        <section id="noaa">
+            <div class="ascii" style="color:var(--noaa-blue)">
+      ____  _   _    _    _    
+     |  _ \| \ | |  / \  / \   
+     | | | |  \| | / _ \/ _ \  
+     | |_| | |\  |/ ___ ___  \ 
+     |____/|_| \_/_/   \/   \_\  <span style="color:white">NATIONAL OCEANIC AND ATMOSPHERIC ADMINISTRATION</span>
+            </div>
+            <h2>NOAA & Ocean Exploration</h2>
+            <div class="resource-grid">
+                <div class="card" style="border-left: 5px solid var(--noaa-blue);">
+                    <span class="tag tag-blue">Charting</span>
+                    <h3>HSSD & FPM</h3>
+                    <p>The Hydrographic Surveys Specifications & Deliverables, and Field Procedures Manual.</p>
+                    <div class="rationale"><strong>Why:</strong> The HSSD dictates "What" the final product looks like. The FPM dictates "How" the NOAA fleet acquires it.</div>
+                    <a href="https://nauticalcharts.noaa.gov/publications/standards-and-requirements.html" target="_blank" class="btn-link">NOAA Rulebooks</a>
+                </div>
+                <div class="card" style="border-left: 5px solid var(--noaa-blue);">
+                    <span class="tag tag-blue">Exploration</span>
+                    <h3>NOAA Ocean Exploration</h3>
+                    <p>Mapping the deep sea via the <em>Okeanos Explorer</em>.</p>
+                    <div class="rationale"><strong>Why:</strong> Learn how telepresence and ROVs are used in cutting-edge seafloor discovery.</div>
+                    <a href="https://oceanexplorer.noaa.gov/about/how-we-explore/welcome.html" target="_blank" class="btn-link">How We Explore</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="gis">
+            <h2>GIS & Spatial Data</h2>
+            <div class="resource-grid">
+                <div class="card">
+                    <span class="tag tag-blue">ESRI</span>
+                    <h3>ArcGIS Bathymetry</h3>
+                    <p>Manage, visualize, and analyze bathymetric data (BIS) within ArcGIS Pro.</p>
+                    <a href="https://www.esri.com/en-us/arcgis/products/arcgis-bathymetry/overview" target="_blank" class="btn-link">ESRI Portal</a>
+                </div>
+                <div class="card">
+                    <span class="tag tag-green">Open Source</span>
+                    <h3>QGIS</h3>
+                    <p>The leading free and open-source geographic information system.</p>
+                    <a href="https://qgis.org/" target="_blank" class="btn-link">Download QGIS</a>
+                </div>
+                <div class="card">
+                    <span class="tag tag-gold">Theory</span>
+                    <h3>GIS Geography</h3>
+                    <p>General GIS concepts, Datums (NAD83 vs WGS84), Projections, and raster examples.</p>
+                    <a href="https://gisgeography.com/" target="_blank" class="btn-link">Learn GIS Concepts</a>
+                </div>
+            </div>
+        </section>
+
         <section id="contribute">
-            <div class="contact-section">
-                <h2>Community Contribution</h2>
-                <p>Have an SOP to share? Want to request a specific technical link or blog topic?</p>
-                <p>Help us grow the library by submitting your resources.</p>
-                <a href="mailto:admin@hydrohub.com?subject=SOP Submission" class="email-btn">Email: admin@hydrohub.com</a>
+            <h2>Community Submission</h2>
+            <div class="contact-box">
+                <h3>Request Info or Submit SOPs</h3>
+                <p style="color:#cbd5e1; margin-bottom: 20px;">Have a great standard operating procedure, or want to request a specific link be added to the Hub? Email us directly.</p>
+                <a href="mailto:admin@hydrohub.com?subject=Hub Submission" class="btn-link btn-accent" style="padding: 15px 30px; font-size: 1.1rem;">Email: admin@hydrohub.com</a>
+            </div>
+        </section>
+
+        <section id="peyton" style="margin-top: 150px; padding-top: 50px; border-top: 2px solid #334155;">
+            
+            <div class="ascii epic-fire" style="font-size: 16px; text-align: center; border:none; background:transparent;">
+     (  )   (   )  (  )       (  )   (   )  (  )
+      ) (    ) (    ) (        ) (    ) (    ) (
+    (____)  (____)  (____)   (____)  (____)  (____)
+   [ BOOM ] [ FIRE ] [ BOOM ] [ FIRE ] [ BOOM ]
+            </div>
+
+            <div class="ascii" style="color:var(--accent); font-size: 20px; text-align: center; border:none; background:transparent; font-weight: 900; text-shadow: 0 0 10px var(--accent);">
+       _______  _______  __    __  _______  _______  __    __ 
+      |   __  ||   ____||  |  |  ||       ||   __  ||  \  |  |
+      |  |__| ||  |__   |  |__|  ||___    ||  |  | ||   \ |  |
+      |   ____||   __|  \___  ___/    |  | |  |  | ||  |\\|  |
+      |  |     |  |____     |  |      |  | |  |__| ||  | \   |
+      |__|     |_______|    |__|      |__| |_______||__|  \__|
+            </div>
+
+            <h1 class="shake-text" style="text-align: center; margin: 30px 0; font-size: 5rem; color: white; width: 100%;">OH HELLO THERE PEYTON!</h1>
+            
+            <h1 style="text-align: center; margin: 10px 0; font-size: 3rem; color: var(--secondary); text-shadow: 0 0 10px var(--secondary);">I SEE YOU FOUND THIS SITE!!!</h1>
+            <h2 style="text-align: center; border:none; color:white; font-size: 2.5rem; margin-top:20px;">I HOPE YOU ENJOYED IT!!</h2>
+            
+            <div class="ascii" style="color:var(--success); font-size: 26px; text-align: center; border:none; background:transparent; font-weight:bold; text-shadow: 0 0 15px var(--success);">
+          _      _
+         ( )    ( )
+          \ \  / /
+           \ \/ /   <span style="color:var(--accent); text-shadow: 0 0 10px var(--accent);">[ BIG THUMBS UP ]</span>
+           |    |
+           |____|
+            </div>
+            
+            <div class="ascii epic-fire" style="font-size: 20px; text-align: center; border:none; background:transparent;">
+  * EXPLOSION * * EXPLOSION * * EXPLOSION * * EXPLOSION *
             </div>
         </section>
 
     </main>
 
     <script>
-        // Master Search Functionality
-        document.getElementById('masterSearch').addEventListener('input', function(e) {
+        document.getElementById('search').addEventListener('input', function(e) {
             const term = e.target.value.toLowerCase();
-            const cards = document.querySelectorAll('.card');
-            
-            cards.forEach(card => {
-                const text = card.innerText.toLowerCase();
-                card.parentElement.style.display = text.includes(term) ? "block" : "none";
+            document.querySelectorAll('.card, tbody tr').forEach(element => {
+                element.style.display = element.innerText.toLowerCase().includes(term) ? '' : 'none';
             });
         });
     </script>
-
 </body>
 </html>
