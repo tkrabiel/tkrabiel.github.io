@@ -85,7 +85,7 @@
 <div id="game-container">
     <canvas id="game" width="800" height="480"></canvas>
     <div id="ui">
-        SCORE: <span id="score">000000</span>  LIVES: <span id="lives">5</span>  SPREAD: <span id="spread">1</span>
+        SCORE: <span id="score">000000</span>  LIVES: <span id="lives">5</span>  SPREAD: <span id="spread">1</span>  LASER: <span id="laser">0</span>
     </div>
 </div>
 
@@ -152,7 +152,7 @@
 </audio>
 
 <script>
-// ============== VERTICAL PORTRAIT - WIN AT 10,000 + 250 PTS PER GUN + STACKING SPREAD + LIFE DROPS + SAILDRONE ENEMIES ==============
+// ============== VERTICAL PORTRAIT - WIN AT 10,000 + 250 PTS PER GUN + STACKING SPREAD + GROWING PERMANENT LASER BEAM + LIFE DROPS + SAILDRONE ENEMIES ==============
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 480;
@@ -160,6 +160,7 @@ const W = 800, H = 480;
 const scoreEl = document.getElementById('score');
 const livesEl = document.getElementById('lives');
 const spreadEl = document.getElementById('spread');
+const laserEl = document.getElementById('laser');
 const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over');
 const defeatScreen = document.getElementById('defeat-screen');
@@ -169,7 +170,7 @@ const bgMusic = document.getElementById('bgmusic');
 const sadMusic = document.getElementById('sadmusic');
 const winMusic = document.getElementById('winmusic');
 
-let score = 0, lives = 5, gameRunning = false, won = false, spreadLevel = 1;
+let score = 0, lives = 5, gameRunning = false, won = false, spreadLevel = 1, laserActive = false, laserWidth = 0;
 let movingLeft = false, movingRight = false;
 let player, bullets = [], enemies = [], particles = [], stars = [], powerups = [], lifeDrops = [];
 
@@ -192,14 +193,10 @@ class Bullet { constructor(x,y,angle=0){this.x=x;this.y=y;this.w=6;this.h=18;thi
     update(){this.y-=this.speed; this.x += this.angle*3;} }
 class Enemy { constructor(){this.x=Math.random()*700+50;this.y=-40;this.w=36;this.h=28;this.speed=1.8+Math.random()*1.2;}
     draw() { // SAILDRONE LOOK
-        ctx.fillStyle = '#FF0000'; // hull
-        ctx.fillRect(this.x-18, this.y+12, 36, 12);
-        ctx.fillStyle = '#00FFFF'; // solar panel
-        ctx.fillRect(this.x-12, this.y, 24, 8);
-        ctx.fillStyle = '#FFFFFF'; // mast
-        ctx.fillRect(this.x-2, this.y-18, 4, 28);
-        ctx.fillStyle = '#FFFF00'; // sail
-        ctx.beginPath(); ctx.moveTo(this.x-2, this.y-18); ctx.lineTo(this.x+22, this.y-2); ctx.lineTo(this.x-2, this.y-2); ctx.fill();
+        ctx.fillStyle = '#FF0000'; ctx.fillRect(this.x-18, this.y+12, 36, 12);
+        ctx.fillStyle = '#00FFFF'; ctx.fillRect(this.x-12, this.y, 24, 8);
+        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(this.x-2, this.y-18, 4, 28);
+        ctx.fillStyle = '#FFFF00'; ctx.beginPath(); ctx.moveTo(this.x-2, this.y-18); ctx.lineTo(this.x+22, this.y-2); ctx.lineTo(this.x-2, this.y-2); ctx.fill();
     }
     update(){this.y+=this.speed; this.x+=Math.sin(this.y/20)*1.2;}
 }
@@ -300,8 +297,24 @@ function checkCollisions(){
                 for(let k=0;k<18;k++)particles.push(new Particle(e.x,e.y+14));
                 particles.push(new Particle(e.x-35,e.y-25,true));particles.push(new Particle(e.x+35,e.y-25,true));
                 beep(135,240,0.75);
+                // LASER GROW ON KILL
+                if(laserActive) laserWidth = Math.min(laserWidth + 15, W/3);
+                laserEl.textContent = Math.floor(laserWidth);
                 if(score >= 10000 && !won) winGame();
                 break;
+            }
+        }
+    }
+    // LASER DAMAGE (permanent beam kills enemies automatically)
+    if(laserActive){
+        const left = player.x - laserWidth/2;
+        const right = player.x + laserWidth/2;
+        for(let j=enemies.length-1;j>=0;j--){
+            const e = enemies[j];
+            if(e.x + e.w/2 > left && e.x - e.w/2 < right && e.y < player.y){
+                enemies.splice(j,1);score+=50;scoreEl.textContent=String(score).padStart(6,'0');
+                for(let k=0;k<12;k++)particles.push(new Particle(e.x,e.y+14));
+                if(score >= 10000 && !won) winGame();
             }
         }
     }
@@ -321,6 +334,9 @@ function checkCollisions(){
             scoreEl.textContent = String(score).padStart(6,'0');
             spreadLevel = Math.min(5, spreadLevel + 1);
             spreadEl.textContent = spreadLevel;
+            laserActive = true;
+            laserWidth = Math.max(laserWidth, 40);
+            laserEl.textContent = Math.floor(laserWidth);
             for(let k=0;k<12;k++)particles.push(new Particle(player.x,player.y,true));
             beep(600,400,0.6);
         }
@@ -343,6 +359,14 @@ function drawBackground(){ctx.fillStyle='#000033';ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#FFFFFF';for(let s of stars){ctx.fillRect(s.x,s.y,s.size,s.size);s.y+=s.speed;if(s.y>H)s.y=0;}
     for(let p of powerups){p.update();p.draw();}
     for(let l of lifeDrops){l.update();l.draw();}
+    // DRAW PERMANENT LASER BEAM
+    if(laserActive){
+        const grad = ctx.createLinearGradient(player.x, player.y, player.x, 0);
+        grad.addColorStop(0, '#FFFF00');
+        grad.addColorStop(1, '#00FFFF');
+        ctx.fillStyle = grad;
+        ctx.fillRect(player.x - laserWidth/2, 0, laserWidth, player.y);
+    }
 }
 
 function gameLoop(){
@@ -356,8 +380,8 @@ function gameLoop(){
 }
 
 function startGame(){
-    gameRunning=true; won=false; spreadLevel=1;
-    score=0;lives=5;scoreEl.textContent='000000';livesEl.textContent='5';spreadEl.textContent='1';
+    gameRunning=true; won=false; spreadLevel=1; laserActive=false; laserWidth=0;
+    score=0;lives=5;scoreEl.textContent='000000';livesEl.textContent='5';spreadEl.textContent='1';laserEl.textContent='0';
     bullets=[];enemies=[];particles=[];powerups=[];lifeDrops=[];player.x=400;
     bgMusic.currentTime=0; bgMusic.play().catch(()=>{});
     sadMusic.pause(); winMusic.pause();
@@ -389,4 +413,10 @@ function restartGame(){
     winMusic.pause();
 }
 
-window.addEventListener('keydown',e=>{if(e.key===' '&&gameRunning)shoot(); if(!gameRunning&&(e.key===' '||e.key==='Enter'))startGame(); i
+window.addEventListener('keydown',e=>{if(e.key===' '&&gameRunning)shoot(); if(!gameRunning&&(e.key===' '||e.key==='Enter'))startGame(); if(!gameRunning&&e.key.toLowerCase()==='r')restartGame();});
+
+startScreen.style.display='block';
+</script>
+
+</body>
+</html>
