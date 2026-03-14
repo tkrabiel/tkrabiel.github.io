@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PEYTON BENSON'S SPACE DESTROYER 🔥 90s ARCADE EDITION</title>
+    <style>
+        body { 
+            margin: 0; 
+            background: #000033; 
+            color: #00FFAA; 
+            font-family: 'Courier New', Courier, monospace; 
+            text-align: center; 
+            overflow: hidden;
+        }
+        canvas { 
+            border: 8px solid #FF00FF; 
+            box-shadow: 0 0 40px #00FFFF, 0 0 80px #FF0000; 
+            image-rendering: pixelated;
+        }
+        #ui {
+            position: absolute; top: 20px; left: 20px; font-size: 24px; color: #FFFF00; text-shadow: 0 0 10px #FF00FF;
+        }
+        marquee { font-size: 28px; color: #FF0000; text-shadow: 0 0 15px #FFFF00; }
+        .game-over, .start-screen {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,50,0.9); padding: 30px; border: 6px solid #FF00FF; font-size: 36px; display: none;
+        }
+    </style>
+</head>
+<body>
+
+<marquee>PEYTON BENSON'S SPACE DESTROYER - YOU THE MAN!!! BLAST THE ENEMY FLEET!!! BOOM BOOM BOOM!!!</marquee>
+
+<canvas id="game" width="800" height="600"></canvas>
+
+<div id="ui">
+    SCORE: <span id="score">000000</span>  LIVES: <span id="lives">3</span>
+</div>
+
+<div id="start-screen" class="start-screen">
+    <h1 style="color:#00FFFF; margin:0;">PEYTON BENSON'S<br>SPACE DESTROYER</h1>
+    <p style="font-size:24px; color:#FF00FF;">YOU ARE THE TOP GUN HYDRO PILOT IN SPACE!!!</p>
+    <p style="font-size:18px;">← → or A D = MOVE  SPACE = BLAST LASERS</p>
+    <p style="color:#FFFF00; font-size:22px;">PRESS ANY KEY TO LAUNCH!!!</p>
+</div>
+
+<div id="game-over" class="game-over">
+    <h1 style="color:#FF0000;">GAME OVER</h1>
+    <p style="font-size:28px;">FINAL SCORE: <span id="final-score">000000</span></p>
+    <p style="color:#FFFF00;">PEYTON YOU STILL THE MAN!!! PRESS R TO RESTART</p>
+</div>
+
+<script>
+// ============== PEYTON BENSON SPACE DESTROYER - FULL 90s CANVAS GAME ==============
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const startScreen = document.getElementById('start-screen');
+const gameOverScreen = document.getElementById('game-over');
+const finalScoreEl = document.getElementById('final-score');
+
+let score = 0;
+let lives = 3;
+let gameRunning = false;
+let keys = {};
+let player, bullets = [], enemies = [], particles = [], stars = [];
+
+// Player ship
+class Player {
+    constructor() {
+        this.x = 400;
+        this.y = 520;
+        this.width = 40;
+        this.height = 30;
+        this.speed = 8;
+    }
+    draw() {
+        ctx.fillStyle = '#00FFFF';
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x - this.width/2, this.y + this.height);
+        ctx.lineTo(this.x + this.width/2, this.y + this.height);
+        ctx.closePath();
+        ctx.fill();
+        // wings
+        ctx.fillStyle = '#FF00FF';
+        ctx.fillRect(this.x - 28, this.y + 15, 12, 8);
+        ctx.fillRect(this.x + 16, this.y + 15, 12, 8);
+        // cockpit
+        ctx.fillStyle = '#FFFF00';
+        ctx.fillRect(this.x - 8, this.y + 8, 16, 12);
+    }
+    update() {
+        if (keys['ArrowLeft'] || keys['a'] || keys['A']) this.x -= this.speed;
+        if (keys['ArrowRight'] || keys['d'] || keys['D']) this.x += this.speed;
+        if (this.x < 20) this.x = 20;
+        if (this.x > 780) this.x = 780;
+    }
+}
+
+// Bullet
+class Bullet {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = 6;
+        this.height = 18;
+        this.speed = 14;
+    }
+    draw() {
+        ctx.fillStyle = '#FFFF00';
+        ctx.fillRect(this.x - 3, this.y, this.width, this.height);
+    }
+    update() {
+        this.y -= this.speed;
+    }
+}
+
+// Enemy ship
+class Enemy {
+    constructor() {
+        this.x = Math.random() * 700 + 50;
+        this.y = -50;
+        this.width = 36;
+        this.height = 28;
+        this.speed = 3 + Math.random() * 2;
+    }
+    draw() {
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y + this.height);
+        ctx.lineTo(this.x - this.width/2, this.y);
+        ctx.lineTo(this.x + this.width/2, this.y);
+        ctx.closePath();
+        ctx.fill();
+    }
+    update() {
+        this.y += this.speed;
+        this.x += Math.sin(this.y / 20) * 1.5; // wavy movement
+    }
+}
+
+// Particle explosion
+class Particle {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 6 + 4;
+        this.speedX = Math.random() * 8 - 4;
+        this.speedY = Math.random() * 8 - 4;
+        this.life = 25;
+        this.color = '#FF00FF';
+    }
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.size, this.size);
+    }
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.life--;
+        this.speedX *= 0.95;
+        this.speedY *= 0.95;
+    }
+}
+
+// Background stars
+for (let i = 0; i < 120; i++) {
+    stars.push({
+        x: Math.random() * 800,
+        y: Math.random() * 600,
+        size: Math.random() * 3 + 1,
+        speed: Math.random() * 1.5 + 0.5
+    });
+}
+
+player = new Player();
+
+// Keyboard
+window.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if (!gameRunning && (e.key === ' ' || e.key === 'Enter')) startGame();
+    if (gameRunning && e.key === ' ') shoot();
+    if (!gameRunning && e.key.toLowerCase() === 'r') restartGame();
+});
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+function shoot() {
+    if (bullets.length < 8) { // limit rate
+        bullets.push(new Bullet(player.x, player.y - 10));
+        // pew pew sound
+        beep(800, 80, 0.2);
+    }
+}
+
+function beep(freq, duration, vol = 0.3) {
+    const audio = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.connect(gain);
+    gain.connect(audio.destination);
+    osc.frequency.value = freq;
+    gain.gain.value = vol;
+    osc.start();
+    setTimeout(() => osc.stop(), duration);
+}
+
+function spawnEnemy() {
+    if (Math.random() < 0.035 + score / 50000) {
+        enemies.push(new Enemy());
+    }
+}
+
+function checkCollisions() {
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        for (let j = enemies.length - 1; j >= 0; j--) {
+            const e = enemies[j];
+            if (b.x > e.x - e.width/2 && b.x < e.x + e.width/2 &&
+                b.y > e.y && b.y < e.y + e.height) {
+                // HIT!
+                bullets.splice(i, 1);
+                enemies.splice(j, 1);
+                score += 100;
+                scoreEl.textContent = String(score).padStart(6, '0');
+                // EXPLOSION
+                for (let k = 0; k < 18; k++) particles.push(new Particle(e.x, e.y + 14));
+                beep(120, 180, 0.6);
+                break;
+            }
+        }
+    }
+
+    // Enemy hits player
+    for (let j = enemies.length - 1; j >= 0; j--) {
+        const e = enemies[j];
+        if (e.y + e.height > player.y && 
+            e.x + e.width/2 > player.x - 20 && 
+            e.x - e.width/2 < player.x + 20) {
+            enemies.splice(j, 1);
+            lives--;
+            livesEl.textContent = lives;
+            for (let k = 0; k < 30; k++) particles.push(new Particle(player.x, player.y));
+            beep(200, 400, 0.8);
+            if (lives <= 0) endGame();
+        }
+        if (e.y > 620) enemies.splice(j, 1);
+    }
+}
+
+function drawBackground() {
+    ctx.fillStyle = '#000033';
+    ctx.fillRect(0, 0, 800, 600);
+    ctx.fillStyle = '#FFFFFF';
+    for (let s of stars) {
+        ctx.fillRect(s.x, s.y, s.size, s.size);
+        s.y += s.speed;
+        if (s.y > 600) s.y = 0;
+    }
+}
+
+function gameLoop() {
+    if (!gameRunning) return;
+
+    drawBackground();
+
+    player.update();
+    player.draw();
+
+    // Bullets
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        bullets[i].update();
+        bullets[i].draw();
+        if (bullets[i].y < -20) bullets.splice(i, 1);
+    }
+
+    // Enemies
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        enemies[i].update();
+        enemies[i].draw();
+    }
+
+    // Particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw();
+        if (particles[i].life <= 0) particles.splice(i, 1);
+    }
+
+    spawnEnemy();
+    checkCollisions();
+
+    // Win condition (just keep going forever - higher score = more enemies)
+    requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+    startScreen.style.display = 'none';
+    gameRunning = true;
+    score = 0;
+    lives = 3;
+    scoreEl.textContent = '000000';
+    livesEl.textContent = '3';
+    bullets = [];
+    enemies = [];
+    particles = [];
+    player.x = 400;
+    gameLoop();
+}
+
+function endGame() {
+    gameRunning = false;
+    finalScoreEl.textContent = String(score).padStart(6, '0');
+    gameOverScreen.style.display = 'block';
+    beep(400, 600);
+}
+
+function restartGame() {
+    gameOverScreen.style.display = 'none';
+    startScreen.style.display = 'block';
+}
+
+// Start screen ready
+startScreen.style.display = 'block';
+
+// Click anywhere on start screen also starts
+canvas.addEventListener('click', () => {
+    if (!gameRunning) startGame();
+});
+</script>
+
+</body>
+</html>
