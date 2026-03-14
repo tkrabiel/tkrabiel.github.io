@@ -56,7 +56,6 @@
             animation: xpulse 1.2s infinite alternate;
         }
         @keyframes xpulse { from { transform:translate(-50%,-50%) scale(0.9); } to { transform:translate(-50%,-50%) scale(1.05); } }
-        /* WIN SCREEN - PEYTON FLYING CRAZY */
         .win-screen .flying-container {
             position:relative; height:220px; overflow:hidden; margin:15px 0; background:rgba(0,0,0,0.6);
         }
@@ -86,7 +85,7 @@
 <div id="game-container">
     <canvas id="game" width="800" height="480"></canvas>
     <div id="ui">
-        SCORE: <span id="score">000000</span>  LIVES: <span id="lives">5</span>
+        SCORE: <span id="score">000000</span>  LIVES: <span id="lives">5</span>  SPREAD: <span id="spread">1</span>
     </div>
 </div>
 
@@ -129,6 +128,7 @@
 
 <div id="win-screen" class="win-screen">
     <h1 style="color:#00FF00; font-size:42px; margin:10px;">YOU SAVED EMILY!!!</h1>
+    <p style="color:#FFFF00; font-size:26px;">AT 10,000 POINTS — PEYTON IS THE ULTIMATE HYDRO HERO!!!</p>
     <div class="flying-container">
         <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:0s; left:10%; top:10%;">
         <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:0.4s; left:60%; top:30%;">
@@ -138,7 +138,6 @@
         <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:2.0s; left:55%; top:15%;">
         <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:2.4s; left:40%; top:55%;">
     </div>
-    <p style="color:#FFFF00; font-size:26px;">PEYTON BENSON — THE ULTIMATE HYDRO HERO!!!</p>
     <p style="color:#00FFAA;">TAP SCREEN TO PLAY AGAIN</p>
 </div>
 
@@ -153,13 +152,14 @@
 </audio>
 
 <script>
-// ============== VERTICAL PORTRAIT - WIN AT 5000 + FALLING SPREAD-GUN POWER-UPS + EASIER GAME ==============
+// ============== VERTICAL PORTRAIT - WIN AT 10,000 + 250 PTS PER GUN + STACKING SPREAD + LIFE DROPS + SAILDRONE ENEMIES ==============
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 480;
 
 const scoreEl = document.getElementById('score');
 const livesEl = document.getElementById('lives');
+const spreadEl = document.getElementById('spread');
 const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over');
 const defeatScreen = document.getElementById('defeat-screen');
@@ -169,12 +169,12 @@ const bgMusic = document.getElementById('bgmusic');
 const sadMusic = document.getElementById('sadmusic');
 const winMusic = document.getElementById('winmusic');
 
-let score = 0, lives = 5, gameRunning = false, won = false, spreadActive = false;
+let score = 0, lives = 5, gameRunning = false, won = false, spreadLevel = 1;
 let movingLeft = false, movingRight = false;
-let player, bullets = [], enemies = [], particles = [], stars = [], powerups = [];
+let player, bullets = [], enemies = [], particles = [], stars = [], powerups = [], lifeDrops = [];
 
-// Player, Bullet, Enemy, Particle classes
-class Player { constructor() { this.x = 400; this.y = 400; this.w = 48; this.h = 36; } // bigger for easier play
+// Player
+class Player { constructor() { this.x = 400; this.y = 400; this.w = 48; this.h = 36; }
     draw() {
         ctx.fillStyle = '#00FFFF'; ctx.beginPath(); ctx.moveTo(this.x, this.y);
         ctx.lineTo(this.x - this.w/2, this.y + this.h); ctx.lineTo(this.x + this.w/2, this.y + this.h); ctx.closePath(); ctx.fill();
@@ -189,10 +189,20 @@ class Player { constructor() { this.x = 400; this.y = 400; this.w = 48; this.h =
 }
 class Bullet { constructor(x,y,angle=0){this.x=x;this.y=y;this.w=6;this.h=18;this.speed=15;this.angle=angle;}
     draw(){ctx.fillStyle='#FFFF00';ctx.fillRect(this.x-3,this.y,this.w,this.h);} 
-    update(){this.y-=this.speed; this.x += this.angle*2;} }
-class Enemy { constructor(){this.x=Math.random()*700+50;this.y=-40;this.w=36;this.h=28;this.speed=1.8+Math.random()*1.2;} // slower = easier
-    draw(){ctx.fillStyle='#FF0000';ctx.beginPath();ctx.moveTo(this.x,this.y+this.h);ctx.lineTo(this.x-this.w/2,this.y);ctx.lineTo(this.x+this.w/2,this.y);ctx.closePath();ctx.fill();}
-    update(){this.y+=this.speed; this.x+=Math.sin(this.y/20)*1.2;} }
+    update(){this.y-=this.speed; this.x += this.angle*3;} }
+class Enemy { constructor(){this.x=Math.random()*700+50;this.y=-40;this.w=36;this.h=28;this.speed=1.8+Math.random()*1.2;}
+    draw() { // SAILDRONE LOOK
+        ctx.fillStyle = '#FF0000'; // hull
+        ctx.fillRect(this.x-18, this.y+12, 36, 12);
+        ctx.fillStyle = '#00FFFF'; // solar panel
+        ctx.fillRect(this.x-12, this.y, 24, 8);
+        ctx.fillStyle = '#FFFFFF'; // mast
+        ctx.fillRect(this.x-2, this.y-18, 4, 28);
+        ctx.fillStyle = '#FFFF00'; // sail
+        ctx.beginPath(); ctx.moveTo(this.x-2, this.y-18); ctx.lineTo(this.x+22, this.y-2); ctx.lineTo(this.x-2, this.y-2); ctx.fill();
+    }
+    update(){this.y+=this.speed; this.x+=Math.sin(this.y/20)*1.2;}
+}
 class Particle { 
     constructor(x,y,chant=false) {
         this.x=x; this.y=y; this.size=chant?0:Math.random()*6+4;
@@ -208,6 +218,10 @@ class Particle {
 }
 class PowerUp { constructor(){this.x=Math.random()*700+50;this.y=-30;this.w=32;this.h=32;this.speed=2.5;}
     draw(){ctx.fillStyle='#00FF00';ctx.fillRect(this.x,this.y,this.w,this.h); ctx.fillStyle='#FFFF00';ctx.font="bold 18px Courier New";ctx.fillText("GUN",this.x+4,this.y+24);}
+    update(){this.y+=this.speed;}
+}
+class LifeDrop { constructor(){this.x=Math.random()*700+50;this.y=-30;this.w=28;this.h=28;this.speed=2.3;}
+    draw(){ctx.fillStyle='#00FFAA';ctx.font="bold 28px Courier New";ctx.fillText("♥",this.x,this.y+24);}
     update(){this.y+=this.speed;}
 }
 
@@ -252,14 +266,12 @@ document.getElementById('notpb-start').addEventListener('click', () => {
 });
 
 function shoot() {
-    if(bullets.length<8){
-        if(spreadActive){
-            bullets.push(new Bullet(player.x,player.y-10, -0.6)); // left
-            bullets.push(new Bullet(player.x,player.y-10, 0));    // center
-            bullets.push(new Bullet(player.x,player.y-10, 0.6));  // right
-        } else {
-            bullets.push(new Bullet(player.x,player.y-10, 0));
+    if(bullets.length<12){
+        const angles = [];
+        for(let i = -spreadLevel; i <= spreadLevel; i++){
+            angles.push(i * 0.35);
         }
+        angles.forEach(a => bullets.push(new Bullet(player.x, player.y-10, a)));
         beep(820,65,0.3);
     }
 }
@@ -268,8 +280,16 @@ function beep(freq,dur,vol=0.3){
     try{const a=new(window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=freq;g.gain.value=vol;o.start();setTimeout(()=>o.stop(),dur);}catch(e){}
 }
 
-function spawnEnemy(){if(Math.random()<0.028+score/80000)enemies.push(new Enemy());} // much lower spawn = easier
-function spawnPowerUp(){if(Math.random()<0.012)powerups.push(new PowerUp());} // rare falling guns
+function spawnEnemy(){if(Math.random()<0.028+score/80000)enemies.push(new Enemy());}
+function spawnDrop(){
+    if(Math.random()<0.035){
+        if(Math.random()<0.05){ // 5% chance life
+            lifeDrops.push(new LifeDrop());
+        } else {
+            powerups.push(new PowerUp());
+        }
+    }
+}
 
 function checkCollisions(){
     // bullets vs enemies
@@ -280,7 +300,7 @@ function checkCollisions(){
                 for(let k=0;k<18;k++)particles.push(new Particle(e.x,e.y+14));
                 particles.push(new Particle(e.x-35,e.y-25,true));particles.push(new Particle(e.x+35,e.y-25,true));
                 beep(135,240,0.75);
-                if(score >= 5000 && !won) winGame();
+                if(score >= 10000 && !won) winGame();
                 break;
             }
         }
@@ -297,18 +317,32 @@ function checkCollisions(){
     for(let i=powerups.length-1;i>=0;i--){const p=powerups[i];
         if(p.y+p.h>player.y-10&&Math.abs(p.x-player.x)<40){
             powerups.splice(i,1);
-            spreadActive = true;
-            for(let k=0;k<12;k++)particles.push(new Particle(player.x,player.y,true)); // big chant
+            score += 250;
+            scoreEl.textContent = String(score).padStart(6,'0');
+            spreadLevel = Math.min(5, spreadLevel + 1);
+            spreadEl.textContent = spreadLevel;
+            for(let k=0;k<12;k++)particles.push(new Particle(player.x,player.y,true));
             beep(600,400,0.6);
         }
         if(p.y>H+50)powerups.splice(i,1);
+    }
+    // player vs life drops
+    for(let i=lifeDrops.length-1;i>=0;i--){const l=lifeDrops[i];
+        if(l.y+l.h>player.y-10&&Math.abs(l.x-player.x)<40){
+            lifeDrops.splice(i,1);
+            lives = Math.min(9, lives + 1);
+            livesEl.textContent = lives;
+            for(let k=0;k<8;k++)particles.push(new Particle(player.x,player.y,true));
+            beep(900,300,0.5);
+        }
+        if(l.y>H+50)lifeDrops.splice(i,1);
     }
 }
 
 function drawBackground(){ctx.fillStyle='#000033';ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#FFFFFF';for(let s of stars){ctx.fillRect(s.x,s.y,s.size,s.size);s.y+=s.speed;if(s.y>H)s.y=0;}
-    // draw powerups
     for(let p of powerups){p.update();p.draw();}
+    for(let l of lifeDrops){l.update();l.draw();}
 }
 
 function gameLoop(){
@@ -317,14 +351,14 @@ function gameLoop(){
     for(let i=bullets.length-1;i>=0;i--){bullets[i].update();bullets[i].draw();if(bullets[i].y<-20)bullets.splice(i,1);}
     for(let i=enemies.length-1;i>=0;i--){enemies[i].update();enemies[i].draw();}
     for(let i=particles.length-1;i>=0;i--){particles[i].update();particles[i].draw();if(particles[i].life<=0)particles.splice(i,1);}
-    spawnEnemy();spawnPowerUp();checkCollisions();
+    spawnEnemy();spawnDrop();checkCollisions();
     requestAnimationFrame(gameLoop);
 }
 
 function startGame(){
-    gameRunning=true; won=false; spreadActive=false;
-    score=0;lives=5;scoreEl.textContent='000000';livesEl.textContent='5';
-    bullets=[];enemies=[];particles=[];powerups=[];player.x=400;
+    gameRunning=true; won=false; spreadLevel=1;
+    score=0;lives=5;scoreEl.textContent='000000';livesEl.textContent='5';spreadEl.textContent='1';
+    bullets=[];enemies=[];particles=[];powerups=[];lifeDrops=[];player.x=400;
     bgMusic.currentTime=0; bgMusic.play().catch(()=>{});
     sadMusic.pause(); winMusic.pause();
     gameLoop();
@@ -355,10 +389,4 @@ function restartGame(){
     winMusic.pause();
 }
 
-window.addEventListener('keydown',e=>{if(e.key===' '&&gameRunning)shoot(); if(!gameRunning&&(e.key===' '||e.key==='Enter'))startGame(); if(!gameRunning&&e.key.toLowerCase()==='r')restartGame();});
-
-startScreen.style.display='block';
-</script>
-
-</body>
-</html>
+window.addEventListener('keydown',e=>{if(e.key===' '&&gameRunning)shoot(); if(!gameRunning&&(e.key===' '||e.key==='Enter'))startGame(); i
