@@ -39,7 +39,7 @@
             width:150px; background:#FF0000; border-color:#FFFF00; font-size:36px;
             box-shadow:0 0 35px #FFFF00;
         }
-        .start-screen, .game-over, .defeat-screen {
+        .start-screen, .game-over, .defeat-screen, .win-screen {
             position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
             background:rgba(0,0,50,0.97); padding:25px; border:12px solid #FF00FF; 
             font-size:28px; width:92%; max-width:480px; z-index:60; display:none;
@@ -56,6 +56,22 @@
             animation: xpulse 1.2s infinite alternate;
         }
         @keyframes xpulse { from { transform:translate(-50%,-50%) scale(0.9); } to { transform:translate(-50%,-50%) scale(1.05); } }
+        /* WIN SCREEN - PEYTON FLYING CRAZY */
+        .win-screen .flying-container {
+            position:relative; height:220px; overflow:hidden; margin:15px 0; background:rgba(0,0,0,0.6);
+        }
+        .flying-peyton {
+            position:absolute; width:120px; border:6px solid #00FF00; border-radius:12px;
+            animation: flyCrazy 2.8s linear infinite alternate;
+            box-shadow:0 0 30px #00FFFF;
+        }
+        @keyframes flyCrazy {
+            0%   { left:5%; top:10%; transform:rotate(0deg); }
+            25%  { left:70%; top:20%; transform:rotate(25deg); }
+            50%  { left:30%; top:75%; transform:rotate(-35deg); }
+            75%  { left:85%; top:45%; transform:rotate(40deg); }
+            100% { left:15%; top:60%; transform:rotate(-20deg); }
+        }
     </style>
 </head>
 <body>
@@ -111,15 +127,33 @@
     <p style="color:#00FFAA;">TAP SCREEN TO TRY AGAIN</p>
 </div>
 
+<div id="win-screen" class="win-screen">
+    <h1 style="color:#00FF00; font-size:42px; margin:10px;">YOU SAVED EMILY!!!</h1>
+    <div class="flying-container">
+        <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:0s; left:10%; top:10%;">
+        <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:0.4s; left:60%; top:30%;">
+        <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:0.8s; left:25%; top:65%;">
+        <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:1.2s; left:75%; top:45%;">
+        <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:1.6s; left:15%; top:80%;">
+        <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:2.0s; left:55%; top:15%;">
+        <img src="peyton-suit.jpg" class="flying-peyton" style="animation-delay:2.4s; left:40%; top:55%;">
+    </div>
+    <p style="color:#FFFF00; font-size:26px;">PEYTON BENSON — THE ULTIMATE HYDRO HERO!!!</p>
+    <p style="color:#00FFAA;">TAP SCREEN TO PLAY AGAIN</p>
+</div>
+
 <audio id="bgmusic" loop>
     <source src="http://soundimage.org/wp-content/uploads/2016/10/Arcade-Fantasy.mp3" type="audio/mpeg">
 </audio>
 <audio id="sadmusic" loop>
     <source src="https://www.chosic.com/wp-content/uploads/2024/02/Sad-Piano-Music.mp3" type="audio/mpeg">
 </audio>
+<audio id="winmusic" loop>
+    <source src="https://www.chosic.com/wp-content/uploads/2023/03/Happy-8bit-Victory.mp3" type="audio/mpeg">
+</audio>
 
 <script>
-// ============== VERTICAL PORTRAIT - RELIABLE CSS SCROLLING STORY AT TOP ==============
+// ============== VERTICAL PORTRAIT - 100,000 WIN CONDITION WITH FLYING PEYTON + WINNER SONG ==============
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 480;
@@ -129,15 +163,17 @@ const livesEl = document.getElementById('lives');
 const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over');
 const defeatScreen = document.getElementById('defeat-screen');
+const winScreen = document.getElementById('win-screen');
 const finalScoreEl = document.getElementById('final-score');
 const bgMusic = document.getElementById('bgmusic');
 const sadMusic = document.getElementById('sadmusic');
+const winMusic = document.getElementById('winmusic');
 
-let score = 0, lives = 3, gameRunning = false;
+let score = 0, lives = 3, gameRunning = false, won = false;
 let movingLeft = false, movingRight = false;
 let player, bullets = [], enemies = [], particles = [], stars = [];
 
-// Player, Bullet, Enemy, Particle classes (unchanged)
+// Player, Bullet, Enemy, Particle classes
 class Player { constructor() { this.x = 400; this.y = 400; this.w = 40; this.h = 30; }
     draw() {
         ctx.fillStyle = '#00FFFF'; ctx.beginPath(); ctx.moveTo(this.x, this.y);
@@ -192,7 +228,7 @@ rightBtn.addEventListener('mouseup', ()=>{movingRight=false;});
 fireBtn.addEventListener('touchstart', e=>{e.preventDefault(); shoot();});
 fireBtn.addEventListener('mousedown', shoot);
 
-canvas.addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning) shoot(); else if(startScreen.style.display!=='none') return; else if(gameOverScreen.style.display!=='none' || defeatScreen.style.display!=='none') restartGame(); });
+canvas.addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning) shoot(); else if(startScreen.style.display!=='none') return; else if(gameOverScreen.style.display!=='none' || defeatScreen.style.display!=='none' || winScreen.style.display!=='none') restartGame(); });
 canvas.addEventListener('click', ()=>{ if(gameRunning) shoot(); });
 
 // Peyton click = start
@@ -201,7 +237,7 @@ document.getElementById('peyton-start').addEventListener('click', () => {
     startGame();
 });
 
-// NOTPB click = defeat + sad music
+// NOTPB click = defeat
 document.getElementById('notpb-start').addEventListener('click', () => {
     startScreen.style.display = 'none';
     defeatScreen.style.display = 'block';
@@ -226,7 +262,10 @@ function checkCollisions(){
                 bullets.splice(i,1);enemies.splice(j,1);score+=100;scoreEl.textContent=String(score).padStart(6,'0');
                 for(let k=0;k<18;k++)particles.push(new Particle(e.x,e.y+14));
                 particles.push(new Particle(e.x-35,e.y-25,true));particles.push(new Particle(e.x+35,e.y-25,true));
-                beep(135,240,0.75);break;
+                beep(135,240,0.75);
+                // WIN CHECK
+                if(score >= 100000 && !won) winGame();
+                break;
             }
         }
     }
@@ -254,11 +293,11 @@ function gameLoop(){
 }
 
 function startGame(){
-    gameRunning=true;
+    gameRunning=true; won=false;
     score=0;lives=3;scoreEl.textContent='000000';livesEl.textContent='3';
     bullets=[];enemies=[];particles=[];player.x=400;
     bgMusic.currentTime=0; bgMusic.play().catch(()=>{});
-    sadMusic.pause();
+    sadMusic.pause(); winMusic.pause();
     gameLoop();
 }
 
@@ -269,12 +308,22 @@ function endGame(){
     bgMusic.pause();
 }
 
+function winGame(){
+    gameRunning=false; won=true;
+    winScreen.style.display='block';
+    bgMusic.pause();
+    winMusic.currentTime=0;
+    winMusic.play().catch(()=>{});
+}
+
 function restartGame(){
     gameOverScreen.style.display='none';
     defeatScreen.style.display='none';
+    winScreen.style.display='none';
     startScreen.style.display='block';
     bgMusic.pause();
     sadMusic.pause();
+    winMusic.pause();
 }
 
 window.addEventListener('keydown',e=>{if(e.key===' '&&gameRunning)shoot(); if(!gameRunning&&(e.key===' '||e.key==='Enter'))startGame(); if(!gameRunning&&e.key.toLowerCase()==='r')restartGame();});
