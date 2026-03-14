@@ -90,7 +90,7 @@ PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESS
         <img class="start-pic" id="peyton-start" src="peyton-suit.jpg" alt="CLICK PEYTON TO START">
         <p style="color:#00FFAA; font-size:18px;">CLICK ME — I’M THE LEGEND!!!</p>
         
-        <img class="start-pic" id="nj-start" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Flag_of_New_Jersey.svg/800px-Flag_of_New_Jersey.svg.png" alt="NEW JERSEY">
+        <img class="start-pic" id="notpb-start" src="NOTPB.png" alt="NOT PEYTON BENSON">
         <p style="color:#FF0000; font-size:18px;">CLICK ME IF YOU HATE PEYTON (instant defeat)</p>
     </div>
 </div>
@@ -107,9 +107,9 @@ PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESS
 
 <div id="defeat-screen" class="defeat-screen">
     <h1 style="color:#FF0000; margin-bottom:10px;">DEFEAT!!!</h1>
-    <p style="font-size:26px; color:#FFFF00;">YOU CHOSE NEW JERSEY OVER PEYTON...</p>
+    <p style="font-size:26px; color:#FFFF00;">YOU CHOSE NOT PEYTON BENSON...</p>
     <p style="font-size:22px;">THE HYDRO HERO IS SAD FOREVER</p>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Flag_of_New_Jersey.svg/800px-Flag_of_New_Jersey.svg.png" style="width:80%; border:8px solid #FF0000; margin:15px 0;" alt="NEW JERSEY">
+    <img src="NOTPB.png" style="width:80%; border:8px solid #FF0000; margin:15px 0;" alt="NOT PEYTON BENSON">
     <p style="color:#00FFAA;">TAP SCREEN TO TRY AGAIN</p>
 </div>
 
@@ -121,7 +121,7 @@ PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESS
 </audio>
 
 <script>
-// ============== VERTICAL PORTRAIT - CLICK PEYTON TO START / CLICK NJ = DEFEAT ==============
+// ============== VERTICAL PORTRAIT - CLICK PEYTON TO START / CLICK NOTPB.png = DEFEAT ==============
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 480;
@@ -139,7 +139,7 @@ let score = 0, lives = 3, gameRunning = false;
 let movingLeft = false, movingRight = false;
 let player, bullets = [], enemies = [], particles = [], stars = [];
 
-// Classes (same as before)
+// Player, Bullet, Enemy, Particle classes (unchanged)
 class Player { constructor() { this.x = 400; this.y = 400; this.w = 40; this.h = 30; }
     draw() {
         ctx.fillStyle = '#00FFFF'; ctx.beginPath(); ctx.moveTo(this.x, this.y);
@@ -197,14 +197,14 @@ fireBtn.addEventListener('mousedown', shoot);
 canvas.addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning) shoot(); else if(startScreen.style.display!=='none') return; else if(gameOverScreen.style.display!=='none' || defeatScreen.style.display!=='none') restartGame(); });
 canvas.addEventListener('click', ()=>{ if(gameRunning) shoot(); });
 
-// Click Peyton = start game
+// Peyton click = start game
 document.getElementById('peyton-start').addEventListener('click', () => {
     startScreen.style.display = 'none';
     startGame();
 });
 
-// Click New Jersey = defeat screen + sad music
-document.getElementById('nj-start').addEventListener('click', () => {
+// NOTPB.png click = instant defeat + sad music
+document.getElementById('notpb-start').addEventListener('click', () => {
     startScreen.style.display = 'none';
     defeatScreen.style.display = 'block';
     bgMusic.pause();
