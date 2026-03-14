@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PEYTON BENSON'S BAT-SHIT CRAZY ASCII SPACE ADVENTURE</title>
+    <style>
+        body { 
+            margin:0; padding:0; background:#000033; color:#00FFAA; 
+            font-family:'Courier New', monospace; height:100vh; display:flex; flex-direction:column;
+            overflow:hidden;
+        }
+        .story-container {
+            height:15vh; background:rgba(0,0,20,0.95); overflow:hidden; 
+            border-bottom:8px solid #FF00FF; flex-shrink:0; position:relative;
+        }
+        .story-inner {
+            display:inline-block; white-space:nowrap; padding-left:100%; 
+            animation: scrollSlow 90s linear infinite;
+            font-size:21px; color:#FFFF00; text-shadow:0 0 12px #00FFFF;
+        }
+        @keyframes scrollSlow {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        #main-screen {
+            flex:60%; background:#000011; padding:15px; overflow:auto; font-size:18px; line-height:1.1;
+            border:8px solid #FF00FF; position:relative;
+        }
+        pre.ascii {
+            margin:10px 0; color:#00FFFF; text-shadow:0 0 8px #FFFF00; white-space:pre;
+        }
+        #ui {
+            position:absolute; top:8px; left:8px; font-size:22px; color:#FFFF00; 
+            text-shadow:0 0 10px #FF00FF; z-index:30;
+        }
+        #controls {
+            height:25vh; background:rgba(0,0,50,0.85); display:flex; justify-content:space-between; 
+            align-items:center; padding:0 15px; flex-shrink:0; gap:10px;
+        }
+        .choice-btn {
+            background:#000033; color:#FFFF00; font-size:24px; font-weight:bold;
+            border:8px solid #00FFFF; box-shadow:0 0 25px #FF00FF;
+            flex:1; padding:15px; border-radius:15px; cursor:pointer;
+        }
+        .start-screen, .game-over, .defeat-screen, .win-screen {
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            background:rgba(0,0,50,0.97); padding:25px; border:12px solid #FF00FF; 
+            font-size:28px; width:92%; max-width:480px; z-index:60; display:none;
+            color:#00FFFF; text-align:center;
+        }
+        .start-pics { display:flex; flex-direction:column; gap:20px; margin:20px 0; }
+        .start-pic { 
+            width:100%; border:8px solid #FFFF00; border-radius:12px; cursor:pointer; 
+            box-shadow:0 0 25px #FF00FF; font-size:18px; padding:8px; background:#000033;
+        }
+        .peyton-death { position:relative; width:100%; max-width:320px; margin:15px auto; }
+        .peyton-death pre { font-size:14px; color:#FF0000; }
+        .red-x {
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            font-size:180px; color:#FF0000; opacity:0.85; font-weight:bold;
+            text-shadow:0 0 30px #FF0000, 0 0 60px #FFFF00;
+            animation: xpulse 1.2s infinite alternate;
+        }
+        @keyframes xpulse { from { transform:translate(-50%,-50%) scale(0.9); } to { transform:translate(-50%,-50%) scale(1.05); } }
+        .win-screen .flying-container {
+            position:relative; height:220px; overflow:hidden; margin:15px 0; background:rgba(0,0,0,0.6);
+        }
+        .flying-peyton {
+            position:absolute; font-size:28px; color:#00FF00; animation: flyCrazy 2.8s linear infinite alternate;
+        }
+        @keyframes flyCrazy {
+            0%   { left:5%; top:10%; transform:rotate(0deg); }
+            25%  { left:70%; top:20%; transform:rotate(25deg); }
+            50%  { left:30%; top:75%; transform:rotate(-35deg); }
+            75%  { left:85%; top:45%; transform:rotate(40deg); }
+            100% { left:15%; top:60%; transform:rotate(-20deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="story-container">
+    <div class="story-inner">
+        PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESSEL OFFSETS, QATs, SATs, AND DROPPING SONAR BOMBS WHILE SCREAMING “YOU THE MAN!!!” TO HIS CREW!!! ONE DAY WHILE MAPPING THE DEEPEST TRENCH OFF MAINE HE PINGED TOO HARD AND A WORMHOLE OPENED!!! SUCKED INTO SPACE!!! NOW PEYTON PILOTS THE USS HYDRO F-14 BLASTING EVIL SPACE NAZIS WHO KIDNAPPED HIS TRUE LOVE EMILY!!! THESE SPACE NAZI BAD GUYS WANT TO FLOOD THE GALAXY WITH FAKE DEPTH DATA!!! LITTLE GREEN ALIENS CHANT “PEYTON YOU THE MAN!!! PEYTON YOU THE MAN!!!” EVERY TIME HE BLASTS ONE!!! WILL PEYTON SAVE EMILY BEFORE THE NAZIS TURN THE UNIVERSE INTO ONE GIANT INACCURATE CHART??? FROM MAINE LEAD HYDRO TO TOP GUN SPACE DESTROYER — PEYTON WILL STOP AT NOTHING!!! HEY PEYTON YOU THE MAN!!! MAPPING THE STARS NOW!!! VESSEL OFFSETS IN ZERO GRAVITY!!! EMILY IS WAITING!!! BLAST THOSE SPACE NAZIS!!! PEYTON BENSON YOU THE MAN!!! 
+    </div>
+</div>
+
+<div id="game-container">
+    <div id="main-screen">
+        <pre id="ascii-scene" class="ascii"></pre>
+        <div id="narrative" style="color:#FFFF00; margin-top:10px; line-height:1.4;"></div>
+    </div>
+    <div id="ui">
+        SCORE: <span id="score">000000</span>  LIVES: <span id="lives">5</span>  SPREAD: <span id="spread">1</span>  LASER: <span id="laser">0</span>
+    </div>
+</div>
+
+<div id="controls">
+    <div id="choice1" class="choice-btn" onclick="makeChoice(1)">CHOICE 1</div>
+    <div id="choice2" class="choice-btn" onclick="makeChoice(2)">CHOICE 2</div>
+    <div id="choice3" class="choice-btn" onclick="makeChoice(3)">CHOICE 3</div>
+</div>
+
+<div id="start-screen" class="start-screen">
+    <h1 style="color:#00FFFF; margin:10px;">PEYTON BENSON'S<br>BAT-SHIT CRAZY ASCII ADVENTURE</h1>
+    <p style="font-size:22px; color:#FFFF00;">CLICK THE PICTURE OF PEYTON TO START THE MADNESS</p>
+    
+    <div class="start-pics">
+        <div class="start-pic" id="peyton-start" onclick="startAdventure()">
+            <pre style="font-size:12px; color:#00FFFF; margin:0; padding:8px;">
+     ___
+    /   \     PEYTON BENSON
+   /  P  \    HYDRO HERO
+  | B E N |
+   \ SON /
+    |||
+   /   \
+  /_____\
+            </pre>
+            <p style="color:#00FFAA; font-size:18px;">CLICK ME — I’M THE LEGEND!!!</p>
+        </div>
+        
+        <div class="start-pic" id="notpb-start" onclick="instantDefeat()">
+            <pre style="font-size:12px; color:#FF0000; margin:0; padding:8px;">
+     ___
+    /   \     NOT PEYTON
+   /  T  \    (the beard guy)
+  | K R A |
+   \ B I E /
+    |||
+   /   \
+  /_____\
+            </pre>
+            <p style="color:#FF0000; font-size:18px;">CLICK ME IF YOU HATE PEYTON (instant defeat)</p>
+        </div>
+    </div>
+</div>
+
+<div id="game-over" class="game-over">
+    <h1 style="color:#FF0000; margin-bottom:10px;">GAME OVER</h1>
+    <div class="peyton-death">
+        <pre style="font-size:14px; color:#FF0000;">
+     ___
+    /   \     PEYTON BENSON
+   /  P  \    
+  | B E N |
+   \ SON /
+    |||
+   /   \
+  /_____\
+        </pre>
+        <div class="red-x">X</div>
+    </div>
+    <p style="font-size:28px;">FINAL SCORE: <span id="final-score">000000</span></p>
+    <p style="color:#FFFF00;">PEYTON YOU STILL THE MAN!!! TAP SCREEN TO RESTART</p>
+</div>
+
+<div id="defeat-screen" class="defeat-screen">
+    <h1 style="color:#FF0000; margin-bottom:10px;">DEFEAT!!!</h1>
+    <p style="font-size:26px; color:#FFFF00;">YOU CHOSE NOT PEYTON BENSON...</p>
+    <p style="font-size:22px;">THE HYDRO HERO IS SAD FOREVER</p>
+    <pre style="font-size:14px; color:#FF0000; margin:15px 0;">
+     ___
+    /   \     NOT PEYTON
+   /  T  \    (the beard guy)
+  | K R A |
+   \ B I E /
+    |||
+   /   \
+  /_____\
+    </pre>
+    <p style="color:#00FFAA;">TAP SCREEN TO TRY AGAIN</p>
+</div>
+
+<div id="win-screen" class="win-screen">
+    <h1 style="color:#00FF00; font-size:42px; margin:10px;">YOU SAVED EMILY!!!</h1>
+    <p style="color:#FFFF00; font-size:26px;">AT 10,000 POINTS — PEYTON IS THE ULTIMATE HYDRO HERO!!!</p>
+    <div class="flying-container">
+        <pre class="flying-peyton" style="animation-delay:0s; left:5%; top:10%;">PEYTON</pre>
+        <pre class="flying-peyton" style="animation-delay:0.4s; left:60%; top:20%;">PEYTON</pre>
+        <pre class="flying-peyton" style="animation-delay:0.8s; left:25%; top:65%;">PEYTON</pre>
+        <pre class="flying-peyton" style="animation-delay:1.2s; left:75%; top:45%;">PEYTON</pre>
+        <pre class="flying-peyton" style="animation-delay:1.6s; left:15%; top:80%;">PEYTON</pre>
+        <pre class="flying-peyton" style="animation-delay:2.0s; left:55%; top:15%;">PEYTON</pre>
+        <pre class="flying-peyton" style="animation-delay:2.4s; left:40%; top:55%;">PEYTON</pre>
+    </div>
+    <p style="color:#00FFAA;">TAP SCREEN TO PLAY AGAIN</p>
+</div>
+
+<audio id="bgmusic" loop>
+    <source src="http://soundimage.org/wp-content/uploads/2016/10/Arcade-Fantasy.mp3" type="audio/mpeg">
+</audio>
+<audio id="sadmusic" loop>
+    <source src="https://www.chosic.com/wp-content/uploads/2024/02/Sad-Piano-Music.mp3" type="audio/mpeg">
+</audio>
+<audio id="winmusic" loop>
+    <source src="https://www.chosic.com/wp-content/uploads/2023/03/Happy-8bit-Victory.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+// ============== BAT-SHIT CRAZY ASCII TEXT ADVENTURE - FULL VERTICAL ==============
+let currentScene = 0;
+let score = 0;
+let lives = 5;
+let spreadLevel = 1;
+let laserWidth = 0;
+let gameRunning = false;
+
+const scenes = [
+    { // Scene 0 - Cockpit start
+        ascii: `
+     ___
+    /   \\     USS HYDRO F-14
+   /  P  \\
+  | B E N |
+   \\ SON /
+    |||
+   /   \\
+  /_____\\
+        `,
+        text: "You are Peyton Benson. The wormhole sucked you in. Emily is kidnapped by Space Nazis. The aliens are chanting. What do you do?",
+        choices: ["FIRE MAIN CANNON", "ACTIVATE PERMANENT LASER", "GRAB NEARBY GUN POWERUP"]
+    },
+    { // Scene 1 - Saildrone encounter
+        ascii: `
+     ___
+    /   \\     SAILDRONE ENEMY
+   /  S  \\
+  | A I L |
+   \\ D R O /
+    |||
+   /   \\
+  /_____\\
+        `,
+        text: "A Saildrone appears! The aliens scream PEYTON YOU THE MAN!!! Laser beam is ready. Spread shots loaded.",
+        choices: ["BLAST WITH SPREAD", "GROW THE LASER", "DODGE AND COUNTER"]
+    },
+    { // Scene 2 - Powerup grab
+        ascii: `
+     ___
+    /   \\     GREEN GUN POWERUP
+   /  G  \\
+  | U N  |
+   \\   / 
+    |||
+   /   \\
+  /_____\\
+        `,
+        text: "A glowing GUN powerup floats by. Touching it gives +250 points and stacks your spread shots!",
+        choices: ["GRAB THE GUN (+250)", "IGNORE AND KEEP FIRING", "USE IT TO GROW LASER"]
+    },
+    { // Scene 3 - Laser growing
+        ascii: `
+     ___
+    /   \\     LASER BEAM GROWING!!!
+   /  L  \\
+  | A S E |
+   \\ R   /
+    |||
+   /   \\
+  /_____\\
+        `,
+        text: "Your permanent laser is now MASSIVE. Every kill makes it bigger. The Saildrones are terrified.",
+        choices: ["FIRE THE HUGE LASER", "COLLECT LIFE DROP", "KEEP BLASTING"]
+    },
+    { // Scene 4 - Final push
+        ascii: `
+     ___
+    /   \\     FINAL SAILDRONE FLEET
+   /  F  \\
+  | L E E |
+   \\ T   /
+    |||
+   /   \\
+  /_____\\
+        `,
+        text: "The last wave of Space Nazis! Emily is almost free. Aliens are losing their minds chanting.",
+        choices: ["ALL OUT SPREAD + LASER", "DODGE AND COUNTER", "MAX POWER"]
+    }
+];
+
+function updateUI() {
+    document.getElementById('score').textContent = String(score).padStart(6,'0');
+    document.getElementById('lives').textContent = lives;
+    document.getElementById('spread').textContent = spreadLevel;
+    document.getElementById('laser').textContent = Math.floor(laserWidth);
+}
+
+function showScene(n) {
+    currentScene = n % scenes.length;
+    const s = scenes[currentScene];
+    document.getElementById('ascii-scene').textContent = s.ascii;
+    document.getElementById('narrative').innerHTML = s.text + "<br><br>SCORE: " + score;
+    document.getElementById('choice1').textContent = s.choices[0];
+    document.getElementById('choice2').textContent = s.choices[1];
+    document.getElementById('choice3').textContent = s.choices[2];
+    updateUI();
+}
+
+function makeChoice(c) {
+    if (!gameRunning) return;
+    
+    // Crazy point gains
+    if (c === 1) score += 250; // spread shot
+    if (c === 2) {
+        laserWidth = Math.min(laserWidth + 80, 260); // laser grows
+        score += 150;
+    }
+    if (c === 3) {
+        spreadLevel = Math.min(5, spreadLevel + 1);
+        score += 250;
+    }
+    
+    // Random life or powerup feel
+    if (Math.random() < 0.2) lives = Math.min(9, lives + 1);
+    
+    score += 300; // every choice advances the story
+    
+    if (score >= 10000 && !won) {
+        winGame();
+        return;
+    }
+    
+    showScene(currentScene + 1);
+}
+
+function startAdventure() {
+    document.getElementById('start-screen').style.display = 'none';
+    gameRunning = true;
+    score = 0; lives = 5; spreadLevel = 1; laserWidth = 40; won = false;
+    showScene(0);
+    document.getElementById('bgmusic').play().catch(()=>{});
+}
+
+function instantDefeat() {
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('defeat-screen').style.display = 'block';
+    document.getElementById('bgmusic').pause();
+    document.getElementById('sadmusic').play().catch(()=>{});
+}
+
+function winGame() {
+    gameRunning = false;
+    document.getElementById('win-screen').style.display = 'block';
+    document.getElementById('bgmusic').pause();
+    document.getElementById('winmusic').play().catch(()=>{});
+}
+
+function restartGame() {
+    document.getElementById('game-over').style.display = 'none';
+    document.getElementById('defeat-screen').style.display = 'none';
+    document.getElementById('win-screen').style.display = 'none';
+    document.getElementById('start-screen').style.display = 'block';
+    document.getElementById('bgmusic').pause();
+    document.getElementById('sadmusic').pause();
+    document.getElementById('winmusic').pause();
+}
+
+function endGame() {
+    gameRunning = false;
+    document.getElementById('game-over').style.display = 'block';
+    document.getElementById('bgmusic').pause();
+}
+
+// Keyboard support
+window.addEventListener('keydown', e => {
+    if (e.key === '1' && gameRunning) makeChoice(1);
+    if (e.key === '2' && gameRunning) makeChoice(2);
+    if (e.key === '3' && gameRunning) makeChoice(3);
+    if (!gameRunning && (e.key === ' ' || e.key === 'Enter')) {
+        if (document.getElementById('start-screen').style.display !== 'none') startAdventure();
+        else restartGame();
+    }
+});
+
+document.getElementById('start-screen').style.display = 'block';
+</script>
+
+</body>
+</html>
