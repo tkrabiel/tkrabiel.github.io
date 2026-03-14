@@ -10,19 +10,22 @@
             font-family:'Courier New', monospace; height:100vh; display:flex; flex-direction:column;
             overflow:hidden;
         }
-        marquee.story { 
-            height:15vh; background:rgba(0,0,20,0.95); color:#FFFF00; font-size:21px; 
-            text-shadow:0 0 12px #00FFFF; padding:8px 0; border-bottom:8px solid #FF00FF;
-            white-space:nowrap; flex-shrink:0;
+        .story-container {
+            height:15vh; background:rgba(0,0,20,0.95); overflow:hidden; 
+            border-bottom:8px solid #FF00FF; flex-shrink:0; position:relative;
         }
-        #game-container { flex: 60%; background:#000033; position:relative; }
-        canvas { 
-            display:block; width:100%; height:100%; image-rendering:pixelated;
+        .story-inner {
+            display:inline-block; white-space:nowrap; padding-left:100%; 
+            animation: scrollSlow 90s linear infinite;
+            font-size:21px; color:#FFFF00; text-shadow:0 0 12px #00FFFF;
         }
-        #ui {
-            position:absolute; top:12px; left:12px; font-size:26px; color:#FFFF00; 
-            text-shadow:0 0 15px #FF00FF; z-index:30; pointer-events:none;
+        @keyframes scrollSlow {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
+        #game-container { flex:60%; background:#000033; position:relative; }
+        canvas { display:block; width:100%; height:100%; image-rendering:pixelated; }
+        #ui { position:absolute; top:12px; left:12px; font-size:26px; color:#FFFF00; text-shadow:0 0 15px #FF00FF; z-index:30; pointer-events:none; }
         #controls {
             height:25vh; background:rgba(0,0,50,0.85); display:flex; justify-content:space-between; 
             align-items:center; padding:0 15px; flex-shrink:0;
@@ -42,17 +45,9 @@
             font-size:28px; width:92%; max-width:480px; z-index:60; display:none;
             color:#00FFFF; text-align:center;
         }
-        .start-pics {
-            display:flex; flex-direction:column; gap:20px; margin:20px 0;
-        }
-        .start-pic {
-            width:100%; border:8px solid #FFFF00; border-radius:12px; cursor:pointer;
-            box-shadow:0 0 25px #FF00FF;
-        }
-        .start-pic:hover { border-color:#00FFFF; }
-        .peyton-death {
-            position:relative; width:100%; max-width:320px; margin:15px auto;
-        }
+        .start-pics { display:flex; flex-direction:column; gap:20px; margin:20px 0; }
+        .start-pic { width:100%; border:8px solid #FFFF00; border-radius:12px; cursor:pointer; box-shadow:0 0 25px #FF00FF; }
+        .peyton-death { position:relative; width:100%; max-width:320px; margin:15px auto; }
         .peyton-death img { width:100%; border:8px solid #FF0000; border-radius:8px; }
         .red-x {
             position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
@@ -65,9 +60,12 @@
 </head>
 <body>
 
-<marquee class="story" behavior="scroll" direction="left" scrollamount="2">
-PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESSEL OFFSETS, QATs, SATs, AND DROPPING SONAR BOMBS WHILE SCREAMING “YOU THE MAN!!!” TO HIS CREW!!! ONE DAY WHILE MAPPING THE DEEPEST TRENCH OFF MAINE HE PINGED TOO HARD AND A WORMHOLE OPENED!!! SUCKED INTO SPACE!!! NOW PEYTON PILOTS THE USS HYDRO F-14 BLASTING EVIL SPACE NAZIS WHO KIDNAPPED HIS TRUE LOVE EMILY!!! THESE SPACE NAZI BAD GUYS WANT TO FLOOD THE GALAXY WITH FAKE DEPTH DATA!!! LITTLE GREEN ALIENS CHANT “PEYTON YOU THE MAN!!! PEYTON YOU THE MAN!!!” EVERY TIME HE BLASTS ONE!!! WILL PEYTON SAVE EMILY BEFORE THE NAZIS TURN THE UNIVERSE INTO ONE GIANT INACCURATE CHART??? FROM MAINE LEAD HYDRO TO TOP GUN SPACE DESTROYER — PEYTON WILL STOP AT NOTHING!!! HEY PEYTON YOU THE MAN!!! MAPPING THE STARS NOW!!! VESSEL OFFSETS IN ZERO GRAVITY!!! EMILY IS WAITING!!! BLAST THOSE SPACE NAZIS!!! PEYTON BENSON YOU THE MAN!!! (the aliens never stop chanting and the story never stops scrolling)
-</marquee>
+<div class="story-container">
+    <div class="story-inner">
+        PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESSEL OFFSETS, QATs, SATs, AND DROPPING SONAR BOMBS WHILE SCREAMING “YOU THE MAN!!!” TO HIS CREW!!! ONE DAY WHILE MAPPING THE DEEPEST TRENCH OFF MAINE HE PINGED TOO HARD AND A WORMHOLE OPENED!!! SUCKED INTO SPACE!!! NOW PEYTON PILOTS THE USS HYDRO F-14 BLASTING EVIL SPACE NAZIS WHO KIDNAPPED HIS TRUE LOVE EMILY!!! THESE SPACE NAZI BAD GUYS WANT TO FLOOD THE GALAXY WITH FAKE DEPTH DATA!!! LITTLE GREEN ALIENS CHANT “PEYTON YOU THE MAN!!! PEYTON YOU THE MAN!!!” EVERY TIME HE BLASTS ONE!!! WILL PEYTON SAVE EMILY BEFORE THE NAZIS TURN THE UNIVERSE INTO ONE GIANT INACCURATE CHART??? FROM MAINE LEAD HYDRO TO TOP GUN SPACE DESTROYER — PEYTON WILL STOP AT NOTHING!!! HEY PEYTON YOU THE MAN!!! MAPPING THE STARS NOW!!! VESSEL OFFSETS IN ZERO GRAVITY!!! EMILY IS WAITING!!! BLAST THOSE SPACE NAZIS!!! PEYTON BENSON YOU THE MAN!!! 
+        PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESSEL OFFSETS, QATs, SATs, AND DROPPING SONAR BOMBS WHILE SCREAMING “YOU THE MAN!!!” TO HIS CREW!!! ONE DAY WHILE MAPPING THE DEEPEST TRENCH OFF MAINE HE PINGED TOO HARD AND A WORMHOLE OPENED!!! SUCKED INTO SPACE!!! NOW PEYTON PILOTS THE USS HYDRO F-14 BLASTING EVIL SPACE NAZIS WHO KIDNAPPED HIS TRUE LOVE EMILY!!! THESE SPACE NAZI BAD GUYS WANT TO FLOOD THE GALAXY WITH FAKE DEPTH DATA!!! LITTLE GREEN ALIENS CHANT “PEYTON YOU THE MAN!!! PEYTON YOU THE MAN!!!” EVERY TIME HE BLASTS ONE!!! WILL PEYTON SAVE EMILY BEFORE THE NAZIS TURN THE UNIVERSE INTO ONE GIANT INACCURATE CHART??? FROM MAINE LEAD HYDRO TO TOP GUN SPACE DESTROYER — PEYTON WILL STOP AT NOTHING!!! HEY PEYTON YOU THE MAN!!! MAPPING THE STARS NOW!!! VESSEL OFFSETS IN ZERO GRAVITY!!! EMILY IS WAITING!!! BLAST THOSE SPACE NAZIS!!! PEYTON BENSON YOU THE MAN!!! 
+    </div>
+</div>
 
 <div id="game-container">
     <canvas id="game" width="800" height="480"></canvas>
@@ -121,7 +119,7 @@ PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESS
 </audio>
 
 <script>
-// ============== VERTICAL PORTRAIT - CLICK PEYTON TO START / CLICK NOTPB.png = DEFEAT ==============
+// ============== VERTICAL PORTRAIT - RELIABLE CSS SCROLLING STORY AT TOP ==============
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 480;
@@ -197,13 +195,13 @@ fireBtn.addEventListener('mousedown', shoot);
 canvas.addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning) shoot(); else if(startScreen.style.display!=='none') return; else if(gameOverScreen.style.display!=='none' || defeatScreen.style.display!=='none') restartGame(); });
 canvas.addEventListener('click', ()=>{ if(gameRunning) shoot(); });
 
-// Peyton click = start game
+// Peyton click = start
 document.getElementById('peyton-start').addEventListener('click', () => {
     startScreen.style.display = 'none';
     startGame();
 });
 
-// NOTPB.png click = instant defeat + sad music
+// NOTPB click = defeat + sad music
 document.getElementById('notpb-start').addEventListener('click', () => {
     startScreen.style.display = 'none';
     defeatScreen.style.display = 'block';
