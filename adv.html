@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PEYTON BENSON'S SPACE DESTROYER - VERTICAL + SLOW TOP STORY</title>
+    <title>PEYTON BENSON'S SPACE DESTROYER - VERTICAL EDITION</title>
     <style>
         body { 
             margin:0; padding:0; background:#000033; color:#00FFAA; 
@@ -36,22 +36,28 @@
             width:150px; background:#FF0000; border-color:#FFFF00; font-size:36px;
             box-shadow:0 0 35px #FFFF00;
         }
-        .start-screen, .game-over {
+        .start-screen, .game-over, .defeat-screen {
             position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-            background:rgba(0,0,50,0.97); padding:30px; border:12px solid #FF00FF; 
+            background:rgba(0,0,50,0.97); padding:25px; border:12px solid #FF00FF; 
             font-size:28px; width:92%; max-width:480px; z-index:60; display:none;
             color:#00FFFF; text-align:center;
         }
+        .start-pics {
+            display:flex; flex-direction:column; gap:20px; margin:20px 0;
+        }
+        .start-pic {
+            width:100%; border:8px solid #FFFF00; border-radius:12px; cursor:pointer;
+            box-shadow:0 0 25px #FF00FF;
+        }
+        .start-pic:hover { border-color:#00FFFF; }
         .peyton-death {
             position:relative; width:100%; max-width:320px; margin:15px auto;
         }
-        .peyton-death img {
-            width:100%; border:8px solid #FF0000; border-radius:8px;
-        }
+        .peyton-death img { width:100%; border:8px solid #FF0000; border-radius:8px; }
         .red-x {
             position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
             font-size:180px; color:#FF0000; opacity:0.85; font-weight:bold;
-            text-shadow:0 0 30px #FF0000, 0 0 60px #FFFF00; pointer-events:none;
+            text-shadow:0 0 30px #FF0000, 0 0 60px #FFFF00;
             animation: xpulse 1.2s infinite alternate;
         }
         @keyframes xpulse { from { transform:translate(-50%,-50%) scale(0.9); } to { transform:translate(-50%,-50%) scale(1.05); } }
@@ -78,29 +84,44 @@ PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESS
 
 <div id="start-screen" class="start-screen">
     <h1 style="color:#00FFFF; margin:10px;">PEYTON BENSON'S<br>SPACE DESTROYER</h1>
-    <p style="font-size:24px; color:#FF00FF;">ONCE A MIGHTY HYDROGRAPHER… NOW A SPACE LEGEND SAVING EMILY FROM SPACE NAZIS!!!</p>
-    <p style="color:#FFFF00;">USE BUTTONS TO FLY  TAP SCREEN OR FIRE BUTTON TO BLAST</p>
-    <p style="color:#00FFAA; font-size:24px;">ROTATE TO PORTRAIT + TAP ANYWHERE TO START!!!</p>
+    <p style="font-size:22px; color:#FFFF00;">CLICK THE PICTURE OF PEYTON TO START</p>
+    
+    <div class="start-pics">
+        <img class="start-pic" id="peyton-start" src="peyton-suit.jpg" alt="CLICK PEYTON TO START">
+        <p style="color:#00FFAA; font-size:18px;">CLICK ME — I’M THE LEGEND!!!</p>
+        
+        <img class="start-pic" id="nj-start" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Flag_of_New_Jersey.svg/800px-Flag_of_New_Jersey.svg.png" alt="NEW JERSEY">
+        <p style="color:#FF0000; font-size:18px;">CLICK ME IF YOU HATE PEYTON (instant defeat)</p>
+    </div>
 </div>
 
 <div id="game-over" class="game-over">
     <h1 style="color:#FF0000; margin-bottom:10px;">GAME OVER</h1>
-    
     <div class="peyton-death">
         <img src="peyton-suit.jpg" alt="PEYTON BENSON">
         <div class="red-x">X</div>
     </div>
-    
     <p style="font-size:28px;">FINAL SCORE: <span id="final-score">000000</span></p>
     <p style="color:#FFFF00;">PEYTON YOU STILL THE MAN!!! TAP SCREEN TO RESTART</p>
+</div>
+
+<div id="defeat-screen" class="defeat-screen">
+    <h1 style="color:#FF0000; margin-bottom:10px;">DEFEAT!!!</h1>
+    <p style="font-size:26px; color:#FFFF00;">YOU CHOSE NEW JERSEY OVER PEYTON...</p>
+    <p style="font-size:22px;">THE HYDRO HERO IS SAD FOREVER</p>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Flag_of_New_Jersey.svg/800px-Flag_of_New_Jersey.svg.png" style="width:80%; border:8px solid #FF0000; margin:15px 0;" alt="NEW JERSEY">
+    <p style="color:#00FFAA;">TAP SCREEN TO TRY AGAIN</p>
 </div>
 
 <audio id="bgmusic" loop>
     <source src="http://soundimage.org/wp-content/uploads/2016/10/Arcade-Fantasy.mp3" type="audio/mpeg">
 </audio>
+<audio id="sadmusic" loop>
+    <source src="https://www.chosic.com/wp-content/uploads/2024/02/Sad-Piano-Music.mp3" type="audio/mpeg">
+</audio>
 
 <script>
-// ============== VERTICAL PORTRAIT LAYOUT - TOP SLOW STORY + 60% GAME + BOTTOM BUTTONS ==============
+// ============== VERTICAL PORTRAIT - CLICK PEYTON TO START / CLICK NJ = DEFEAT ==============
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 480;
@@ -109,14 +130,16 @@ const scoreEl = document.getElementById('score');
 const livesEl = document.getElementById('lives');
 const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over');
+const defeatScreen = document.getElementById('defeat-screen');
 const finalScoreEl = document.getElementById('final-score');
-const music = document.getElementById('bgmusic');
+const bgMusic = document.getElementById('bgmusic');
+const sadMusic = document.getElementById('sadmusic');
 
 let score = 0, lives = 3, gameRunning = false;
 let movingLeft = false, movingRight = false;
 let player, bullets = [], enemies = [], particles = [], stars = [];
 
-// Player, Bullet, Enemy, Particle (no tilt)
+// Classes (same as before)
 class Player { constructor() { this.x = 400; this.y = 400; this.w = 40; this.h = 30; }
     draw() {
         ctx.fillStyle = '#00FFFF'; ctx.beginPath(); ctx.moveTo(this.x, this.y);
@@ -153,7 +176,7 @@ class Particle {
 for(let i=0;i<140;i++) stars.push({x:Math.random()*W,y:Math.random()*H,size:Math.random()*3+1,speed:Math.random()*1.8+0.6});
 player = new Player();
 
-// BUTTON CONTROLS ONLY (no tilt)
+// Buttons
 const leftBtn = document.getElementById('left');
 const rightBtn = document.getElementById('right');
 const fireBtn = document.getElementById('fire');
@@ -171,8 +194,23 @@ rightBtn.addEventListener('mouseup', ()=>{movingRight=false;});
 fireBtn.addEventListener('touchstart', e=>{e.preventDefault(); shoot();});
 fireBtn.addEventListener('mousedown', shoot);
 
-canvas.addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning) shoot(); else if(startScreen.style.display!=='none') startGame(); else if(gameOverScreen.style.display!=='none') restartGame(); });
+canvas.addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning) shoot(); else if(startScreen.style.display!=='none') return; else if(gameOverScreen.style.display!=='none' || defeatScreen.style.display!=='none') restartGame(); });
 canvas.addEventListener('click', ()=>{ if(gameRunning) shoot(); });
+
+// Click Peyton = start game
+document.getElementById('peyton-start').addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    startGame();
+});
+
+// Click New Jersey = defeat screen + sad music
+document.getElementById('nj-start').addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    defeatScreen.style.display = 'block';
+    bgMusic.pause();
+    sadMusic.currentTime = 0;
+    sadMusic.play().catch(()=>{});
+});
 
 function shoot() {
     if(bullets.length<8){bullets.push(new Bullet(player.x,player.y-10)); beep(820,65,0.3);}
@@ -218,11 +256,11 @@ function gameLoop(){
 }
 
 function startGame(){
-    startScreen.style.display='none';
     gameRunning=true;
     score=0;lives=3;scoreEl.textContent='000000';livesEl.textContent='3';
     bullets=[];enemies=[];particles=[];player.x=400;
-    music.currentTime=0; music.play().catch(()=>{});
+    bgMusic.currentTime=0; bgMusic.play().catch(()=>{});
+    sadMusic.pause();
     gameLoop();
 }
 
@@ -230,13 +268,15 @@ function endGame(){
     gameRunning=false;
     finalScoreEl.textContent=String(score).padStart(6,'0');
     gameOverScreen.style.display='block';
-    music.pause();
+    bgMusic.pause();
 }
 
 function restartGame(){
     gameOverScreen.style.display='none';
+    defeatScreen.style.display='none';
     startScreen.style.display='block';
-    music.pause();
+    bgMusic.pause();
+    sadMusic.pause();
 }
 
 window.addEventListener('keydown',e=>{if(e.key===' '&&gameRunning)shoot(); if(!gameRunning&&(e.key===' '||e.key==='Enter'))startGame(); if(!gameRunning&&e.key.toLowerCase()==='r')restartGame();});
