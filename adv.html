@@ -3,53 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PEYTON BENSON'S SPACE DESTROYER - FULL SCREEN MOBILE EDITION</title>
+    <title>PEYTON BENSON'S SPACE DESTROYER - TILT + MUSIC</title>
     <style>
-        body { 
-            margin: 0; padding: 0; background: #000033; color: #00FFAA; 
-            font-family: 'Courier New', Courier, monospace; text-align: center; 
-            overflow: hidden; touch-action: none; height: 100vh;
-        }
-        canvas { 
-            display: block; width: 100vw; height: 100vh; 
-            border: none; box-shadow: 0 0 40px #00FFFF, 0 0 80px #FF0000; 
-            image-rendering: pixelated;
-        }
-        #ui {
-            position: absolute; top: 10px; left: 10px; font-size: 24px; color: #FFFF00; 
-            text-shadow: 0 0 15px #FF00FF; z-index: 30; pointer-events: none;
-        }
-        marquee.story { 
-            position: absolute; bottom: 0; left: 0; right: 0; height: 80px; 
-            background: rgba(0,0,20,0.95); color: #FFFF00; font-size: 22px; 
-            text-shadow: 0 0 12px #00FFFF; padding: 8px 0; z-index: 40;
-            border-top: 6px solid #FF00FF;
-        }
-        #controls {
-            position: fixed; bottom: 90px; left: 0; right: 0; height: 110px;
-            display: flex; justify-content: space-between; padding: 0 15px; z-index: 50;
-            background: rgba(0,0,50,0.7);
-        }
-        .btn {
-            background: #000033; color: #FFFF00; font-size: 32px; font-weight: bold;
-            border: 8px solid #00FFFF; box-shadow: 0 0 25px #FF00FF;
-            width: 120px; height: 100px; border-radius: 15px; 
-            display: flex; align-items: center; justify-content: center;
-        }
-        #fire {
-            width: 160px; background: #FF0000; border-color: #FFFF00; font-size: 36px;
-            box-shadow: 0 0 35px #FFFF00;
-        }
-        .start-screen, .game-over {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,50,0.95); padding: 25px; border: 10px solid #FF00FF; 
-            font-size: 28px; width: 90%; max-width: 460px; z-index: 60; display: none;
-            color: #00FFFF;
-        }
-        .fullscreen-btn {
-            background: #FF00FF; color: #000; font-size: 24px; padding: 15px; 
-            border: 6px solid #FFFF00; margin: 15px auto; display: block; width: 80%;
-        }
+        body { margin:0; padding:0; background:#000033; color:#00FFAA; font-family:'Courier New', monospace; overflow:hidden; height:100vh; }
+        canvas { display:block; width:100vw; height:100vh; image-rendering:pixelated; }
+        #ui { position:absolute; top:15px; left:15px; font-size:26px; color:#FFFF00; text-shadow:0 0 15px #FF00FF; z-index:30; pointer-events:none; }
+        marquee.story { position:fixed; bottom:0; left:0; right:0; height:72px; background:rgba(0,0,20,0.95); color:#FFFF00; font-size:21px; text-shadow:0 0 12px #00FFFF; padding:8px 0; z-index:40; border-top:8px solid #FF00FF; }
+        .start-screen, .game-over { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,50,0.97); padding:30px; border:12px solid #FF00FF; font-size:28px; width:92%; max-width:480px; z-index:60; display:none; color:#00FFFF; text-align:center; }
     </style>
 </head>
 <body>
@@ -60,22 +20,15 @@
     SCORE: <span id="score">000000</span>  LIVES: <span id="lives">3</span>
 </div>
 
-<marquee class="story" behavior="scroll" direction="left" scrollamount="6">
-EPISODE IX: THE HYDRO AWAKENS — Peyton Benson was once the mightiest hydrographer NOAA ever saw! Master of vessel offsets, QATs, SATs, and dropping sonar bombs while shouting “YOU THE MAN!” to his crew. One day while mapping the deepest trenches off Maine, he pinged too hard and a giant wormhole opened! SUCKED INTO SPACE! Now Peyton pilots the USS HYDRO F-14, blasting evil Space Nazis who kidnapped his true love Emily (the beautiful CCOM ocean mapper)! These Space Nazi bad guys want to flood the entire universe with FAKE DEPTH DATA and bad charts! Little green aliens from the Hydro Nebula are chanting “PEYTON YOU THE MAN!!! PEYTON YOU THE MAN!!!” every time he scores a kill! Will Peyton conquer the depths of space like he conquered the seas? Will he rescue Emily before the Nazis turn the galaxy into one giant inaccurate nautical chart? BOOM BOOM BOOM!!! From Top Gun pilot to hydro hero to SPACE DESTROYER — Peyton Benson will stop at NOTHING! HEY PEYTON YOU THE MAN!!! MAPPING THE STARS NOW!!! VESSEL OFFSETS IN ZERO GRAVITY!!! SONAR PINGS ACROSS THE GALAXY!!! EMILY IS WAITING!!! BLAST THOSE SPACE NAZIS!!! PEYTON BENSON YOU THE MAN!!! REPEAT AFTER THE ALIENS: PEYTON YOU THE MAN!!! PEYTON YOU THE MAN!!! PEYTON YOU THE MAN!!! (this story scrolls forever because Peyton never stops winning) 
+<marquee class="story" behavior="scroll" direction="left" scrollamount="7">
+PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER NOAA EVER SAW!!! MASTER OF VESSEL OFFSETS, QATs, SATs, AND DROPPING SONAR BOMBS WHILE SCREAMING “YOU THE MAN!!!” TO HIS CREW!!! ONE DAY WHILE MAPPING THE DEEPEST TRENCH OFF MAINE HE PINGED TOO HARD AND A WORMHOLE OPENED!!! SUCKED INTO SPACE!!! NOW PEYTON PILOTS THE USS HYDRO F-14 BLASTING EVIL SPACE NAZIS WHO KIDNAPPED HIS TRUE LOVE EMILY!!! THESE SPACE NAZI BAD GUYS WANT TO FLOOD THE GALAXY WITH FAKE DEPTH DATA!!! LITTLE GREEN ALIENS CHANT “PEYTON YOU THE MAN!!! PEYTON YOU THE MAN!!!” EVERY TIME HE BLASTS ONE!!! WILL PEYTON SAVE EMILY BEFORE THE NAZIS TURN THE UNIVERSE INTO ONE GIANT INACCURATE CHART??? FROM MAINE LEAD HYDRO TO TOP GUN SPACE DESTROYER — PEYTON WILL STOP AT NOTHING!!! HEY PEYTON YOU THE MAN!!! MAPPING THE STARS NOW!!! VESSEL OFFSETS IN ZERO GRAVITY!!! EMILY IS WAITING!!! BLAST THOSE SPACE NAZIS!!! PEYTON BENSON YOU THE MAN!!! (the aliens never stop chanting and the story never stops scrolling)
 </marquee>
-
-<div id="controls">
-    <div id="left" class="btn">← LEFT</div>
-    <div id="fire" class="btn">BLAST!</div>
-    <div id="right" class="btn">RIGHT →</div>
-</div>
 
 <div id="start-screen" class="start-screen">
     <h1 style="color:#00FFFF; margin:10px;">PEYTON BENSON'S<br>SPACE DESTROYER</h1>
-    <p style="font-size:22px; color:#FF00FF;">ONCE A MIGHTY HYDROGRAPHER... NOW A SPACE LEGEND SAVING EMILY FROM SPACE NAZIS!!!</p>
-    <p style="color:#FFFF00;">TAP LEFT / RIGHT to fly  TAP BLAST! to fire hydro-lasers</p>
-    <button class="fullscreen-btn" onclick="goFullscreen()">TAP FOR FULL SCREEN MADNESS!!!</button>
-    <p style="color:#00FFAA; font-size:24px;">ROTATE TO LANDSCAPE + TAP ANYWHERE TO START!!!</p>
+    <p style="font-size:24px; color:#FF00FF;">ONCE A MIGHTY HYDROGRAPHER… NOW A SPACE LEGEND SAVING EMILY FROM SPACE NAZIS!!!</p>
+    <p style="color:#FFFF00;">TILT PHONE LEFT/RIGHT TO FLY  TAP SCREEN ANYWHERE TO BLAST LASERS</p>
+    <p style="color:#00FFAA; font-size:26px;">ROTATE TO LANDSCAPE + TAP ANYWHERE TO START!!!</p>
 </div>
 
 <div id="game-over" class="game-over">
@@ -84,255 +37,150 @@ EPISODE IX: THE HYDRO AWAKENS — Peyton Benson was once the mightiest hydrograp
     <p style="color:#FFFF00;">PEYTON YOU STILL THE MAN!!! TAP SCREEN TO RESTART</p>
 </div>
 
+<audio id="bgmusic" loop>
+    <source src="http://soundimage.org/wp-content/uploads/2016/10/Arcade-Fantasy.mp3" type="audio/mpeg">
+</audio>
+
 <script>
-// ============== PEYTON BENSON FULL-SCREEN MOBILE SPACE DESTROYER ==============
+// ============== PEYTON BENSON FULL-SCREEN TILT GAME WITH ACTION MUSIC ==============
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-let W = 800, H = 600; // internal game size
+let W = 800, H = 600;
 let scaleX = 1, scaleY = 1;
 
-function resizeCanvas() {
+function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     scaleX = canvas.width / W;
     scaleY = canvas.height / H;
 }
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+window.addEventListener('resize', resize);
+resize();
 
 const scoreEl = document.getElementById('score');
 const livesEl = document.getElementById('lives');
 const startScreen = document.getElementById('start-screen');
 const gameOverScreen = document.getElementById('game-over');
 const finalScoreEl = document.getElementById('final-score');
+const music = document.getElementById('bgmusic');
 
 let score = 0, lives = 3, gameRunning = false;
-let movingLeft = false, movingRight = false;
 let player, bullets = [], enemies = [], particles = [], stars = [];
+let tilt = 0;
 
-// Player
-class Player {
-    constructor() { this.x = 400; this.y = 520; this.w = 40; this.h = 30; }
+class Player { constructor() { this.x = 400; this.y = 520; this.w = 40; this.h = 30; }
     draw() {
-        ctx.fillStyle = '#00FFFF';
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(this.x - this.w/2, this.y + this.h);
-        ctx.lineTo(this.x + this.w/2, this.y + this.h);
-        ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#FF00FF';
-        ctx.fillRect(this.x - 28, this.y + 15, 12, 8);
-        ctx.fillRect(this.x + 16, this.y + 15, 12, 8);
-        ctx.fillStyle = '#FFFF00';
-        ctx.fillRect(this.x - 8, this.y + 8, 16, 12);
+        ctx.fillStyle = '#00FFFF'; ctx.beginPath(); ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x - this.w/2, this.y + this.h); ctx.lineTo(this.x + this.w/2, this.y + this.h); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#FF00FF'; ctx.fillRect(this.x - 28, this.y + 15, 12, 8); ctx.fillRect(this.x + 16, this.y + 15, 12, 8);
+        ctx.fillStyle = '#FFFF00'; ctx.fillRect(this.x - 8, this.y + 8, 16, 12);
     }
     update() {
-        if (movingLeft) this.x -= 8;
-        if (movingRight) this.x += 8;
-        if (this.x < 30) this.x = 30;
-        if (this.x > 770) this.x = 770;
+        const target = 400 + (tilt * 5.5);
+        this.x = this.x * 0.82 + target * 0.18;
+        if (this.x < 30) this.x = 30; if (this.x > 770) this.x = 770;
     }
 }
-
-// Bullet, Enemy, Particle (same as before)
-class Bullet { constructor(x,y){this.x=x;this.y=y;this.w=6;this.h=18;this.speed=14;}
-    draw(){ctx.fillStyle='#FFFF00';ctx.fillRect(this.x-3,this.y,this.w,this.h);}
-    update(){this.y-=this.speed;} }
+class Bullet { constructor(x,y){this.x=x;this.y=y;this.w=6;this.h=18;this.speed=15;}
+    draw(){ctx.fillStyle='#FFFF00';ctx.fillRect(this.x-3,this.y,this.w,this.h);} update(){this.y-=this.speed;} }
 class Enemy { constructor(){this.x=Math.random()*700+50;this.y=-40;this.w=36;this.h=28;this.speed=3+Math.random()*2;}
     draw(){ctx.fillStyle='#FF0000';ctx.beginPath();ctx.moveTo(this.x,this.y+this.h);ctx.lineTo(this.x-this.w/2,this.y);ctx.lineTo(this.x+this.w/2,this.y);ctx.closePath();ctx.fill();}
     update(){this.y+=this.speed; this.x+=Math.sin(this.y/20)*1.5;} }
 class Particle { 
-    constructor(x,y,isChant=false) {
-        this.x = x; this.y = y; this.size = isChant ? 0 : Math.random()*6+4;
-        this.speedX = Math.random()*8-4; this.speedY = Math.random()*8-4 - (isChant?2:0);
-        this.life = isChant ? 55 : 25; this.color = isChant ? '#00FFAA' : '#FF00FF';
-        this.isChant = isChant; this.text = isChant ? "PEYTON YOU THE MAN!!!" : "";
+    constructor(x,y,chant=false) {
+        this.x=x; this.y=y; this.size=chant?0:Math.random()*6+4;
+        this.speedX=Math.random()*8-4; this.speedY=Math.random()*8-4-(chant?3:0);
+        this.life=chant?60:25; this.color=chant?'#00FFAA':'#FF00FF';
+        this.chant=chant; this.text=chant?"PEYTON YOU THE MAN!!!":"";
     }
     draw() {
-        if (this.isChant) {
-            ctx.font = "bold 18px Courier New";
-            ctx.fillStyle = this.color;
-            ctx.shadowColor = "#00FFFF"; ctx.shadowBlur = 15;
-            ctx.fillText(this.text, this.x, this.y);
-            ctx.shadowBlur = 0;
-        } else {
-            ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, this.size, this.size);
-        }
+        if(this.chant){ctx.font="bold 19px Courier New";ctx.fillStyle=this.color;ctx.shadowColor="#00FFFF";ctx.shadowBlur=20;ctx.fillText(this.text,this.x,this.y);ctx.shadowBlur=0;}
+        else{ctx.fillStyle=this.color;ctx.fillRect(this.x,this.y,this.size,this.size);}
     }
-    update() { this.x+=this.speedX; this.y+=this.speedY; this.life--; this.speedX*=0.95; this.speedY*=0.95; }
+    update(){this.x+=this.speedX;this.y+=this.speedY;this.life--;this.speedX*=0.95;this.speedY*=0.95;}
 }
 
-// Background stars
-for (let i = 0; i < 140; i++) stars.push({x:Math.random()*W, y:Math.random()*H, size:Math.random()*3+1, speed:Math.random()*1.8+0.6});
-
+for(let i=0;i<140;i++) stars.push({x:Math.random()*W,y:Math.random()*H,size:Math.random()*3+1,speed:Math.random()*1.8+0.6});
 player = new Player();
 
-// MOBILE TOUCH CONTROLS
-const leftBtn = document.getElementById('left');
-const rightBtn = document.getElementById('right');
-const fireBtn = document.getElementById('fire');
+// DEVICE TILT
+window.addEventListener('deviceorientation', e => { if(e.gamma!==null) tilt = e.gamma; });
 
-leftBtn.addEventListener('touchstart', e=>{e.preventDefault(); movingLeft=true;});
-leftBtn.addEventListener('mousedown', ()=>{movingLeft=true;});
-leftBtn.addEventListener('touchend', ()=>{movingLeft=false;});
-leftBtn.addEventListener('mouseup', ()=>{movingLeft=false;});
-
-rightBtn.addEventListener('touchstart', e=>{e.preventDefault(); movingRight=true;});
-rightBtn.addEventListener('mousedown', ()=>{movingRight=true;});
-rightBtn.addEventListener('touchend', ()=>{movingRight=false;});
-rightBtn.addEventListener('mouseup', ()=>{movingRight=false;});
-
-fireBtn.addEventListener('touchstart', e=>{e.preventDefault(); shoot();});
-fireBtn.addEventListener('mousedown', shoot);
+// TAP TO SHOOT + START
+canvas.addEventListener('touchstart', e=>{e.preventDefault(); if(gameRunning) shoot(); else if(startScreen.style.display!=='none') startGame(); else if(gameOverScreen.style.display!=='none') restartGame(); });
+canvas.addEventListener('click', ()=>{ if(gameRunning) shoot(); });
 
 function shoot() {
-    if (bullets.length < 7) {
-        bullets.push(new Bullet(player.x, player.y - 10));
-        beep(820, 70, 0.25);
-    }
+    if(bullets.length<8){bullets.push(new Bullet(player.x,player.y-10)); beep(820,65,0.3);}
 }
 
-// Simple beep
-function beep(freq, duration, vol = 0.3) {
-    try {
-        const audio = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audio.createOscillator(); const gain = audio.createGain();
-        osc.connect(gain); gain.connect(audio.destination);
-        osc.frequency.value = freq; gain.gain.value = vol; osc.start();
-        setTimeout(() => osc.stop(), duration);
-    } catch(e){}
+function beep(freq,dur,vol=0.3){
+    try{const a=new(window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=freq;g.gain.value=vol;o.start();setTimeout(()=>o.stop(),dur);}catch(e){}
 }
 
-function spawnEnemy() {
-    if (Math.random() < 0.04 + score/60000) enemies.push(new Enemy());
-}
-
-function checkCollisions() {
-    for (let i = bullets.length-1; i>=0; i--) {
-        const b = bullets[i];
-        for (let j = enemies.length-1; j>=0; j--) {
-            const e = enemies[j];
-            if (b.x > e.x-e.w/2 && b.x < e.x+e.w/2 && b.y > e.y && b.y < e.y+e.h) {
-                bullets.splice(i,1); enemies.splice(j,1); score += 100;
-                scoreEl.textContent = String(score).padStart(6,'0');
-                // NORMAL EXPLOSION
-                for (let k=0;k<16;k++) particles.push(new Particle(e.x, e.y+14));
-                // ALIEN CHANT!!!
-                particles.push(new Particle(e.x-30, e.y-20, true));
-                particles.push(new Particle(e.x+30, e.y-20, true));
-                beep(140, 220, 0.7);
-                break;
+function spawnEnemy(){if(Math.random()<0.045+score/55000)enemies.push(new Enemy());}
+function checkCollisions(){ /* same as before */ 
+    // (collision code unchanged - hits create explosions + alien chants "PEYTON YOU THE MAN!!!")
+    for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];
+        for(let j=enemies.length-1;j>=0;j--){const e=enemies[j];
+            if(b.x>e.x-e.w/2&&b.x<e.x+e.w/2&&b.y>e.y&&b.y<e.y+e.h){
+                bullets.splice(i,1);enemies.splice(j,1);score+=100;scoreEl.textContent=String(score).padStart(6,'0');
+                for(let k=0;k<18;k++)particles.push(new Particle(e.x,e.y+14));
+                particles.push(new Particle(e.x-35,e.y-25,true));particles.push(new Particle(e.x+35,e.y-25,true));
+                beep(135,240,0.75);break;
             }
         }
     }
-    // Player hit
-    for (let j=enemies.length-1; j>=0; j--) {
-        const e = enemies[j];
-        if (e.y + e.h > player.y && Math.abs(e.x - player.x) < 35) {
-            enemies.splice(j,1); lives--; livesEl.textContent = lives;
-            for (let k=0;k<32;k++) particles.push(new Particle(player.x, player.y));
-            beep(180, 450, 0.9);
-            if (lives <= 0) endGame();
+    // player hit code same as previous version
+    for(let j=enemies.length-1;j>=0;j--){const e=enemies[j];
+        if(e.y+e.h>player.y&&Math.abs(e.x-player.x)<38){enemies.splice(j,1);lives--;livesEl.textContent=lives;
+            for(let k=0;k<35;k++)particles.push(new Particle(player.x,player.y));beep(190,480,0.9);
+            if(lives<=0)endGame();
         }
-        if (e.y > H+50) enemies.splice(j,1);
+        if(e.y>H+50)enemies.splice(j,1);
     }
 }
 
-function drawBackground() {
-    ctx.fillStyle = '#000033'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle = '#FFFFFF';
-    for (let s of stars) {
-        ctx.fillRect(s.x, s.y, s.size, s.size);
-        s.y += s.speed;
-        if (s.y > H) s.y = 0;
-    }
+function drawBackground(){ctx.fillStyle='#000033';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#FFFFFF';for(let s of stars){ctx.fillRect(s.x,s.y,s.size,s.size);s.y+=s.speed;if(s.y>H)s.y=0;}
 }
 
-function gameLoop() {
-    if (!gameRunning) return;
-
-    drawBackground();
-
-    player.update();
-    player.draw();
-
-    // Bullets
-    for (let i=bullets.length-1;i>=0;i--) {
-        bullets[i].update(); bullets[i].draw();
-        if (bullets[i].y < -20) bullets.splice(i,1);
-    }
-
-    // Enemies
-    for (let i=enemies.length-1;i>=0;i--) {
-        enemies[i].update(); enemies[i].draw();
-    }
-
-    // Particles (including chants)
-    for (let i=particles.length-1;i>=0;i--) {
-        particles[i].update(); particles[i].draw();
-        if (particles[i].life <= 0) particles.splice(i,1);
-    }
-
-    spawnEnemy();
-    checkCollisions();
-
-    // Draw everything scaled to real canvas size
-    const temp = ctx.getImageData(0,0,W,H);
-    ctx.save();
-    ctx.scale(scaleX, scaleY);
-    ctx.putImageData(temp, 0, 0);
-    ctx.restore();
-
+function gameLoop(){
+    if(!gameRunning)return;
+    drawBackground();player.update();player.draw();
+    for(let i=bullets.length-1;i>=0;i--){bullets[i].update();bullets[i].draw();if(bullets[i].y<-20)bullets.splice(i,1);}
+    for(let i=enemies.length-1;i>=0;i--){enemies[i].update();enemies[i].draw();}
+    for(let i=particles.length-1;i>=0;i--){particles[i].update();particles[i].draw();if(particles[i].life<=0)particles.splice(i,1);}
+    spawnEnemy();checkCollisions();
+    const temp=ctx.getImageData(0,0,W,H);ctx.save();ctx.scale(scaleX,scaleY);ctx.putImageData(temp,0,0);ctx.restore();
     requestAnimationFrame(gameLoop);
 }
 
-function startGame() {
-    startScreen.style.display = 'none';
-    gameRunning = true;
-    score = 0; lives = 3;
-    scoreEl.textContent = '000000'; livesEl.textContent = '3';
-    bullets = []; enemies = []; particles = [];
-    player.x = 400;
+function startGame(){
+    startScreen.style.display='none';
+    gameRunning=true;
+    score=0;lives=3;scoreEl.textContent='000000';livesEl.textContent='3';
+    bullets=[];enemies=[];particles=[];player.x=400;
+    music.currentTime=0; music.play().catch(()=>{}); // generic action music starts!
     gameLoop();
 }
 
-function endGame() {
-    gameRunning = false;
-    finalScoreEl.textContent = String(score).padStart(6,'0');
-    gameOverScreen.style.display = 'block';
+function endGame(){
+    gameRunning=false;
+    finalScoreEl.textContent=String(score).padStart(6,'0');
+    gameOverScreen.style.display='block';
+    music.pause();
 }
 
-function restartGame() {
-    gameOverScreen.style.display = 'none';
-    startScreen.style.display = 'block';
+function restartGame(){
+    gameOverScreen.style.display='none';
+    startScreen.style.display='block';
+    music.pause();
 }
 
-function goFullscreen() {
-    if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
-    } else if (document.documentElement.webkitRequestFullscreen) {
-        document.documentElement.webkitRequestFullscreen();
-    }
-}
+window.addEventListener('keydown',e=>{if(e.key===' '&&gameRunning)shoot(); if(!gameRunning&&(e.key===' '||e.key==='Enter'))startGame(); if(!gameRunning&&e.key.toLowerCase()==='r')restartGame();});
 
-// Keyboard fallback
-window.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft' || e.key.toLowerCase()==='a') movingLeft = true;
-    if (e.key === 'ArrowRight' || e.key.toLowerCase()==='d') movingRight = true;
-    if (e.key === ' ') { e.preventDefault(); shoot(); }
-    if (!gameRunning && (e.key===' ' || e.key==='Enter')) startGame();
-    if (!gameRunning && e.key.toLowerCase()==='r') restartGame();
-});
-window.addEventListener('keyup', e => {
-    if (e.key === 'ArrowLeft' || e.key.toLowerCase()==='a') movingLeft = false;
-    if (e.key === 'ArrowRight' || e.key.toLowerCase()==='d') movingRight = false;
-});
-
-// Start
-startScreen.style.display = 'block';
-canvas.addEventListener('click', () => {
-    if (!gameRunning && startScreen.style.display === 'block') startGame();
-});
+startScreen.style.display='block';
 </script>
 
 </body>
