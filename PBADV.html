@@ -86,7 +86,7 @@
 <div id="game-container">
     <canvas id="game" width="800" height="480"></canvas>
     <div id="ui">
-        SCORE: <span id="score">000000</span>  LIVES: <span id="lives">3</span>
+        SCORE: <span id="score">000000</span>  LIVES: <span id="lives">5</span>
     </div>
 </div>
 
@@ -153,7 +153,7 @@
 </audio>
 
 <script>
-// ============== VERTICAL PORTRAIT - 100,000 WIN CONDITION WITH FLYING PEYTON + WINNER SONG ==============
+// ============== VERTICAL PORTRAIT - WIN AT 5000 + FALLING SPREAD-GUN POWER-UPS + EASIER GAME ==============
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 480;
@@ -169,29 +169,30 @@ const bgMusic = document.getElementById('bgmusic');
 const sadMusic = document.getElementById('sadmusic');
 const winMusic = document.getElementById('winmusic');
 
-let score = 0, lives = 3, gameRunning = false, won = false;
+let score = 0, lives = 5, gameRunning = false, won = false, spreadActive = false;
 let movingLeft = false, movingRight = false;
-let player, bullets = [], enemies = [], particles = [], stars = [];
+let player, bullets = [], enemies = [], particles = [], stars = [], powerups = [];
 
 // Player, Bullet, Enemy, Particle classes
-class Player { constructor() { this.x = 400; this.y = 400; this.w = 40; this.h = 30; }
+class Player { constructor() { this.x = 400; this.y = 400; this.w = 48; this.h = 36; } // bigger for easier play
     draw() {
         ctx.fillStyle = '#00FFFF'; ctx.beginPath(); ctx.moveTo(this.x, this.y);
         ctx.lineTo(this.x - this.w/2, this.y + this.h); ctx.lineTo(this.x + this.w/2, this.y + this.h); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#FF00FF'; ctx.fillRect(this.x - 28, this.y + 15, 12, 8); ctx.fillRect(this.x + 16, this.y + 15, 12, 8);
-        ctx.fillStyle = '#FFFF00'; ctx.fillRect(this.x - 8, this.y + 8, 16, 12);
+        ctx.fillStyle = '#FF00FF'; ctx.fillRect(this.x - 32, this.y + 15, 14, 10); ctx.fillRect(this.x + 18, this.y + 15, 14, 10);
+        ctx.fillStyle = '#FFFF00'; ctx.fillRect(this.x - 10, this.y + 8, 20, 14);
     }
     update() {
-        if (movingLeft) this.x -= 8;
-        if (movingRight) this.x += 8;
+        if (movingLeft) this.x -= 7;
+        if (movingRight) this.x += 7;
         if (this.x < 30) this.x = 30; if (this.x > 770) this.x = 770;
     }
 }
-class Bullet { constructor(x,y){this.x=x;this.y=y;this.w=6;this.h=18;this.speed=15;}
-    draw(){ctx.fillStyle='#FFFF00';ctx.fillRect(this.x-3,this.y,this.w,this.h);} update(){this.y-=this.speed;} }
-class Enemy { constructor(){this.x=Math.random()*700+50;this.y=-40;this.w=36;this.h=28;this.speed=3+Math.random()*2;}
+class Bullet { constructor(x,y,angle=0){this.x=x;this.y=y;this.w=6;this.h=18;this.speed=15;this.angle=angle;}
+    draw(){ctx.fillStyle='#FFFF00';ctx.fillRect(this.x-3,this.y,this.w,this.h);} 
+    update(){this.y-=this.speed; this.x += this.angle*2;} }
+class Enemy { constructor(){this.x=Math.random()*700+50;this.y=-40;this.w=36;this.h=28;this.speed=1.8+Math.random()*1.2;} // slower = easier
     draw(){ctx.fillStyle='#FF0000';ctx.beginPath();ctx.moveTo(this.x,this.y+this.h);ctx.lineTo(this.x-this.w/2,this.y);ctx.lineTo(this.x+this.w/2,this.y);ctx.closePath();ctx.fill();}
-    update(){this.y+=this.speed; this.x+=Math.sin(this.y/20)*1.5;} }
+    update(){this.y+=this.speed; this.x+=Math.sin(this.y/20)*1.2;} }
 class Particle { 
     constructor(x,y,chant=false) {
         this.x=x; this.y=y; this.size=chant?0:Math.random()*6+4;
@@ -204,6 +205,10 @@ class Particle {
         else{ctx.fillStyle=this.color;ctx.fillRect(this.x,this.y,this.size,this.size);}
     }
     update(){this.x+=this.speedX;this.y+=this.speedY;this.life--;this.speedX*=0.95;this.speedY*=0.95;}
+}
+class PowerUp { constructor(){this.x=Math.random()*700+50;this.y=-30;this.w=32;this.h=32;this.speed=2.5;}
+    draw(){ctx.fillStyle='#00FF00';ctx.fillRect(this.x,this.y,this.w,this.h); ctx.fillStyle='#FFFF00';ctx.font="bold 18px Courier New";ctx.fillText("GUN",this.x+4,this.y+24);}
+    update(){this.y+=this.speed;}
 }
 
 // Stars
@@ -247,15 +252,27 @@ document.getElementById('notpb-start').addEventListener('click', () => {
 });
 
 function shoot() {
-    if(bullets.length<8){bullets.push(new Bullet(player.x,player.y-10)); beep(820,65,0.3);}
+    if(bullets.length<8){
+        if(spreadActive){
+            bullets.push(new Bullet(player.x,player.y-10, -0.6)); // left
+            bullets.push(new Bullet(player.x,player.y-10, 0));    // center
+            bullets.push(new Bullet(player.x,player.y-10, 0.6));  // right
+        } else {
+            bullets.push(new Bullet(player.x,player.y-10, 0));
+        }
+        beep(820,65,0.3);
+    }
 }
 
 function beep(freq,dur,vol=0.3){
     try{const a=new(window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=freq;g.gain.value=vol;o.start();setTimeout(()=>o.stop(),dur);}catch(e){}
 }
 
-function spawnEnemy(){if(Math.random()<0.045+score/55000)enemies.push(new Enemy());}
+function spawnEnemy(){if(Math.random()<0.028+score/80000)enemies.push(new Enemy());} // much lower spawn = easier
+function spawnPowerUp(){if(Math.random()<0.012)powerups.push(new PowerUp());} // rare falling guns
+
 function checkCollisions(){
+    // bullets vs enemies
     for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];
         for(let j=enemies.length-1;j>=0;j--){const e=enemies[j];
             if(b.x>e.x-e.w/2&&b.x<e.x+e.w/2&&b.y>e.y&&b.y<e.y+e.h){
@@ -263,23 +280,35 @@ function checkCollisions(){
                 for(let k=0;k<18;k++)particles.push(new Particle(e.x,e.y+14));
                 particles.push(new Particle(e.x-35,e.y-25,true));particles.push(new Particle(e.x+35,e.y-25,true));
                 beep(135,240,0.75);
-                // WIN CHECK
-                if(score >= 100000 && !won) winGame();
+                if(score >= 5000 && !won) winGame();
                 break;
             }
         }
     }
+    // player vs enemies
     for(let j=enemies.length-1;j>=0;j--){const e=enemies[j];
-        if(e.y+e.h>player.y&&Math.abs(e.x-player.x)<38){enemies.splice(j,1);lives--;livesEl.textContent=lives;
+        if(e.y+e.h>player.y&&Math.abs(e.x-player.x)<42){enemies.splice(j,1);lives--;livesEl.textContent=lives;
             for(let k=0;k<35;k++)particles.push(new Particle(player.x,player.y));beep(190,480,0.9);
             if(lives<=0)endGame();
         }
         if(e.y>H+50)enemies.splice(j,1);
     }
+    // player vs powerups
+    for(let i=powerups.length-1;i>=0;i--){const p=powerups[i];
+        if(p.y+p.h>player.y-10&&Math.abs(p.x-player.x)<40){
+            powerups.splice(i,1);
+            spreadActive = true;
+            for(let k=0;k<12;k++)particles.push(new Particle(player.x,player.y,true)); // big chant
+            beep(600,400,0.6);
+        }
+        if(p.y>H+50)powerups.splice(i,1);
+    }
 }
 
 function drawBackground(){ctx.fillStyle='#000033';ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#FFFFFF';for(let s of stars){ctx.fillRect(s.x,s.y,s.size,s.size);s.y+=s.speed;if(s.y>H)s.y=0;}
+    // draw powerups
+    for(let p of powerups){p.update();p.draw();}
 }
 
 function gameLoop(){
@@ -288,14 +317,14 @@ function gameLoop(){
     for(let i=bullets.length-1;i>=0;i--){bullets[i].update();bullets[i].draw();if(bullets[i].y<-20)bullets.splice(i,1);}
     for(let i=enemies.length-1;i>=0;i--){enemies[i].update();enemies[i].draw();}
     for(let i=particles.length-1;i>=0;i--){particles[i].update();particles[i].draw();if(particles[i].life<=0)particles.splice(i,1);}
-    spawnEnemy();checkCollisions();
+    spawnEnemy();spawnPowerUp();checkCollisions();
     requestAnimationFrame(gameLoop);
 }
 
 function startGame(){
-    gameRunning=true; won=false;
-    score=0;lives=3;scoreEl.textContent='000000';livesEl.textContent='3';
-    bullets=[];enemies=[];particles=[];player.x=400;
+    gameRunning=true; won=false; spreadActive=false;
+    score=0;lives=5;scoreEl.textContent='000000';livesEl.textContent='5';
+    bullets=[];enemies=[];particles=[];powerups=[];player.x=400;
     bgMusic.currentTime=0; bgMusic.play().catch(()=>{});
     sadMusic.pause(); winMusic.pause();
     gameLoop();
