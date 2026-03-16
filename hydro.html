@@ -3,151 +3,179 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>NOAA Hydro Surveyor - Mobile Edition</title>
+<title>NOAA Hydro Surveyor - Mobile</title>
 <style>
   body {margin:0; background:#001122; color:#0ff; font-family:monospace; overflow:hidden; touch-action:none;}
   canvas {display:block; margin:0 auto; max-width:100%; height:auto; border-bottom:3px solid #0ff;}
-  #hud {position:absolute; top:10px; left:10px; background:rgba(0,20,40,0.95); padding:12px; border:2px solid #0ff; font-size:14px; z-index:10;}
+  #hud {position:absolute; top:10px; left:10px; background:rgba(0,20,40,0.95); padding:12px; border:2px solid #0ff; font-size:13px; z-index:10;}
   #controls {
     position:fixed; bottom:0; left:0; right:0; background:rgba(0,20,40,0.95);
-    display:flex; justify-content:space-around; padding:15px; gap:10px; z-index:20;
+    display:flex; flex-wrap:wrap; justify-content:space-around; padding:12px; gap:8px; z-index:20;
   }
   button {
-    font-size:28px; padding:15px 25px; background:#003355; color:#0ff;
-    border:3px solid #0ff; border-radius:12px; width:30%; touch-action:manipulation;
+    font-size:24px; padding:12px 18px; background:#003355; color:#0ff;
+    border:3px solid #0ff; border-radius:10px; flex:1; min-width:80px; touch-action:manipulation;
   }
-  button:active {background:#00aaff; color:#001122;}
-  #info {position:absolute; bottom:80px; left:0; right:0; text-align:center; font-size:12px; color:#0bb;}
+  #ping {background:#00aa66; font-size:26px; padding:18px; flex:1.6;}
+  #ping:active {background:#00ff99;}
+  button:active {background:#00aaff;}
 </style>
 </head>
 <body>
 <canvas id="c" width="800" height="600"></canvas>
 
 <div id="hud">
-  <b>NOAA HYDROGRAPHIC SURVEYOR</b><br>
-  Depth: <span id="depth">---</span> m  Coverage: <span id="cov">0</span>%
+  <b>NOAA HYDRO SURVEYOR</b><br>
+  Depth: <span id="depth">---</span> m<br>
+  Coverage: <span id="cov">0</span>% Swath: <span id="swath">---</span> m
 </div>
 
 <div id="controls">
   <button id="left">← TURN</button>
-  <button id="thrust">↑ THRUST</button>
+  <button id="thrust">↑ GO</button>
   <button id="right">TURN →</button>
+  <button id="ping">PING<br><small>SONAR</small></button>
 </div>
 
-<div id="info">Sail over unexplored areas • Multibeam swath reveals the seafloor live</div>
-
 <script>
-// ============== SAME GAME LOGIC (slightly optimized for mobile) ==============
+// ============== CONFIG - COARSE RESOLUTION ==============
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 600;
-const CELL = 10;
-const COLS = W/CELL;
-const ROWS = H/CELL;
-const SWATH = 12;
+const CELL = 20;
+const COLS = Math.floor(W / CELL);   // 40
+const ROWS = Math.floor(H / CELL);   // 30
+const METERS_PER_CELL = 20;
+const BEAM_ANGLE = 60 * Math.PI / 180; // 60 degrees
 
-let ship = {x:W/2, y:H/2, angle:-Math.PI/2, speed:0};
+let ship = {x: W*0.5, y: H*0.6, angle: -Math.PI/2, speed: 0};
 
-let depths = Array.from({length:ROWS},()=>Array(COLS));
-let revealed = Array.from({length:ROWS},()=>Array(COLS).fill(false));
+// ============== RANDOM SEAFLOOR ==============
+let depths = Array.from({length: ROWS}, () => Array(COLS));
+let revealed = Array.from({length: ROWS}, () => Array(COLS).fill(false));
 
-for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
-  depths[y][x] = 30 + 40*Math.sin(x/8) + 35*Math.cos(y/6) + Math.random()*15;
-  depths[y][x] = Math.max(5, depths[y][x]);
+for (let y = 0; y < ROWS; y++) {
+  for (let x = 0; x < COLS; x++) {
+    let d = 45;
+    d += 28 * Math.sin(x / 6);
+    d += 32 * Math.cos(y / 5);
+    d += 18 * Math.sin(x / 11 + y / 9);
+    d += (Math.random() - 0.5) * 22;
+    depths[y][x] = Math.max(8, Math.round(d));
+  }
 }
 
-const keys = {}; // still works if you plug in a Bluetooth keyboard
-
-// ============== MOBILE BUTTONS ==============
+// ============== MOBILE CONTROLS ==============
 let mobileLeft = false, mobileRight = false, mobileThrust = false;
 
-document.getElementById('left').addEventListener('touchstart', e=>{e.preventDefault(); mobileLeft=true;});
-document.getElementById('left').addEventListener('touchend',  e=>{e.preventDefault(); mobileLeft=false;});
-document.getElementById('right').addEventListener('touchstart',e=>{e.preventDefault(); mobileRight=true;});
-document.getElementById('right').addEventListener('touchend', e=>{e.preventDefault(); mobileRight=false;});
-document.getElementById('thrust').addEventListener('touchstart',e=>{e.preventDefault(); mobileThrust=true;});
-document.getElementById('thrust').addEventListener('touchend', e=>{e.preventDefault(); mobileThrust=false;});
+document.getElementById('left').addEventListener('touchstart', e=>{e.preventDefault(); mobileLeft = true;});
+document.getElementById('left').addEventListener('touchend',   e=>{e.preventDefault(); mobileLeft = false;});
+document.getElementById('right').addEventListener('touchstart',e=>{e.preventDefault(); mobileRight = true;});
+document.getElementById('right').addEventListener('touchend',  e=>{e.preventDefault(); mobileRight = false;});
+document.getElementById('thrust').addEventListener('touchstart',e=>{e.preventDefault(); mobileThrust = true;});
+document.getElementById('thrust').addEventListener('touchend', e=>{e.preventDefault(); mobileThrust = false;});
 
-// ============== HELPER FUNCTIONS (unchanged) ==============
-function getColor(d){
-  const n = Math.max(0,Math.min(1,(d-5)/120));
-  return `hsl(\( {200-n*80},90%, \){30+n*50}%)`;
+// PING button
+document.getElementById('ping').addEventListener('touchstart', e => {
+  e.preventDefault();
+  doPing();
+});
+
+// ============== PING LOGIC (dynamic swath) ==============
+function doPing() {
+  const gx = Math.floor(ship.x / CELL);
+  const gy = Math.floor(ship.y / CELL);
+  if (gx < 0 || gx >= COLS || gy < 0 || gy >= ROWS) return;
+
+  const currentDepth = depths[gy][gx];
+  const swathMeters = 2 * currentDepth * Math.tan(BEAM_ANGLE);
+  const swathCells = Math.max(2, Math.round(swathMeters / METERS_PER_CELL));
+
+  document.getElementById('swath').textContent = Math.round(swathMeters);
+
+  revealSwath(gx, gy, swathCells);
 }
 
-function revealSwath(){
-  const gx = Math.floor(ship.x/CELL);
-  const gy = Math.floor(ship.y/CELL);
+// ============== REVEAL SWATH ==============
+function revealSwath(gx, gy, swathCells) {
   const dx = Math.cos(ship.angle);
   const dy = Math.sin(ship.angle);
-  const px = -dy, py = dx;
-  for(let w=-SWATH;w<=SWATH;w++){
-    for(let a=-2;a<=4;a++){
-      const rx = Math.floor(gx + dx*a + px*w);
-      const ry = Math.floor(gy + dy*a + py*w);
-      if(rx>=0&&rx<COLS&&ry>=0&&ry<ROWS) revealed[ry][rx]=true;
+  const px = -dy;
+  const py = dx;
+
+  for (let along = -3; along <= 5; along++) {
+    for (let w = -swathCells; w <= swathCells; w++) {
+      const rx = Math.floor(gx + dx * along + px * w);
+      const ry = Math.floor(gy + dy * along + py * w);
+      if (rx >= 0 && rx < COLS && ry >= 0 && ry < ROWS) {
+        revealed[ry][rx] = true;
+      }
     }
   }
 }
 
-function getCoverage(){
-  let c=0; for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++) if(revealed[y][x])c++;
-  return Math.round(c/(COLS*ROWS)*100);
+function getColor(d) {
+  const norm = Math.max(0, Math.min(1, (d - 8) / 140));
+  const hue = 210 - norm * 90;
+  return `hsl(${hue}, 85%, ${35 + norm*45}%)`;
+}
+
+function getCoverage() {
+  let count = 0;
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (revealed[y][x]) count++;
+  return Math.round(count / (COLS * ROWS) * 100);
 }
 
 // ============== MAIN LOOP ==============
-function loop(){
-  // ---- INPUT (keyboard + mobile) ----
-  if(keys['ArrowLeft'] || mobileLeft)  ship.angle -= 0.045;
-  if(keys['ArrowRight']|| mobileRight) ship.angle += 0.045;
-  if(keys['ArrowUp']   || mobileThrust) ship.speed = Math.min(ship.speed+0.18, 4.5);
-  else ship.speed *= 0.90;
+function loop() {
+  // Ship movement
+  if (mobileLeft)  ship.angle -= 0.045;
+  if (mobileRight) ship.angle += 0.045;
+  if (mobileThrust) ship.speed = Math.min(ship.speed + 0.22, 4.2);
+  else ship.speed *= 0.88;
 
-  ship.x += Math.cos(ship.angle)*ship.speed;
-  ship.y += Math.sin(ship.angle)*ship.speed;
+  ship.x += Math.cos(ship.angle) * ship.speed;
+  ship.y += Math.sin(ship.angle) * ship.speed;
 
-  ship.x = Math.max(20, Math.min(W-20, ship.x));
-  ship.y = Math.max(20, Math.min(H-20, ship.y));
+  ship.x = Math.max(30, Math.min(W-30, ship.x));
+  ship.y = Math.max(30, Math.min(H-30, ship.y));
 
-  if(ship.speed > 0.5) revealSwath();
-
-  // ---- DRAW ----
+  // Draw
   ctx.fillStyle = '#001122';
-  ctx.fillRect(0,0,W,H);
+  ctx.fillRect(0, 0, W, H);
 
-  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
-    if(revealed[y][x]){
-      ctx.fillStyle = getColor(depths[y][x]);
-      ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
-    } else {
-      ctx.fillStyle = 'rgba(0,15,35,0.98)';
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      ctx.fillStyle = revealed[y][x] ? getColor(depths[y][x]) : '#001a33';
       ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
     }
   }
 
-  // ship
+  // Draw ship
   ctx.save();
   ctx.translate(ship.x, ship.y);
   ctx.rotate(ship.angle + Math.PI/2);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.moveTo(0,-18); ctx.lineTo(-10,12); ctx.lineTo(10,12); ctx.closePath();
+  ctx.moveTo(0, -16);
+  ctx.lineTo(-9, 13);
+  ctx.lineTo(9, 13);
+  ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = '#0ff';
-  ctx.fillRect(-4,-8,8,6);
+  ctx.fillStyle = '#00ffff';
+  ctx.fillRect(-3.5, -7, 7, 5);
   ctx.restore();
 
   // HUD
-  const under = Math.round(depths[Math.floor(ship.y/CELL)][Math.floor(ship.x/CELL)]);
-  document.getElementById('depth').textContent = under;
+  const gx = Math.floor(ship.x / CELL);
+  const gy = Math.floor(ship.y / CELL);
+  const underKeel = (gx>=0 && gx<COLS && gy>=0 && gy<ROWS) ? depths[gy][gx] : 0;
+  document.getElementById('depth').textContent = underKeel;
   document.getElementById('cov').textContent = getCoverage();
 
   requestAnimationFrame(loop);
 }
 loop();
-
-// Keyboard fallback (for desktop testing)
-window.addEventListener('keydown', e=>keys[e.key]=true);
-window.addEventListener('keyup',   e=>keys[e.key]=false);
 </script>
 </body>
 </html>
