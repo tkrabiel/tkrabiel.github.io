@@ -2,148 +2,152 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>NOAA Hydro Surveyor - Web Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NOAA Hydro Surveyor - Mobile Edition</title>
 <style>
-  body {margin:0; background:#001122; color:#0ff; font-family:monospace; text-align:center;}
-  canvas {border:3px solid #0ff; margin:20px auto; display:block;}
-  #hud {position:absolute; top:10px; left:10px; background:rgba(0,20,40,0.9); padding:15px; border:2px solid #0ff;}
+  body {margin:0; background:#001122; color:#0ff; font-family:monospace; overflow:hidden; touch-action:none;}
+  canvas {display:block; margin:0 auto; max-width:100%; height:auto; border-bottom:3px solid #0ff;}
+  #hud {position:absolute; top:10px; left:10px; background:rgba(0,20,40,0.95); padding:12px; border:2px solid #0ff; font-size:14px; z-index:10;}
+  #controls {
+    position:fixed; bottom:0; left:0; right:0; background:rgba(0,20,40,0.95);
+    display:flex; justify-content:space-around; padding:15px; gap:10px; z-index:20;
+  }
+  button {
+    font-size:28px; padding:15px 25px; background:#003355; color:#0ff;
+    border:3px solid #0ff; border-radius:12px; width:30%; touch-action:manipulation;
+  }
+  button:active {background:#00aaff; color:#001122;}
+  #info {position:absolute; bottom:80px; left:0; right:0; text-align:center; font-size:12px; color:#0bb;}
 </style>
 </head>
 <body>
 <canvas id="c" width="800" height="600"></canvas>
+
 <div id="hud">
   <b>NOAA HYDROGRAPHIC SURVEYOR</b><br>
-  ← → Turn  ↑ Thrust<br>
-  Map the unknown depths!<br>
-  Depth under keel: <span id="depth">---</span> m<br>
-  Coverage: <span id="cov">0</span>%
+  Depth: <span id="depth">---</span> m  Coverage: <span id="cov">0</span>%
 </div>
 
+<div id="controls">
+  <button id="left">← TURN</button>
+  <button id="thrust">↑ THRUST</button>
+  <button id="right">TURN →</button>
+</div>
+
+<div id="info">Sail over unexplored areas • Multibeam swath reveals the seafloor live</div>
+
 <script>
-// ============== CONFIG ==============
+// ============== SAME GAME LOGIC (slightly optimized for mobile) ==============
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const W = 800, H = 600;
 const CELL = 10;
-const COLS = W / CELL;          // 80
-const ROWS = H / CELL;          // 60
-const SWATH_WIDTH = 12;         // cells wide (realistic multibeam fan)
+const COLS = W/CELL;
+const ROWS = H/CELL;
+const SWATH = 12;
 
-// ============== SHIP ==============
-let ship = {x: W/2, y: H/2, angle: -Math.PI/2, speed: 0};
+let ship = {x:W/2, y:H/2, angle:-Math.PI/2, speed:0};
 
-// ============== SEAFLOOR DATA ==============
-let depths = Array.from({length: ROWS}, () => Array(COLS));
-let revealed = Array.from({length: ROWS}, () => Array(COLS).fill(false));
+let depths = Array.from({length:ROWS},()=>Array(COLS));
+let revealed = Array.from({length:ROWS},()=>Array(COLS).fill(false));
 
-for (let y = 0; y < ROWS; y++) {
-  for (let x = 0; x < COLS; x++) {
-    // procedural realistic terrain (valleys + ridges)
-    depths[y][x] = 30 +
-      40 * Math.sin(x / 8) +
-      35 * Math.cos(y / 6) +
-      Math.random() * 15;
-    depths[y][x] = Math.max(5, depths[y][x]); // no negative depths
-  }
+for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  depths[y][x] = 30 + 40*Math.sin(x/8) + 35*Math.cos(y/6) + Math.random()*15;
+  depths[y][x] = Math.max(5, depths[y][x]);
 }
 
-// ============== CONTROLS ==============
-const keys = {};
-window.addEventListener('keydown', e => keys[e.key] = true);
-window.addEventListener('keyup',   e => keys[e.key] = false);
+const keys = {}; // still works if you plug in a Bluetooth keyboard
 
-// ============== HELPER FUNCTIONS ==============
-function getColor(d) {
-  const norm = Math.max(0, Math.min(1, (d - 5) / 120));
-  const hue = 200 - norm * 80;   // deep navy → bright cyan
-  return `hsl(${hue}, 90%, ${30 + norm * 50}%)`;
+// ============== MOBILE BUTTONS ==============
+let mobileLeft = false, mobileRight = false, mobileThrust = false;
+
+document.getElementById('left').addEventListener('touchstart', e=>{e.preventDefault(); mobileLeft=true;});
+document.getElementById('left').addEventListener('touchend',  e=>{e.preventDefault(); mobileLeft=false;});
+document.getElementById('right').addEventListener('touchstart',e=>{e.preventDefault(); mobileRight=true;});
+document.getElementById('right').addEventListener('touchend', e=>{e.preventDefault(); mobileRight=false;});
+document.getElementById('thrust').addEventListener('touchstart',e=>{e.preventDefault(); mobileThrust=true;});
+document.getElementById('thrust').addEventListener('touchend', e=>{e.preventDefault(); mobileThrust=false;});
+
+// ============== HELPER FUNCTIONS (unchanged) ==============
+function getColor(d){
+  const n = Math.max(0,Math.min(1,(d-5)/120));
+  return `hsl(\( {200-n*80},90%, \){30+n*50}%)`;
 }
 
-function revealSwath() {
-  const gx = Math.floor(ship.x / CELL);
-  const gy = Math.floor(ship.y / CELL);
+function revealSwath(){
+  const gx = Math.floor(ship.x/CELL);
+  const gy = Math.floor(ship.y/CELL);
   const dx = Math.cos(ship.angle);
   const dy = Math.sin(ship.angle);
-  const px = -dy;   // perpendicular vector
-  const py = dx;
-
-  for (let w = -SWATH_WIDTH; w <= SWATH_WIDTH; w++) {
-    for (let along = -2; along <= 4; along++) {   // slightly forward + behind
-      const rx = Math.floor(gx + dx * along + px * w);
-      const ry = Math.floor(gy + dy * along + py * w);
-      if (rx >= 0 && rx < COLS && ry >= 0 && ry < ROWS) {
-        revealed[ry][rx] = true;
-      }
+  const px = -dy, py = dx;
+  for(let w=-SWATH;w<=SWATH;w++){
+    for(let a=-2;a<=4;a++){
+      const rx = Math.floor(gx + dx*a + px*w);
+      const ry = Math.floor(gy + dy*a + py*w);
+      if(rx>=0&&rx<COLS&&ry>=0&&ry<ROWS) revealed[ry][rx]=true;
     }
   }
 }
 
-function getCoverage() {
-  let count = 0;
-  for (let y = 0; y < ROWS; y++)
-    for (let x = 0; x < COLS; x++)
-      if (revealed[y][x]) count++;
-  return Math.round(count / (COLS * ROWS) * 100);
+function getCoverage(){
+  let c=0; for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++) if(revealed[y][x])c++;
+  return Math.round(c/(COLS*ROWS)*100);
 }
 
 // ============== MAIN LOOP ==============
-function loop() {
-  // ---- UPDATE SHIP ----
-  if (keys['ArrowLeft'])  ship.angle -= 0.04;
-  if (keys['ArrowRight']) ship.angle += 0.04;
-  if (keys['ArrowUp'])    ship.speed = Math.min(ship.speed + 0.12, 4);
-  else ship.speed *= 0.92;   // natural drag
+function loop(){
+  // ---- INPUT (keyboard + mobile) ----
+  if(keys['ArrowLeft'] || mobileLeft)  ship.angle -= 0.045;
+  if(keys['ArrowRight']|| mobileRight) ship.angle += 0.045;
+  if(keys['ArrowUp']   || mobileThrust) ship.speed = Math.min(ship.speed+0.18, 4.5);
+  else ship.speed *= 0.90;
 
-  ship.x += Math.cos(ship.angle) * ship.speed;
-  ship.y += Math.sin(ship.angle) * ship.speed;
+  ship.x += Math.cos(ship.angle)*ship.speed;
+  ship.y += Math.sin(ship.angle)*ship.speed;
 
-  // keep ship on map
   ship.x = Math.max(20, Math.min(W-20, ship.x));
   ship.y = Math.max(20, Math.min(H-20, ship.y));
 
-  // ---- SCAN & REVEAL ----
-  if (ship.speed > 0.5) revealSwath();
+  if(ship.speed > 0.5) revealSwath();
 
   // ---- DRAW ----
   ctx.fillStyle = '#001122';
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0,0,W,H);
 
-  // draw revealed bathymetry
-  for (let y = 0; y < ROWS; y++) {
-    for (let x = 0; x < COLS; x++) {
-      if (revealed[y][x]) {
-        ctx.fillStyle = getColor(depths[y][x]);
-        ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
-      } else {
-        ctx.fillStyle = 'rgba(0,10,30,0.95)';   // unexplored fog
-        ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
-      }
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+    if(revealed[y][x]){
+      ctx.fillStyle = getColor(depths[y][x]);
+      ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
+    } else {
+      ctx.fillStyle = 'rgba(0,15,35,0.98)';
+      ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
     }
   }
 
-  // draw ship (classic NOAA survey vessel look — white triangle)
+  // ship
   ctx.save();
   ctx.translate(ship.x, ship.y);
   ctx.rotate(ship.angle + Math.PI/2);
   ctx.fillStyle = '#fff';
   ctx.beginPath();
-  ctx.moveTo(0, -18);
-  ctx.lineTo(-10, 12);
-  ctx.lineTo(10, 12);
-  ctx.closePath();
+  ctx.moveTo(0,-18); ctx.lineTo(-10,12); ctx.lineTo(10,12); ctx.closePath();
   ctx.fill();
   ctx.fillStyle = '#0ff';
-  ctx.fillRect(-4, -8, 8, 6);   // tiny cabin
+  ctx.fillRect(-4,-8,8,6);
   ctx.restore();
 
-  // HUD updates
-  const underKeel = Math.round(depths[Math.floor(ship.y/CELL)][Math.floor(ship.x/CELL)]);
-  document.getElementById('depth').textContent = underKeel;
+  // HUD
+  const under = Math.round(depths[Math.floor(ship.y/CELL)][Math.floor(ship.x/CELL)]);
+  document.getElementById('depth').textContent = under;
   document.getElementById('cov').textContent = getCoverage();
 
   requestAnimationFrame(loop);
 }
 loop();
+
+// Keyboard fallback (for desktop testing)
+window.addEventListener('keydown', e=>keys[e.key]=true);
+window.addEventListener('keyup',   e=>keys[e.key]=false);
 </script>
 </body>
 </html>
