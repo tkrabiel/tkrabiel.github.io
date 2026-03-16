@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NOAA Hydro Surveyor - Web Demo</title>
+<style>
+  body {margin:0; background:#001122; color:#0ff; font-family:monospace; text-align:center;}
+  canvas {border:3px solid #0ff; margin:20px auto; display:block;}
+  #hud {position:absolute; top:10px; left:10px; background:rgba(0,20,40,0.9); padding:15px; border:2px solid #0ff;}
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="600"></canvas>
+<div id="hud">
+  <b>NOAA HYDROGRAPHIC SURVEYOR</b><br>
+  ← → Turn  ↑ Thrust<br>
+  Map the unknown depths!<br>
+  Depth under keel: <span id="depth">---</span> m<br>
+  Coverage: <span id="cov">0</span>%
+</div>
+
+<script>
+// ============== CONFIG ==============
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 800, H = 600;
+const CELL = 10;
+const COLS = W / CELL;          // 80
+const ROWS = H / CELL;          // 60
+const SWATH_WIDTH = 12;         // cells wide (realistic multibeam fan)
+
+// ============== SHIP ==============
+let ship = {x: W/2, y: H/2, angle: -Math.PI/2, speed: 0};
+
+// ============== SEAFLOOR DATA ==============
+let depths = Array.from({length: ROWS}, () => Array(COLS));
+let revealed = Array.from({length: ROWS}, () => Array(COLS).fill(false));
+
+for (let y = 0; y < ROWS; y++) {
+  for (let x = 0; x < COLS; x++) {
+    // procedural realistic terrain (valleys + ridges)
+    depths[y][x] = 30 +
+      40 * Math.sin(x / 8) +
+      35 * Math.cos(y / 6) +
+      Math.random() * 15;
+    depths[y][x] = Math.max(5, depths[y][x]); // no negative depths
+  }
+}
+
+// ============== CONTROLS ==============
+const keys = {};
+window.addEventListener('keydown', e => keys[e.key] = true);
+window.addEventListener('keyup',   e => keys[e.key] = false);
+
+// ============== HELPER FUNCTIONS ==============
+function getColor(d) {
+  const norm = Math.max(0, Math.min(1, (d - 5) / 120));
+  const hue = 200 - norm * 80;   // deep navy → bright cyan
+  return `hsl(${hue}, 90%, ${30 + norm * 50}%)`;
+}
+
+function revealSwath() {
+  const gx = Math.floor(ship.x / CELL);
+  const gy = Math.floor(ship.y / CELL);
+  const dx = Math.cos(ship.angle);
+  const dy = Math.sin(ship.angle);
+  const px = -dy;   // perpendicular vector
+  const py = dx;
+
+  for (let w = -SWATH_WIDTH; w <= SWATH_WIDTH; w++) {
+    for (let along = -2; along <= 4; along++) {   // slightly forward + behind
+      const rx = Math.floor(gx + dx * along + px * w);
+      const ry = Math.floor(gy + dy * along + py * w);
+      if (rx >= 0 && rx < COLS && ry >= 0 && ry < ROWS) {
+        revealed[ry][rx] = true;
+      }
+    }
+  }
+}
+
+function getCoverage() {
+  let count = 0;
+  for (let y = 0; y < ROWS; y++)
+    for (let x = 0; x < COLS; x++)
+      if (revealed[y][x]) count++;
+  return Math.round(count / (COLS * ROWS) * 100);
+}
+
+// ============== MAIN LOOP ==============
+function loop() {
+  // ---- UPDATE SHIP ----
+  if (keys['ArrowLeft'])  ship.angle -= 0.04;
+  if (keys['ArrowRight']) ship.angle += 0.04;
+  if (keys['ArrowUp'])    ship.speed = Math.min(ship.speed + 0.12, 4);
+  else ship.speed *= 0.92;   // natural drag
+
+  ship.x += Math.cos(ship.angle) * ship.speed;
+  ship.y += Math.sin(ship.angle) * ship.speed;
+
+  // keep ship on map
+  ship.x = Math.max(20, Math.min(W-20, ship.x));
+  ship.y = Math.max(20, Math.min(H-20, ship.y));
+
+  // ---- SCAN & REVEAL ----
+  if (ship.speed > 0.5) revealSwath();
+
+  // ---- DRAW ----
+  ctx.fillStyle = '#001122';
+  ctx.fillRect(0, 0, W, H);
+
+  // draw revealed bathymetry
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (revealed[y][x]) {
+        ctx.fillStyle = getColor(depths[y][x]);
+        ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+      } else {
+        ctx.fillStyle = 'rgba(0,10,30,0.95)';   // unexplored fog
+        ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+      }
+    }
+  }
+
+  // draw ship (classic NOAA survey vessel look — white triangle)
+  ctx.save();
+  ctx.translate(ship.x, ship.y);
+  ctx.rotate(ship.angle + Math.PI/2);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.moveTo(0, -18);
+  ctx.lineTo(-10, 12);
+  ctx.lineTo(10, 12);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#0ff';
+  ctx.fillRect(-4, -8, 8, 6);   // tiny cabin
+  ctx.restore();
+
+  // HUD updates
+  const underKeel = Math.round(depths[Math.floor(ship.y/CELL)][Math.floor(ship.x/CELL)]);
+  document.getElementById('depth').textContent = underKeel;
+  document.getElementById('cov').textContent = getCoverage();
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
