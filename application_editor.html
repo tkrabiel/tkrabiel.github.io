@@ -2,37 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NSPS Master Application Editor</title>
+    <title>NSPS CST Master Application Portal</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 1000px; margin: auto; }
+        .controls { 
+            position: sticky; top: 0; background: white; padding: 15px; 
+            border: 2px solid #333; z-index: 1000; display: flex; gap: 10px; 
+            margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex-wrap: wrap;
+        }
+        .card { background: white; padding: 30px; border: 1px solid #000; margin-bottom: 20px; }
+        h2 { text-align: center; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; }
         
-        .controls { background: #333; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; display: flex; gap: 15px; align-items: center; position: sticky; top: 10px; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex-wrap: wrap; }
-        .controls a, .controls button { color: white; text-decoration: none; font-weight: bold; font-size: 13px; padding: 10px 15px; border-radius: 4px; border: none; cursor: pointer; text-transform: uppercase; }
+        .engagement-block { border: 2px solid #004a99; margin-top: 30px; background: #fff; position: relative;}
+        .engagement-header { 
+            background: #004a99; color: white; padding: 10px 15px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            font-weight: bold;
+        }
+        .educational-bg .engagement-header { background: #2c3e50; }
+        .educational-bg { border-color: #2c3e50; }
+
+        .row { display: flex; gap: 20px; margin-bottom: 15px; padding: 0 15px; }
+        .col { flex: 1; }
+        .table-box { border: 1px solid #999; padding: 10px; flex: 1; background: #fdfdfd; }
+        .box-title { font-weight: bold; background: #eee; display: block; padding: 5px; margin: -10px -10px 10px -10px; border-bottom: 1px solid #999; text-align: center; font-size: 12px; }
+        label { display: block; font-weight: bold; font-size: 11px; margin-top: 8px; text-transform: uppercase; }
+        input, textarea, select { width: 100%; padding: 6px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; }
+        
+        .btn { padding: 12px 15px; cursor: pointer; border: none; font-weight: bold; color: white; border-radius: 4px; text-decoration: none; text-align: center; font-size: 13px; }
         .btn-home { background: #6c757d; }
+        .btn-add { background: #28a745; }
+        .btn-save { background: #004a99; }
+        .btn-upload { background: #555; }
         .btn-export { background: #e67e22; }
-        .btn-comp { background: #8e44ad; } 
-        .btn-import { background: #17a2b8; } 
-        .btn-add-pe { background: #004a99; }
-        .btn-add-ee { background: #2c3e50; }
-        .btn-save { background: #28a745; margin-left: auto; }
-
-        .header-card { background: white; padding: 30px; border-radius: 8px; border-top: 4px solid #004a99; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .header-card input, .header-card select { padding: 10px; font-size: 16px; width: 100%; max-width: 300px; margin-top: 10px; margin-right: 20px; border: 1px solid #ccc; border-radius: 4px; }
-
-        .engagement-card { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; border-left: 4px solid #ccc; }
-        .engagement-card.pe { border-left-color: #004a99; }
-        .engagement-card.ee { border-left-color: #2c3e50; }
-        
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px; background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-radius: 4px;}
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; color: #555; }
-        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
-        .form-group textarea { resize: vertical; min-height: 80px; }
-        
-        .btn-remove { position: absolute; top: 20px; right: 20px; background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        .duration-box { background: #e9ecef; padding: 15px; border-radius: 4px; margin-top: 15px; display: flex; align-items: center; border-left: 4px solid #004a99;}
+        .btn-comp { background: #8e44ad; }
+        .btn-delete { background: #dc3545; padding: 5px 10px; font-size: 12px; }
 
         /* Autocomplete Dropdown Styles */
         .autocomplete-container { position: relative; }
@@ -47,409 +52,521 @@
 
 <div class="container">
     <div class="controls">
-        <a href="index.html" class="btn-home">← HOME</a>
-        <a href="export.html" class="btn-export">GO TO EXPORT →</a>
-        <a href="competency_form.html" class="btn-comp">COMPETENCY FORM</a>
-        
-        <input type="file" id="jsonUpload" accept=".json" style="display: none;" onchange="loadJSON(event)">
-        <button class="btn-import" onclick="document.getElementById('jsonUpload').click()">📂 LOAD JSON</button>
-        
-        <button class="btn-add-pe" onclick="addEngagement('PE')">+ ADD PROJECT (PE)</button>
-        <button class="btn-add-ee" onclick="addEngagement('EE')">+ ADD EDUCATION (EE)</button>
-        <button class="btn-save" onclick="saveJSON()">💾 SAVE MASTER JSON</button>
+        <a href="index.html" class="btn btn-home">HOME</a>
+        <button class="btn btn-add" onclick="addProjectEngagement()">+ Add New Project</button>
+        <button class="btn btn-add" onclick="addEducationalEngagement()">+ Add New Education</button>
+        <button class="btn btn-save" onclick="saveAllToJSON()">Save Master JSON</button>
+        <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">Load JSON</button>
+        <a href="export.html" class="btn btn-export">GO TO EXPORT</a>
+        <a href="competency_form.html" class="btn btn-comp">COMPETENCY FORM</a>
+        <input type="file" id="fileInput" hidden accept=".json" onchange="loadFromJSON(event)">
     </div>
 
-    <div class="header-card">
-        <h2 style="margin-top:0; color: #004a99;">Applicant Information</h2>
-        <div style="display: flex; flex-wrap: wrap;">
-            <div>
-                <label style="font-weight:bold; display:block;">Applicant Full Name</label>
-                <input type="text" id="applicantName" placeholder="e.g. John Doe">
-            </div>
-            <div>
-                <label style="font-weight:bold; display:block;">Certification Level Seeking</label>
-                <select id="level">
-                    <option value="Level I">Level 1 - CMH (S-5A)</option>
-                    <option value="Level II" selected>Level 2 - CH (S-5B)</option>
+    <div class="card">
+        <h2>Applicant Information</h2>
+        <div class="row">
+            <div class="col"><label>Full Name:</label><input type="text" id="master_name"></div>
+            <div class="col"><label>Email:</label><input type="text" id="email"></div>	
+            <div class="col">
+                <label>Level Seeking:</label>
+                <select id="master_level">
+                    <option value="Level I">Level I (S-5A)</option>
+                    <option value="Level II" selected>Level II (S-5B)</option>
                 </select>
             </div>
         </div>
-        <p style="font-size: 13px; color: #666; margin-top: 15px;">
-            <em>Tip: While typing in any large text box below, type <strong>@</strong> to auto-search and insert competency IDs.</em>
+        <p style="font-size: 13px; color: #666; margin-top: 15px; text-align: center;">
+            <em>Tip: While typing in Project Descriptions or Responsibilities, type <strong>@</strong> to auto-search and insert competency IDs.</em>
         </p>
     </div>
 
-    <div id="engagementsContainer">
-        </div>
+    <div id="engagement-list"></div>
 </div>
 
 <script>
-    let engagementCount = 0;
+let counter = 0;
 
-    // --- MATH & DURATION ENGINE ---
-    function calculateMonths(d1, d2) {
-        if (!d1 || !d2) return 0;
-        const start = new Date(d1);
-        const end = new Date(d2);
-        let months = (end.getFullYear() - start.getFullYear()) * 12;
-        months += end.getMonth() - start.getMonth();
-        if (end.getDate() < start.getDate()) months--;
-        return Math.max(0, months);
-    }
+// --- MATH ENGINE ---
+function calculateMonths(d1, d2) {
+    if (!d1 || !d2) return 0;
+    const start = new Date(d1);
+    const end = new Date(d2);
+    let months = (end.getFullYear() - start.getFullYear()) * 12;
+    months += end.getMonth() - start.getMonth();
+    if (end.getDate() < start.getDate()) months--;
+    return Math.max(0, months);
+}
 
-    function calculateDuration(blockId) {
-        const block = document.getElementById(blockId);
-        const fromVal = block.querySelector('.d_from').value;
-        const toVal = block.querySelector('.d_to').value;
-        const displaySpan = document.getElementById(`duration_${blockId}`);
+function calculateDuration(blockId) {
+    const block = document.getElementById(blockId);
+    const fromVal = block.querySelector('.d_from').value;
+    const toVal = block.querySelector('.d_to').value;
+    const displaySpan = document.getElementById(`duration_${blockId}`);
 
-        if (!fromVal || !toVal) return;
+    if (!fromVal || !toVal) return;
 
-        const totalMonths = calculateMonths(fromVal, toVal);
-        if (displaySpan) displaySpan.innerText = totalMonths;
+    const totalMonths = calculateMonths(fromVal, toVal);
+    if (displaySpan) displaySpan.innerText = totalMonths;
 
-        // Restrict time allocation inputs from exceeding total months
-        const numInputs = block.querySelectorAll('input[type="number"]');
-        numInputs.forEach(input => {
-            input.max = totalMonths;
-            input.onchange = function() {
-                if (parseInt(this.value) > totalMonths) {
-                    alert(`Error: Value cannot exceed the total duration (${totalMonths} months).`);
-                    this.value = totalMonths;
-                }
-            };
-        });
-    }
-
-    // --- FORM BUILDER ---
-    function addEngagement(type) {
-        engagementCount++;
-        const container = document.getElementById('engagementsContainer');
-        const card = document.createElement('div');
-        const id = engagementCount;
-        
-        card.className = `engagement-card ${type.toLowerCase()}`;
-        card.id = `eng_${id}`;
-        card.dataset.type = type;
-
-        const isPE = type === 'PE';
-        const title = isPE ? "Project Engagement (PE)" : "Educational Engagement (EE)";
-
-        let html = `
-            <button class="btn-remove" onclick="document.getElementById('${card.id}').remove()">Remove</button>
-            <h3 style="margin-top:0; color: ${isPE ? '#004a99' : '#2c3e50'};">#<span class="eng-num">${id}</span> - ${title}</h3>
-            
-            <div class="grid-2">
-                <div class="form-group"><label>${isPE ? 'Firm Name' : 'Institution Name'}</label><input type="text" class="f_name"></div>
-                <div class="form-group"><label>${isPE ? 'Supervisor Name' : 'Contact Name'}</label><input type="text" class="s_name"></div>
-                <div class="form-group"><label>Start Date (YYYY-MM-DD)</label><input type="date" class="d_from" onchange="calculateDuration('eng_${id}')"></div>
-                <div class="form-group"><label>End Date (YYYY-MM-DD)</label><input type="date" class="d_to" onchange="calculateDuration('eng_${id}')"></div>
-                <div class="form-group"><label>${isPE ? 'Job Title' : 'Program Title'}</label><input type="text" class="j_title"></div>
-            </div>
-
-            <div class="duration-box">
-                <label style="margin:0; font-size: 14px;">TOTAL MONTHS:</label>
-                <span id="duration_eng_${id}" style="font-size: 18px; font-weight: bold; color: #004a99; margin-left: 10px;">0</span>
-            </div>
-
-            <div class="form-group" style="margin-top:15px;"><label>Detail of any gaps or breaks during this period:</label><textarea class="d_gaps"></textarea></div>
-        `;
-
-        if (isPE) {
-            html += `
-                <div class="form-group"><label>Responsibilities & Duties (Type @ for Competency IDs)</label><textarea class="j_resp"></textarea></div>
-                <div class="form-group"><label>Detailed Project Description (Type @ for Competency IDs)</label><textarea class="j_proj"></textarea></div>
-                <div class="grid-2">
-                    <div class="form-group"><label>Equipment Used</label><input type="text" class="j_equip"></div>
-                    <div class="form-group"><label>Software Used</label><input type="text" class="j_soft"></div>
-                </div>
-                
-                <h4 style="margin-bottom:0;">Time Allocation (Months)</h4>
-                <div class="grid-3">
-                    <div class="form-group"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0"></div>
-                    <div class="form-group"><label>Surveying, Engineering, Not Hydro:</label> <input type="number" class="not_hydro_eng" min="0"></div>
-                    <div class="form-group"><label>Hydrography (Total):</label> <input type="number" class="Hydro_time" min="0"></div>
-                    <div class="form-group"><label>Hydrography in Field:</label> <input type="number" class="H_in_field" min="0"></div>
-                    <div class="form-group"><label>Hydrography in Tech Charge:</label> <input type="number" class="H_charge" min="0"></div>
-                </div>
-            `;
-        } else {
-            html += `
-                <div class="form-group"><label>Certificate/Degree Awarded</label><input type="text" class="j_cert"></div>
-                <div class="form-group"><label>Detailed Description of Program (Type @ for Competency IDs)</label><textarea class="j_proj"></textarea></div>
-                <div class="form-group"><label>Additional Comments</label><textarea class="j_comments"></textarea></div>
-                
-                <h4 style="margin-bottom:0;">Time Allocation (Months)</h4>
-                <div class="grid-3">
-                    <div class="form-group"><label>Education Time:</label> <input type="number" class="Edu_number" min="0"></div>
-                    <div class="form-group"><label>Surveying/Engineering (Not Hydro):</label> <input type="number" class="not_hydro_eng" min="0"></div>
-                </div>
-            `;
-        }
-
-        html += `<input type="hidden" class="engagement_type" value="${type}">`;
-        card.innerHTML = html;
-        container.appendChild(card);
-    }
-
-    // --- JSON IMPORT/EXPORT ---
-    function loadJSON(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const json = JSON.parse(e.target.result);
-                
-                if (json.applicant) document.getElementById('applicantName').value = json.applicant;
-                if (json.level) document.getElementById('level').value = json.level;
-
-                document.getElementById('engagementsContainer').innerHTML = '';
-                engagementCount = 0;
-
-                if (json.data && Array.isArray(json.data)) {
-                    json.data.forEach(eng => {
-                        const type = eng.engagement_type === 'EE' ? 'EE' : 'PE';
-                        addEngagement(type);
-                        
-                        const card = document.getElementById(`eng_${engagementCount}`);
-                        const setVal = (cls, val) => {
-                            const el = card.querySelector(`.${cls}`);
-                            if (el && val !== undefined) el.value = val;
-                        };
-
-                        setVal('f_name', eng.f_name); setVal('s_name', eng.s_name);
-                        setVal('d_from', eng.d_from); setVal('d_to', eng.d_to);
-                        setVal('j_title', eng.j_title); setVal('j_proj', eng.j_proj);
-                        setVal('d_gaps', eng.d_gaps);
-                        
-                        setVal('Edu_number', eng.Edu_number);
-                        setVal('not_hydro_eng', eng.not_hydro_eng);
-                        
-                        if (type === 'PE') {
-                            setVal('j_resp', eng.j_resp); setVal('j_equip', eng.j_equip); setVal('j_soft', eng.j_soft);
-                            setVal('Hydro_time', eng.Hydro_time); setVal('H_in_field', eng.H_in_field); setVal('H_charge', eng.H_charge);
-                        } else {
-                            setVal('j_cert', eng.j_cert); setVal('j_comments', eng.j_comments);
-                        }
-                        
-                        // Recalculate math
-                        calculateDuration(`eng_${engagementCount}`);
-                    });
-                }
-                document.getElementById('jsonUpload').value = "";
-                
-            } catch (err) { alert("Error reading file."); }
-        };
-        reader.readAsText(file);
-    }
-
-    function saveJSON() {
-        const applicant = document.getElementById('applicantName').value || "Unnamed_Applicant";
-        const level = document.getElementById('level').value;
-        const cards = document.querySelectorAll('.engagement-card');
-        const data = [];
-
-        cards.forEach((card, index) => {
-            const getVal = (cls) => { const el = card.querySelector(`.${cls}`); return el ? el.value : ""; };
-            const type = getVal('engagement_type');
-            
-            let entry = {
-                e_number: (index + 1).toString(), 
-                engagement_type: type,
-                f_name: getVal('f_name'), s_name: getVal('s_name'),
-                d_from: getVal('d_from'), d_to: getVal('d_to'),
-                d_gaps: getVal('d_gaps'), j_title: getVal('j_title'),
-                j_proj: getVal('j_proj'),
-                Edu_number: getVal('Edu_number'), not_hydro_eng: getVal('not_hydro_eng')
-            };
-
-            if (type === 'PE') {
-                entry.j_resp = getVal('j_resp'); entry.j_equip = getVal('j_equip'); entry.j_soft = getVal('j_soft');
-                entry.Hydro_time = getVal('Hydro_time'); entry.H_in_field = getVal('H_in_field'); entry.H_charge = getVal('H_charge');
-            } else {
-                entry.j_cert = getVal('j_cert'); entry.j_comments = getVal('j_comments');
+    const numInputs = block.querySelectorAll('input[type="number"]');
+    numInputs.forEach(input => {
+        input.max = totalMonths;
+        input.onchange = function() {
+            if (parseInt(this.value) > totalMonths) {
+                alert(`Error: Value cannot exceed the total duration (${totalMonths} months).`);
+                this.value = totalMonths;
             }
-            data.push(entry);
-        });
+        };
+    });
+}
 
-        const finalJSON = { applicant, level, data };
-        const blob = new Blob([JSON.stringify(finalJSON, null, 4)], { type: "application/json" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `CST_Application_${applicant.replace(/\s+/g, '_')}.json`;
-        a.click();
+function autoExpand(textarea) {
+    textarea.style.height = 'inherit';
+    const computed = window.getComputedStyle(textarea);
+    const height = textarea.scrollHeight + 
+                   parseInt(computed.getPropertyValue('border-top-width')) + 
+                   parseInt(computed.getPropertyValue('border-bottom-width'));
+    textarea.style.height = height + 'px';
+}
+
+// --- FORM BUILDERS ---
+function addEducationalEngagement(data = null) {
+    counter++;
+    const list = document.getElementById('engagement-list');
+    const id = counter;
+
+    const template = `
+        <div class="engagement-block educational-bg" id="eng_${id}" data-type="EE">
+            <div class="engagement-header">
+                <span>EDUCATIONAL ENGAGEMENT DETAIL # <span class="display_e_number">${id}</span></span>
+                <button class="btn btn-delete" onclick="removeEng(${id})">Remove Engagement</button>
+            </div>
+            
+            <div class="inner-padding" style="padding: 15px;">
+                <div class="row">
+                    <div class="table-box">
+                        <span class="box-title">INSTITUTION</span>
+                        <label>Name:</label> <input type="text" class="f_name" value="${data?.f_name || ''}">
+                        <label>Address:</label> <input type="text" class="f_addr" value="${data?.f_addr || ''}">
+                        <label>Email:</label> <input type="email" class="f_email" value="${data?.f_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="f_tel" value="${data?.f_tel || ''}">
+                    </div>
+                    <div class="table-box">
+                        <span class="box-title">CONTACT</span>
+                        <label>Name:</label> <input type="text" class="s_name" value="${data?.s_name || ''}">
+                        <label>Address:</label> <input type="text" class="s_addr" value="${data?.s_addr || ''}">
+                        <label>Email:</label> <input type="email" class="s_email" value="${data?.s_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="s_tel" value="${data?.s_tel || ''}">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>From Date:</label> 
+                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration('eng_${id}')">
+                    </div>
+                    <div class="col">
+                        <label>To Date:</label> 
+                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration('eng_${id}')">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
+                        <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
+                        <span id="duration_eng_${id}" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
+                            ${data ? calculateMonths(data.d_from, data.d_to) : '0'}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col"><label>Detail of any breaks or gaps during this period:</label> 
+                    <textarea class="d_gaps" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.d_gaps || ''}</textarea></div>
+                </div>
+
+                <div class="row">
+                    <div class="col"><label>Program Title:</label> 
+                    <textarea class="j_title" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_title || ''}</textarea></div>
+                </div>
+                <div class="row">
+		            <div class="col"><label>Certificate Awarded:</label> 
+                    <textarea class="j_cert" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_cert || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Detailed Description of Program (Type @ to search competencies):</label> 
+                    <textarea class="j_proj" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_proj || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Additional Comments:</label> 
+                    <textarea class="j_comments" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_comments || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="table-box">
+                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" value="${data?.Edu_number || ''}"></div>
+                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" value="${data?.not_hydro_eng || ''}"></div>
+                    </div>                    
+                </div>
+            </div>
+        </div>`;
+    list.insertAdjacentHTML('beforeend', template);
+}
+
+function addProjectEngagement(data = null) {
+    counter++;
+    const list = document.getElementById('engagement-list');
+    const id = counter;
+
+    const template = `
+        <div class="engagement-block project-bg" id="eng_${id}" data-type="PE">
+            <div class="engagement-header">
+                <span>PROJECT ENGAGEMENT DETAIL # <span class="display_e_number">${id}</span></span>
+                <button class="btn btn-delete" onclick="removeEng(${id})">Remove Engagement</button>
+            </div>
+            
+            <div class="inner-padding" style="padding: 15px;">
+                <div class="row">
+                    <div class="table-box">
+                        <span class="box-title">FIRM</span>
+                        <label>Name:</label> <input type="text" class="f_name" value="${data?.f_name || ''}">
+                        <label>Address:</label> <input type="text" class="f_addr" value="${data?.f_addr || ''}">
+                        <label>Email:</label> <input type="email" class="f_email" value="${data?.f_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="f_tel" value="${data?.f_tel || ''}">
+                    </div>
+                    <div class="table-box">
+                        <span class="box-title">SUPERVISOR</span>
+                        <label>Name:</label> <input type="text" class="s_name" value="${data?.s_name || ''}">
+                        <label>Address:</label> <input type="text" class="s_addr" value="${data?.s_addr || ''}">
+                        <label>Email:</label> <input type="email" class="s_email" value="${data?.s_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="s_tel" value="${data?.s_tel || ''}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>From Date:</label> 
+                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration('eng_${id}')">
+                    </div>
+                    <div class="col">
+                        <label>To Date:</label> 
+                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration('eng_${id}')">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
+                        <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
+                        <span id="duration_eng_${id}" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
+                            ${data ? calculateMonths(data.d_from, data.d_to) : '0'}
+                        </span>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Detail of gaps during this period:</label> <textarea class="d_gaps" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.d_gaps || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Job Title:</label> <textarea class="j_title" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_title || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Responsibilities & Duties (Type @ to search competencies):</label> <textarea class="j_resp" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_resp || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Detailed Project Descriptions (Type @ to search competencies):</label> <textarea class="j_proj" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_proj || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Equipment Used:</label> <textarea class="j_equip" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_equip || ''}</textarea></div>
+                    <div class="col"><label>Software Used:</label> <textarea class="j_soft" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_soft || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="table-box">
+                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" value="${data?.Edu_number || ''}"></div>
+                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" value="${data?.not_hydro_eng || ''}"></div>
+                        <div class="col"><label>Hydrography:</label> <input type="number" class="Hydro_time" min="0" value="${data?.Hydro_time || ''}"></div>
+                        <div class="col"><label>Hydrography in Field:</label> <input type="number" class="H_in_field" min="0" value="${data?.H_in_field || ''}"></div>
+                        <div class="col"><label>Hydrography in Technical Charge:</label> <input type="number" class="H_charge" min="0" value="${data?.H_charge || ''}"></div>
+                    </div>                
+                </div>
+            </div>
+        </div>`;
+    list.insertAdjacentHTML('beforeend', template);
+}
+
+// --- DATA MANAGEMENT ---
+function removeEng(id) {
+    if(confirm("Are you sure you want to delete this engagement record?")) {
+        const element = document.getElementById(`eng_${id}`);
+        element.remove();
+        reindexEngagements();
     }
+}
 
-    // --- AUTOCOMPLETE @ LOGIC START ---
-    const competencyData = {
-        "Level I": [
-            {id: "B1.1a", desc: "Geometry"}, {id: "B1.1b", desc: "Linear algebra"}, {id: "B1.1c", desc: "Numerical methods for linear systems"},
-            {id: "B1.2a", desc: "Differential and integral calculus"}, {id: "B1.2b", desc: "Numerical solutions of non-linear equation"},
-            {id: "B1.3a", desc: "Probabilities and Bayesian estimation"}, {id: "B1.3b", desc: "Statistics"},
-            {id: "B2.1", desc: "Computer systems"}, {id: "B2.2", desc: "Office work software suites"}, {id: "B2.3", desc: "Programming"}, {id: "B2.4", desc: "Web and network services"}, {id: "B2.5", desc: "Databases"},
-            {id: "B3.1", desc: "Kinematics"}, {id: "B3.2", desc: "Gravity"}, {id: "B3.3", desc: "Magnetism"}, {id: "B3.4", desc: "Waves"}, {id: "B3.5", desc: "Electromagnetic waves"}, {id: "B3.6", desc: "Geometrical optics"}, {id: "B3.7", desc: "Lasers"}, {id: "B3.8", desc: "Transducers and clocks"},
-            {id: "B4.1", desc: "Conventional aids to navigation"}, {id: "B4.2", desc: "GMDSS"}, {id: "B4.3", desc: "Nautical charts"}, {id: "B4.4", desc: "Navigation publications"}, {id: "B4.5", desc: "Compasses"}, {id: "B4.6", desc: "Emergency procedures"}, {id: "B4.7", desc: "Safe working practice"}, {id: "B4.8", desc: "Rope and wires"}, {id: "B4.9", desc: "Towed and over the side instruments"}, {id: "B4.10", desc: "Anchoring"}, {id: "B4.11", desc: "Instrument moorings"},
-            {id: "B5.1", desc: "Weather fundamentals and observations"}, {id: "B5.2", desc: "Wind, waves and seas"}, {id: "B5.3", desc: "Weather forecasting"},
-            {id: "F1.1a", desc: "The gravity field of the Earth"}, {id: "F1.1b", desc: "Gravity observations and their reduction"}, {id: "F1.1c", desc: "Height systems and height determination"}, {id: "F1.1d", desc: "Geopotential and geoidal modelling"},
-            {id: "F1.2a", desc: "Coordinate systems for positioning"}, {id: "F1.2b", desc: "Datum transformation techniques"}, {id: "F1.2c", desc: "Geodetic computations on the ellipsoid"}, {id: "F1.2d", desc: "Three-dimensional geodetic modelling"},
-            {id: "F1.3a", desc: "Trigonometric surveys"}, {id: "F1.3b", desc: "Existing survey control"}, {id: "F1.3c", desc: "Establishing survey control"}, {id: "F1.3d", desc: "Instrument tests"}, {id: "F1.3e", desc: "Historical surveys"},
-            {id: "F1.4a", desc: "Levelling instruments"}, {id: "F1.4b", desc: "Height reduction"},
-            {id: "F1.5a", desc: "Map projections"},
-            {id: "F1.6a", desc: "Trigonometry"}, {id: "F1.6b", desc: "Theory of observations"}, {id: "F1.6c", desc: "Least squares"},
-            {id: "F2.1a", desc: "Water masses and circulation"}, {id: "F2.1b", desc: "Physical properties of sea water"}, {id: "F2.1c", desc: "Oceanographic measurements"}, {id: "F2.1d", desc: "Waves"},
-            {id: "F3.1a", desc: "Earth structure"}, {id: "F3.1b", desc: "Geomorphology"}, {id: "F3.1c", desc: "Substrates"},
-            {id: "F3.2a", desc: "Gravity fields and gravity surveys"}, {id: "F3.2b", desc: "Magnetic fields"}, {id: "F3.2c", desc: "Seismic surveys"},
-            {id: "H1.1a", desc: "Common reference frames for sensors"}, {id: "H1.1b", desc: "Integration of reference frames"},
-            {id: "H1.2a", desc: "GNSS signals"}, {id: "H1.2b", desc: "GNSS observables"}, {id: "H1.2c", desc: "Relative and absolute techniques"}, {id: "H1.2d", desc: "Installation and operation"}, {id: "H1.2e", desc: "Quality control"},
-            {id: "H1.3a", desc: "Accelerometers, gyroscopes, inclinometers, compass"}, {id: "H1.3b", desc: "Strap down inertial units"}, {id: "H1.3c", desc: "Kalman filtering"}, {id: "H1.3d", desc: "Aided inertial navigation"},
-            {id: "H1.4a", desc: "Acoustic positioning principles"}, {id: "H1.4b", desc: "Acoustic positioning systems"}, {id: "H1.4c", desc: "Acoustic positioning error analysis"}, {id: "H1.4d", desc: "Acoustic positioning applications"},
-            {id: "H1.5a", desc: "Track guidance"},
-            {id: "H2.1a", desc: "Transducers and generation of acoustic waves"}, {id: "H2.1b", desc: "Propagation of acoustic waves"}, {id: "H2.1c", desc: "Acoustic noise"}, {id: "H2.1d", desc: "Reflection, scattering and system performance"}, {id: "H2.1e", desc: "Refraction and ray-tracing"},
-            {id: "H2.2a", desc: "Single beam echo sounders principles"}, {id: "H2.2b", desc: "Single beam returns interpretation"}, {id: "H2.2c", desc: "Single beam survey system"}, {id: "H2.2d", desc: "Processing of single beam data"},
-            {id: "H2.3a", desc: "Side-scan sonar systems"}, {id: "H2.3b", desc: "Synthetic Aperture Sonar"},
-            {id: "H2.4a", desc: "Multi-beam echo sounders"}, {id: "H2.4b", desc: "Multi-beam system parameters"}, {id: "H2.4c", desc: "Multi-beam systems"}, {id: "H2.4d", desc: "Multi-beam data processing"}, {id: "H2.4e", desc: "Interferometric Sonar"},
-            {id: "H2.5a", desc: "Backscatter from side scan and MBES"},
-            {id: "H3.1a", desc: "Airborne LiDAR systems"}, {id: "H3.1b", desc: "Airborne LiDAR data products"}, {id: "H3.1c", desc: "Terrestrial LiDAR"},
-            {id: "H3.2a", desc: "Remotely sensed bathymetry"}, {id: "H3.2b", desc: "Satellite altimetry"}, {id: "H3.2c", desc: "Optical methods of shoreline delineation"},
-            {id: "H4.1a", desc: "Hydrographic survey requirements"}, {id: "H4.1b", desc: "Hydrographic survey project management"},
-            {id: "H4.2a", desc: "Survey planning"}, {id: "H4.2b", desc: "Single Beam operations"}, {id: "H4.2c", desc: "Multi-beam and Interferometric operations"}, {id: "H4.2d", desc: "Magnetic surveys"}, {id: "H4.2e", desc: "Airborne LiDAR surveys"}, {id: "H4.2f", desc: "Side scan sonar operations"}, {id: "H4.2g", desc: "Side-scan sonar data interpretation"},
-            {id: "H4.3a", desc: "Classification from acoustic data"}, {id: "H4.3b", desc: "Classification from optical data"}, {id: "H4.3c", desc: "Seabed sampling"}, {id: "H4.3d", desc: "Seabed characterization"},
-            {id: "H5.1a", desc: "Tide theory"}, {id: "H5.1b", desc: "Non-tidal water level variations"},
-            {id: "H5.2a", desc: "Water level gauges"}, {id: "H5.2b", desc: "Tidal measurement"}, {id: "H5.2c", desc: "Uncertainty in water level"},
-            {id: "H5.3a", desc: "Harmonic analysis"}, {id: "H5.3b", desc: "Ocean water level"},
-            {id: "H5.4a", desc: "Separation models"}, {id: "H5.4b", desc: "Vertical datums"}, {id: "H5.4c", desc: "Sounding reduction"},
-            {id: "H5.5a", desc: "Tidally induced currents"}, {id: "H5.5b", desc: "Current measurement, portrayal and surveys"},
-            {id: "H6.1a", desc: "Hydrographic data acquisition"}, {id: "H6.1b", desc: "Real-time data monitoring"}, {id: "H6.1c", desc: "Survey data storage and transfer"},
-            {id: "H6.2a", desc: "Filtering and estimation of single beam data"}, {id: "H6.2b", desc: "Filtering and estimation of multi-beam data"}, {id: "H6.2c", desc: "Spatial data quality control"}, {id: "H6.2d", desc: "Spatial data interpolation"}, {id: "H6.2e", desc: "Spatial data representation"},
-            {id: "H7.1a", desc: "Databases"}, {id: "H7.1b", desc: "Marine GIS basics"},
-            {id: "H7.2a", desc: "MSDI"}, {id: "H7.2b", desc: "Open access marine data"},
-            {id: "H7.3a", desc: "Spatial data integration"}, {id: "H7.3b", desc: "Spatial data visualisation"}, {id: "H7.3c", desc: "Deliverables"},
-            {id: "H8.1a", desc: "Responsibilities of the hydrographic surveyor"}, {id: "H8.1b", desc: "Contracts"},
-            {id: "H8.2a", desc: "Delimitations"}, {id: "H8.2b", desc: "Impact of surveys"}
-        ],
-        "Level II": [
-            {id: "B1.1", desc: "Linear algebra"}, {id: "B1.2", desc: "Differential calculus"}, {id: "B1.3", desc: "Trigonometry"}, {id: "B1.4", desc: "Statistics"}, {id: "B1.5", desc: "Theory of errors"}, {id: "B1.6", desc: "Least squares"}, {id: "B1.7", desc: "Interpolation"},
-            {id: "B2.1", desc: "Computer systems"}, {id: "B2.2", desc: "Office work software suites"}, {id: "B2.3", desc: "Programming"}, {id: "B2.4", desc: "Web and network services"}, {id: "B2.5", desc: "Databases"},
-            {id: "B3.1", desc: "Kinematics"}, {id: "B3.2", desc: "Gravity"}, {id: "B3.3", desc: "Magnetism"}, {id: "B3.4", desc: "Waves"}, {id: "B3.5", desc: "Electromagnetic waves"}, {id: "B3.6", desc: "Geometrical optics"}, {id: "B3.7", desc: "Lasers"}, {id: "B3.8", desc: "Transducers and clocks"},
-            {id: "B4.1", desc: "Geography and geology"}, {id: "B4.2", desc: "Substrates"},
-            {id: "B5.1", desc: "Conventional aids to navigation"}, {id: "B5.2", desc: "GMDSS"}, {id: "B5.3", desc: "Nautical charts"}, {id: "B5.4", desc: "Navigation publications"}, {id: "B5.5", desc: "Compasses"}, {id: "B5.6", desc: "Emergency procedures"}, {id: "B5.7", desc: "Safe working practice"}, {id: "B5.8", desc: "Rope and wires"}, {id: "B5.9", desc: "Towed and over the side instruments"}, {id: "B5.10", desc: "Anchoring"}, {id: "B5.11", desc: "Instrument moorings"},
-            {id: "B6.1", desc: "Weather fundamentals and observations"}, {id: "B6.2", desc: "Wind, waves and seas"}, {id: "B6.3", desc: "Weather forecasting"},
-            {id: "E1.1a", desc: "Generation of acoustic waves"}, {id: "E1.1b", desc: "Propagation of acoustic waves"}, {id: "E1.1c", desc: "Reflection, scattering and system performance"}, {id: "E1.1d", desc: "Reception of acoustic waves"},
-            {id: "E1.2a", desc: "Single beam echo sounders"}, {id: "E1.2b", desc: "Single beam echo sounder data recording"}, {id: "E1.2c", desc: "Range uncertainty"}, {id: "E1.2d", desc: "Side scan sonar"},
-            {id: "E1.3a", desc: "Beam characteristics"}, {id: "E1.3b", desc: "Backscatter and water column returns"}, {id: "E1.3c", desc: "Bottom spatial coverage"}, {id: "E1.3d", desc: "Installation and configuration"}, {id: "E1.3e", desc: "Range and angle uncertainty"}, {id: "E1.3f", desc: "Operation"},
-            {id: "E2.1a", desc: "Airborne LiDAR systems"}, {id: "E2.1b", desc: "Airborne LiDAR data products"}, {id: "E2.1c", desc: "Terrestrial LiDAR"},
-            {id: "E2.2a", desc: "Remotely sensed bathymetry"}, {id: "E2.2b", desc: "Shoreline deliniation"},
-            {id: "E3.1a", desc: "Tidal fundamentals"}, {id: "E3.1b", desc: "Tidal information"}, {id: "E3.1c", desc: "Non-tidal water level variations"},
-            {id: "E3.2a", desc: "Water level gauges"}, {id: "E3.2b", desc: "Tidal measurement"}, {id: "E3.2c", desc: "Water level datums"}, {id: "E3.2d", desc: "Uncertainty in water level"},
-            {id: "E3.3a", desc: "Water level reduction of soundings"}, {id: "E3.3b", desc: "Reduction of soundings using GNSS observations"},
-            {id: "E3.4a", desc: "Tidal streams and currents"}, {id: "E3.4b", desc: "Current measurement and portrayal"},
-            {id: "E4.1a", desc: "Introduction to geodesy"}, {id: "E4.1b", desc: "Coordinate systems, frames and datums"}, {id: "E4.1c", desc: "Geodetic transformations and associated computations"}, {id: "E4.1d", desc: "Ellipsoidal computations"},
-            {id: "E4.2", desc: "Map projections"},
-            {id: "E4.3a", desc: "Positioning fundamentals"}, {id: "E4.3b", desc: "Satellite positioning"}, {id: "E4.3c", desc: "Positioning systems"}, {id: "E4.3d", desc: "Historical surveys"}, {id: "E4.3e", desc: "Survey control"},
-            {id: "E4.4a", desc: "Height systems"}, {id: "E4.4b", desc: "Elevation measurements and computation"},
-            {id: "E4.5a", desc: "Acoustic positioning concepts"}, {id: "E4.5b", desc: "Acoustic positioning systems"},
-            {id: "E4.6a", desc: "Inertial Measurement Units"}, {id: "E4.6b", desc: "Inertial Navigation Systems"},
-            {id: "E4.7", desc: "Sources of uncertainty"},
-            {id: "E5.1a", desc: "Hydrographic survey purposes"}, {id: "E5.1b", desc: "Hydrographic survey execution requirements"}, {id: "E5.1c", desc: "Hydrographic survey project organization"},
-            {id: "E5.2a", desc: "Operational survey data transfer"}, {id: "E5.2b", desc: "Survey systems"}, {id: "E5.2c", desc: "Calibration and corrections"}, {id: "E5.2d", desc: "Line planning"}, {id: "E5.2e", desc: "Line keeping"}, {id: "E5.2f", desc: "Survey operations"}, {id: "E5.2g", desc: "Quality control"},
-            {id: "E5.3", desc: "Documentation"},
-            {id: "E5.4a", desc: "Liability of the hydrographic surveyor"}, {id: "E5.4b", desc: "Delimitations"},
-            {id: "E6.1a", desc: "Hydrographic data acquisition"}, {id: "E6.1b", desc: "Real-time data monitoring"}, {id: "E6.1c", desc: "Survey data storage and transfer"},
-            {id: "E6.2a", desc: "Spatial data cleaning"}, {id: "E6.2b", desc: "Spatial data quality control"}, {id: "E6.2c", desc: "Spatial data representation"},
-            {id: "E6.3a", desc: "Databases"}, {id: "E6.3b", desc: "Marine GIS basics"}, {id: "E6.3c", desc: "Visualization and presentation"}, {id: "E6.3d", desc: "Deliverables"},
-            {id: "E7.1a", desc: "Physical properties of sea water"}, {id: "E7.1b", desc: "Oceanographic measurements"}, {id: "E7.1c", desc: "Waves"},
-            {id: "E7.2a", desc: "Seabed characteristics"}, {id: "E7.2b", desc: "Magnetic surveys"}, {id: "E7.2c", desc: "Seismic surveys"},
-            {id: "E7.3a", desc: "Impact of surveys"}
-        ]
+function reindexEngagements() {
+    const blocks = document.querySelectorAll('.engagement-block');
+    counter = blocks.length;
+    blocks.forEach((block, index) => {
+        const newNumber = index + 1;
+        block.id = `eng_${newNumber}`;
+        const displaySpan = block.querySelector('.display_e_number');
+        if (displaySpan) displaySpan.innerText = newNumber;
+        const delBtn = block.querySelector('.btn-delete');
+        if (delBtn) delBtn.setAttribute('onclick', `removeEng(${newNumber})`);
+    });
+}
+
+function saveAllToJSON() {
+    const blocks = document.querySelectorAll('.engagement-block');
+    const engagements = Array.from(blocks).map(block => {
+        const type = block.getAttribute('data-type') || 'PE';
+        let entry = {
+            e_number: block.querySelector('.display_e_number').innerText,
+            engagement_type: type,
+            f_name: block.querySelector('.f_name').value,
+            f_addr: block.querySelector('.f_addr').value,
+            s_name: block.querySelector('.s_name').value,
+            s_addr: block.querySelector('.s_addr').value,
+            d_from: block.querySelector('.d_from').value,
+            d_to: block.querySelector('.d_to').value,
+            j_title: block.querySelector('.j_title').value,
+            j_proj: block.querySelector('.j_proj').value,
+            d_gaps: block.querySelector('.d_gaps').value,
+            f_email: block.querySelector('.f_email').value,
+            f_tel: block.querySelector('.f_tel').value,
+            s_email: block.querySelector('.s_email').value,
+            s_tel: block.querySelector('.s_tel').value,
+            Edu_number: block.querySelector('.Edu_number').value,
+            not_hydro_eng: block.querySelector('.not_hydro_eng').value
+        };
+
+        if (type === 'EE') {
+            entry.j_cert = block.querySelector('.j_cert').value;
+            entry.j_comments = block.querySelector('.j_comments').value;
+        } else {
+            entry.j_resp = block.querySelector('.j_resp').value;
+            entry.j_equip = block.querySelector('.j_equip').value;
+            entry.j_soft = block.querySelector('.j_soft').value;
+            entry.Hydro_time = block.querySelector('.Hydro_time').value;
+            entry.H_in_field = block.querySelector('.H_in_field').value;
+            entry.H_charge = block.querySelector('.H_charge').value;
+        }
+        return entry;
+    });
+
+    const output = {
+        applicant: document.getElementById('master_name').value,
+        level: document.getElementById('master_level').value,
+        data: engagements
     };
 
-    let currentMatchState = { active: false, startIndex: -1, textObj: null };
+    const blob = new Blob([JSON.stringify(output, null, 4)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `CST_Application_${output.applicant || 'Export'}.json`;
+    link.click();
+}
 
-    document.addEventListener('input', function(e) {
-        if (e.target.tagName.toLowerCase() === 'textarea') {
-            handleAutocomplete(e.target);
-        }
-    });
+function loadFromJSON(event) {
+    const reader = new FileReader();
+    reader.onload = function(e) { populateForm(JSON.parse(e.target.result)); };
+    reader.readAsText(event.target.files[0]);
+}
 
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.autocomplete-items')) closeDropdowns();
-    });
-
-    function handleAutocomplete(textarea) {
-        const val = textarea.value;
-        const cursorPos = textarea.selectionStart;
-        const textBeforeCursor = val.substring(0, cursorPos);
-        const match = textBeforeCursor.match(/@([a-zA-Z0-9.]*)$/);
-
-        closeDropdowns();
-
-        if (match) {
-            currentMatchState = { active: true, startIndex: match.index, textObj: textarea };
-            const levelSelect = document.getElementById('level'); 
-            const selectedLevel = levelSelect ? levelSelect.value : "Level II"; 
-            const searchStr = match[1].toLowerCase();
-            const dataList = competencyData[selectedLevel] || competencyData["Level II"];
-            
-            const filtered = dataList.filter(item => 
-                item.id.toLowerCase().includes(searchStr) || 
-                item.desc.toLowerCase().includes(searchStr)
-            );
-
-            if (filtered.length > 0) showDropdown(textarea, filtered, searchStr);
-        } else {
-            currentMatchState.active = false;
-        }
-    }
-
-    function showDropdown(textarea, list, searchStr) {
-        if (window.getComputedStyle(textarea.parentNode).position === 'static') {
-            textarea.parentNode.style.position = 'relative';
-        }
-
-        const dropdown = document.createElement("div");
-        dropdown.setAttribute("class", "autocomplete-items");
-        dropdown.style.top = (textarea.offsetTop + textarea.offsetHeight) + "px";
-        dropdown.style.left = textarea.offsetLeft + "px";
-        dropdown.style.width = textarea.offsetWidth + "px";
-        
-        list.forEach(item => {
-            const div = document.createElement("div");
-            const regex = new RegExp("(" + searchStr + ")", "gi");
-            const displayId = item.id.replace(regex, "<strong>$1</strong>");
-            
-            div.innerHTML = `${displayId} - ${item.desc}`;
-            div.addEventListener("click", function() { insertTag(item.id); });
-            dropdown.appendChild(div);
+function populateForm(json) {
+    document.getElementById('master_name').value = json.applicant || '';
+    document.getElementById('master_level').value = json.level || '';
+    document.getElementById('engagement-list').innerHTML = ''; 
+    counter = 0;
+    if (json.data && json.data.length > 0) {
+        json.data.forEach(item => {
+            if(item.engagement_type === 'EE') addEducationalEngagement(item);
+            else addProjectEngagement(item);
         });
-
-        textarea.parentNode.appendChild(dropdown);
+    } else {
+        addProjectEngagement();
     }
+}
 
-    function insertTag(id) {
-        if (!currentMatchState.active) return;
-        const textarea = currentMatchState.textObj;
-        const val = textarea.value;
-        const start = currentMatchState.startIndex;
-        const end = textarea.selectionStart;
+// --- AUTOCOMPLETE @ LOGIC ---
+const competencyData = {
+    "Level I": [
+        {id: "B1.1a", desc: "Geometry"}, {id: "B1.1b", desc: "Linear algebra"}, {id: "B1.1c", desc: "Numerical methods for linear systems"},
+        {id: "B1.2a", desc: "Differential and integral calculus"}, {id: "B1.2b", desc: "Numerical solutions of non-linear equation"},
+        {id: "B1.3a", desc: "Probabilities and Bayesian estimation"}, {id: "B1.3b", desc: "Statistics"},
+        {id: "B2.1", desc: "Computer systems"}, {id: "B2.2", desc: "Office work software suites"}, {id: "B2.3", desc: "Programming"}, {id: "B2.4", desc: "Web and network services"}, {id: "B2.5", desc: "Databases"},
+        {id: "B3.1", desc: "Kinematics"}, {id: "B3.2", desc: "Gravity"}, {id: "B3.3", desc: "Magnetism"}, {id: "B3.4", desc: "Waves"}, {id: "B3.5", desc: "Electromagnetic waves"}, {id: "B3.6", desc: "Geometrical optics"}, {id: "B3.7", desc: "Lasers"}, {id: "B3.8", desc: "Transducers and clocks"},
+        {id: "B4.1", desc: "Conventional aids to navigation"}, {id: "B4.2", desc: "GMDSS"}, {id: "B4.3", desc: "Nautical charts"}, {id: "B4.4", desc: "Navigation publications"}, {id: "B4.5", desc: "Compasses"}, {id: "B4.6", desc: "Emergency procedures"}, {id: "B4.7", desc: "Safe working practice"}, {id: "B4.8", desc: "Rope and wires"}, {id: "B4.9", desc: "Towed and over the side instruments"}, {id: "B4.10", desc: "Anchoring"}, {id: "B4.11", desc: "Instrument moorings"},
+        {id: "B5.1", desc: "Weather fundamentals and observations"}, {id: "B5.2", desc: "Wind, waves and seas"}, {id: "B5.3", desc: "Weather forecasting"},
+        {id: "F1.1a", desc: "The gravity field of the Earth"}, {id: "F1.1b", desc: "Gravity observations and their reduction"}, {id: "F1.1c", desc: "Height systems and height determination"}, {id: "F1.1d", desc: "Geopotential and geoidal modelling"},
+        {id: "F1.2a", desc: "Coordinate systems for positioning"}, {id: "F1.2b", desc: "Datum transformation techniques"}, {id: "F1.2c", desc: "Geodetic computations on the ellipsoid"}, {id: "F1.2d", desc: "Three-dimensional geodetic modelling"},
+        {id: "F1.3a", desc: "Trigonometric surveys"}, {id: "F1.3b", desc: "Existing survey control"}, {id: "F1.3c", desc: "Establishing survey control"}, {id: "F1.3d", desc: "Instrument tests"}, {id: "F1.3e", desc: "Historical surveys"},
+        {id: "F1.4a", desc: "Levelling instruments"}, {id: "F1.4b", desc: "Height reduction"},
+        {id: "F1.5a", desc: "Map projections"},
+        {id: "F1.6a", desc: "Trigonometry"}, {id: "F1.6b", desc: "Theory of observations"}, {id: "F1.6c", desc: "Least squares"},
+        {id: "F2.1a", desc: "Water masses and circulation"}, {id: "F2.1b", desc: "Physical properties of sea water"}, {id: "F2.1c", desc: "Oceanographic measurements"}, {id: "F2.1d", desc: "Waves"},
+        {id: "F3.1a", desc: "Earth structure"}, {id: "F3.1b", desc: "Geomorphology"}, {id: "F3.1c", desc: "Substrates"},
+        {id: "F3.2a", desc: "Gravity fields and gravity surveys"}, {id: "F3.2b", desc: "Magnetic fields"}, {id: "F3.2c", desc: "Seismic surveys"},
+        {id: "H1.1a", desc: "Common reference frames for sensors"}, {id: "H1.1b", desc: "Integration of reference frames"},
+        {id: "H1.2a", desc: "GNSS signals"}, {id: "H1.2b", desc: "GNSS observables"}, {id: "H1.2c", desc: "Relative and absolute techniques"}, {id: "H1.2d", desc: "Installation and operation"}, {id: "H1.2e", desc: "Quality control"},
+        {id: "H1.3a", desc: "Accelerometers, gyroscopes, inclinometers, compass"}, {id: "H1.3b", desc: "Strap down inertial units"}, {id: "H1.3c", desc: "Kalman filtering"}, {id: "H1.3d", desc: "Aided inertial navigation"},
+        {id: "H1.4a", desc: "Acoustic positioning principles"}, {id: "H1.4b", desc: "Acoustic positioning systems"}, {id: "H1.4c", desc: "Acoustic positioning error analysis"}, {id: "H1.4d", desc: "Acoustic positioning applications"},
+        {id: "H1.5a", desc: "Track guidance"},
+        {id: "H2.1a", desc: "Transducers and generation of acoustic waves"}, {id: "H2.1b", desc: "Propagation of acoustic waves"}, {id: "H2.1c", desc: "Acoustic noise"}, {id: "H2.1d", desc: "Reflection, scattering and system performance"}, {id: "H2.1e", desc: "Refraction and ray-tracing"},
+        {id: "H2.2a", desc: "Single beam echo sounders principles"}, {id: "H2.2b", desc: "Single beam returns interpretation"}, {id: "H2.2c", desc: "Single beam survey system"}, {id: "H2.2d", desc: "Processing of single beam data"},
+        {id: "H2.3a", desc: "Side-scan sonar systems"}, {id: "H2.3b", desc: "Synthetic Aperture Sonar"},
+        {id: "H2.4a", desc: "Multi-beam echo sounders"}, {id: "H2.4b", desc: "Multi-beam system parameters"}, {id: "H2.4c", desc: "Multi-beam systems"}, {id: "H2.4d", desc: "Multi-beam data processing"}, {id: "H2.4e", desc: "Interferometric Sonar"},
+        {id: "H2.5a", desc: "Backscatter from side scan and MBES"},
+        {id: "H3.1a", desc: "Airborne LiDAR systems"}, {id: "H3.1b", desc: "Airborne LiDAR data products"}, {id: "H3.1c", desc: "Terrestrial LiDAR"},
+        {id: "H3.2a", desc: "Remotely sensed bathymetry"}, {id: "H3.2b", desc: "Satellite altimetry"}, {id: "H3.2c", desc: "Optical methods of shoreline delineation"},
+        {id: "H4.1a", desc: "Hydrographic survey requirements"}, {id: "H4.1b", desc: "Hydrographic survey project management"},
+        {id: "H4.2a", desc: "Survey planning"}, {id: "H4.2b", desc: "Single Beam operations"}, {id: "H4.2c", desc: "Multi-beam and Interferometric operations"}, {id: "H4.2d", desc: "Magnetic surveys"}, {id: "H4.2e", desc: "Airborne LiDAR surveys"}, {id: "H4.2f", desc: "Side scan sonar operations"}, {id: "H4.2g", desc: "Side-scan sonar data interpretation"},
+        {id: "H4.3a", desc: "Classification from acoustic data"}, {id: "H4.3b", desc: "Classification from optical data"}, {id: "H4.3c", desc: "Seabed sampling"}, {id: "H4.3d", desc: "Seabed characterization"},
+        {id: "H5.1a", desc: "Tide theory"}, {id: "H5.1b", desc: "Non-tidal water level variations"},
+        {id: "H5.2a", desc: "Water level gauges"}, {id: "H5.2b", desc: "Tidal measurement"}, {id: "H5.2c", desc: "Uncertainty in water level"},
+        {id: "H5.3a", desc: "Harmonic analysis"}, {id: "H5.3b", desc: "Ocean water level"},
+        {id: "H5.4a", desc: "Separation models"}, {id: "H5.4b", desc: "Vertical datums"}, {id: "H5.4c", desc: "Sounding reduction"},
+        {id: "H5.5a", desc: "Tidally induced currents"}, {id: "H5.5b", desc: "Current measurement, portrayal and surveys"},
+        {id: "H6.1a", desc: "Hydrographic data acquisition"}, {id: "H6.1b", desc: "Real-time data monitoring"}, {id: "H6.1c", desc: "Survey data storage and transfer"},
+        {id: "H6.2a", desc: "Filtering and estimation of single beam data"}, {id: "H6.2b", desc: "Filtering and estimation of multi-beam data"}, {id: "H6.2c", desc: "Spatial data quality control"}, {id: "H6.2d", desc: "Spatial data interpolation"}, {id: "H6.2e", desc: "Spatial data representation"},
+        {id: "H7.1a", desc: "Databases"}, {id: "H7.1b", desc: "Marine GIS basics"},
+        {id: "H7.2a", desc: "MSDI"}, {id: "H7.2b", desc: "Open access marine data"},
+        {id: "H7.3a", desc: "Spatial data integration"}, {id: "H7.3b", desc: "Spatial data visualisation"}, {id: "H7.3c", desc: "Deliverables"},
+        {id: "H8.1a", desc: "Responsibilities of the hydrographic surveyor"}, {id: "H8.1b", desc: "Contracts"},
+        {id: "H8.2a", desc: "Delimitations"}, {id: "H8.2b", desc: "Impact of surveys"}
+    ],
+    "Level II": [
+        {id: "B1.1", desc: "Linear algebra"}, {id: "B1.2", desc: "Differential calculus"}, {id: "B1.3", desc: "Trigonometry"}, {id: "B1.4", desc: "Statistics"}, {id: "B1.5", desc: "Theory of errors"}, {id: "B1.6", desc: "Least squares"}, {id: "B1.7", desc: "Interpolation"},
+        {id: "B2.1", desc: "Computer systems"}, {id: "B2.2", desc: "Office work software suites"}, {id: "B2.3", desc: "Programming"}, {id: "B2.4", desc: "Web and network services"}, {id: "B2.5", desc: "Databases"},
+        {id: "B3.1", desc: "Kinematics"}, {id: "B3.2", desc: "Gravity"}, {id: "B3.3", desc: "Magnetism"}, {id: "B3.4", desc: "Waves"}, {id: "B3.5", desc: "Electromagnetic waves"}, {id: "B3.6", desc: "Geometrical optics"}, {id: "B3.7", desc: "Lasers"}, {id: "B3.8", desc: "Transducers and clocks"},
+        {id: "B4.1", desc: "Geography and geology"}, {id: "B4.2", desc: "Substrates"},
+        {id: "B5.1", desc: "Conventional aids to navigation"}, {id: "B5.2", desc: "GMDSS"}, {id: "B5.3", desc: "Nautical charts"}, {id: "B5.4", desc: "Navigation publications"}, {id: "B5.5", desc: "Compasses"}, {id: "B5.6", desc: "Emergency procedures"}, {id: "B5.7", desc: "Safe working practice"}, {id: "B5.8", desc: "Rope and wires"}, {id: "B5.9", desc: "Towed and over the side instruments"}, {id: "B5.10", desc: "Anchoring"}, {id: "B5.11", desc: "Instrument moorings"},
+        {id: "B6.1", desc: "Weather fundamentals and observations"}, {id: "B6.2", desc: "Wind, waves and seas"}, {id: "B6.3", desc: "Weather forecasting"},
+        {id: "E1.1a", desc: "Generation of acoustic waves"}, {id: "E1.1b", desc: "Propagation of acoustic waves"}, {id: "E1.1c", desc: "Reflection, scattering and system performance"}, {id: "E1.1d", desc: "Reception of acoustic waves"},
+        {id: "E1.2a", desc: "Single beam echo sounders"}, {id: "E1.2b", desc: "Single beam echo sounder data recording"}, {id: "E1.2c", desc: "Range uncertainty"}, {id: "E1.2d", desc: "Side scan sonar"},
+        {id: "E1.3a", desc: "Beam characteristics"}, {id: "E1.3b", desc: "Backscatter and water column returns"}, {id: "E1.3c", desc: "Bottom spatial coverage"}, {id: "E1.3d", desc: "Installation and configuration"}, {id: "E1.3e", desc: "Range and angle uncertainty"}, {id: "E1.3f", desc: "Operation"},
+        {id: "E2.1a", desc: "Airborne LiDAR systems"}, {id: "E2.1b", desc: "Airborne LiDAR data products"}, {id: "E2.1c", desc: "Terrestrial LiDAR"},
+        {id: "E2.2a", desc: "Remotely sensed bathymetry"}, {id: "E2.2b", desc: "Shoreline deliniation"},
+        {id: "E3.1a", desc: "Tidal fundamentals"}, {id: "E3.1b", desc: "Tidal information"}, {id: "E3.1c", desc: "Non-tidal water level variations"},
+        {id: "E3.2a", desc: "Water level gauges"}, {id: "E3.2b", desc: "Tidal measurement"}, {id: "E3.2c", desc: "Water level datums"}, {id: "E3.2d", desc: "Uncertainty in water level"},
+        {id: "E3.3a", desc: "Water level reduction of soundings"}, {id: "E3.3b", desc: "Reduction of soundings using GNSS observations"},
+        {id: "E3.4a", desc: "Tidal streams and currents"}, {id: "E3.4b", desc: "Current measurement and portrayal"},
+        {id: "E4.1a", desc: "Introduction to geodesy"}, {id: "E4.1b", desc: "Coordinate systems, frames and datums"}, {id: "E4.1c", desc: "Geodetic transformations and associated computations"}, {id: "E4.1d", desc: "Ellipsoidal computations"},
+        {id: "E4.2", desc: "Map projections"},
+        {id: "E4.3a", desc: "Positioning fundamentals"}, {id: "E4.3b", desc: "Satellite positioning"}, {id: "E4.3c", desc: "Positioning systems"}, {id: "E4.3d", desc: "Historical surveys"}, {id: "E4.3e", desc: "Survey control"},
+        {id: "E4.4a", desc: "Height systems"}, {id: "E4.4b", desc: "Elevation measurements and computation"},
+        {id: "E4.5a", desc: "Acoustic positioning concepts"}, {id: "E4.5b", desc: "Acoustic positioning systems"},
+        {id: "E4.6a", desc: "Inertial Measurement Units"}, {id: "E4.6b", desc: "Inertial Navigation Systems"},
+        {id: "E4.7", desc: "Sources of uncertainty"},
+        {id: "E5.1a", desc: "Hydrographic survey purposes"}, {id: "E5.1b", desc: "Hydrographic survey execution requirements"}, {id: "E5.1c", desc: "Hydrographic survey project organization"},
+        {id: "E5.2a", desc: "Operational survey data transfer"}, {id: "E5.2b", desc: "Survey systems"}, {id: "E5.2c", desc: "Calibration and corrections"}, {id: "E5.2d", desc: "Line planning"}, {id: "E5.2e", desc: "Line keeping"}, {id: "E5.2f", desc: "Survey operations"}, {id: "E5.2g", desc: "Quality control"},
+        {id: "E5.3", desc: "Documentation"},
+        {id: "E5.4a", desc: "Liability of the hydrographic surveyor"}, {id: "E5.4b", desc: "Delimitations"},
+        {id: "E6.1a", desc: "Hydrographic data acquisition"}, {id: "E6.1b", desc: "Real-time data monitoring"}, {id: "E6.1c", desc: "Survey data storage and transfer"},
+        {id: "E6.2a", desc: "Spatial data cleaning"}, {id: "E6.2b", desc: "Spatial data quality control"}, {id: "E6.2c", desc: "Spatial data representation"},
+        {id: "E6.3a", desc: "Databases"}, {id: "E6.3b", desc: "Marine GIS basics"}, {id: "E6.3c", desc: "Visualization and presentation"}, {id: "E6.3d", desc: "Deliverables"},
+        {id: "E7.1a", desc: "Physical properties of sea water"}, {id: "E7.1b", desc: "Oceanographic measurements"}, {id: "E7.1c", desc: "Waves"},
+        {id: "E7.2a", desc: "Seabed characteristics"}, {id: "E7.2b", desc: "Magnetic surveys"}, {id: "E7.2c", desc: "Seismic surveys"},
+        {id: "E7.3a", desc: "Impact of surveys"}
+    ]
+};
+
+let currentMatchState = { active: false, startIndex: -1, textObj: null };
+
+document.addEventListener('input', function(e) {
+    if (e.target.tagName.toLowerCase() === 'textarea') {
+        handleAutocomplete(e.target);
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.autocomplete-items')) closeDropdowns();
+});
+
+function handleAutocomplete(textarea) {
+    const val = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    const textBeforeCursor = val.substring(0, cursorPos);
+    const match = textBeforeCursor.match(/@([a-zA-Z0-9.]*)$/);
+
+    closeDropdowns();
+
+    if (match) {
+        currentMatchState = { active: true, startIndex: match.index, textObj: textarea };
+        const levelSelect = document.getElementById('master_level'); 
+        const selectedLevel = levelSelect ? levelSelect.value : "Level II"; 
+        const searchStr = match[1].toLowerCase();
+        const dataList = competencyData[selectedLevel] || competencyData["Level II"];
         
-        const insertText = `@${id} [] `;
-        textarea.value = val.substring(0, start) + insertText + val.substring(end);
+        const filtered = dataList.filter(item => 
+            item.id.toLowerCase().includes(searchStr) || 
+            item.desc.toLowerCase().includes(searchStr)
+        );
+
+        if (filtered.length > 0) showDropdown(textarea, filtered, searchStr);
+    } else {
+        currentMatchState.active = false;
+    }
+}
+
+function showDropdown(textarea, list, searchStr) {
+    if (window.getComputedStyle(textarea.parentNode).position === 'static') {
+        textarea.parentNode.style.position = 'relative';
+    }
+
+    const dropdown = document.createElement("div");
+    dropdown.setAttribute("class", "autocomplete-items");
+    dropdown.style.top = (textarea.offsetTop + textarea.offsetHeight) + "px";
+    dropdown.style.left = textarea.offsetLeft + "px";
+    dropdown.style.width = textarea.offsetWidth + "px";
+    
+    list.forEach(item => {
+        const div = document.createElement("div");
+        const regex = new RegExp("(" + searchStr + ")", "gi");
+        const displayId = item.id.replace(regex, "<strong>$1</strong>");
         
-        const newCursorPos = start + insertText.length - 2;
-        textarea.focus();
-        textarea.setSelectionRange(newCursorPos, newCursorPos);
-        closeDropdowns();
-    }
+        div.innerHTML = `${displayId} - ${item.desc}`;
+        div.addEventListener("click", function() { insertTag(item.id); });
+        dropdown.appendChild(div);
+    });
 
-    function closeDropdowns() {
-        const items = document.querySelectorAll(".autocomplete-items");
-        items.forEach(item => item.parentNode.removeChild(item));
-    }
+    textarea.parentNode.appendChild(dropdown);
+}
 
-    // Default initialization
-    addEngagement('PE');
+function insertTag(id) {
+    if (!currentMatchState.active) return;
+    const textarea = currentMatchState.textObj;
+    const val = textarea.value;
+    const start = currentMatchState.startIndex;
+    const end = textarea.selectionStart;
+    
+    const insertText = `@${id} [] `;
+    textarea.value = val.substring(0, start) + insertText + val.substring(end);
+    
+    const newCursorPos = start + insertText.length - 2;
+    textarea.focus();
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    
+    closeDropdowns();
+}
+
+function closeDropdowns() {
+    const items = document.querySelectorAll(".autocomplete-items");
+    items.forEach(item => item.parentNode.removeChild(item));
+}
+
+window.onload = function() {
+    const transferData = localStorage.getItem('cst_data_transfer');
+    if (transferData) {
+        try {
+            const parsedData = JSON.parse(transferData);
+            populateForm(parsedData);
+            localStorage.removeItem('cst_data_transfer');
+        } catch (e) {
+            console.error("Error parsing transferred data:", e);
+            addProjectEngagement();
+        }
+    } else {
+        addProjectEngagement();
+    }
+};
 </script>
+
 </body>
 </html>
