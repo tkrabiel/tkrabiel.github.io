@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NSPS-THSOA Master Competency Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: auto; background: white; padding: 40px; border: 1px solid #ccc; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        .controls { background: #004a99; padding: 20px; color: white; border-radius: 8px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 10px; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn { padding: 10px 20px; background: white; color: #004a99; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; text-decoration: none; transition: 0.2s; }
+        .btn:hover { background: #ffc107; color: #333; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
+        th { background: #333; color: white; text-transform: uppercase; padding: 12px; border: 1px solid #000; font-size: 11px; }
+        td { border: 1px solid #000; padding: 10px; vertical-align: top; font-size: 12px; word-wrap: break-word; min-height: 40px; }
+
+        /* Manual Entry Styling */
+        td[contenteditable="true"] { background: #ffffff; outline: none; transition: 0.2s; }
+        td[contenteditable="true"]:hover { background: #fdfdfd; box-shadow: inset 0 0 5px rgba(0,74,153,0.2); }
+        td[contenteditable="true"]:focus { background: #fff; border: 2px solid #ffc107 !important; }
+
+        .header-row { background: #004a99 !important; color: white; font-weight: bold; font-size: 14px; text-align: center; }
+        .subheader-row { background: #e9ecef !important; font-weight: bold; font-size: 13px; }
+        .highlight { border-left: 10px solid #ffc107 !important; background-color: #fffdec !important; }
+
+        .id-col { width: 75px; font-weight: bold; text-align: center; background: #f8f9fa; }
+        .desc-col { width: 30%; background: #f8f9fa; }
+        .eng-col { width: 85px; text-align: center; font-weight: bold; color: #004a99; }
+        .detail-col { width: auto; }
+
+        h1 { text-align: center; margin-bottom: 5px; color: #004a99; text-transform: uppercase; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-weight: bold; text-transform: uppercase; }
+
+        @media print {
+            .controls { display: none; }
+            body { background: white; padding: 0; }
+            .container { border: none; box-shadow: none; width: 100%; max-width: 100%; padding: 10px; }
+            tr { page-break-inside: avoid; }
+            .header-row { background-color: #004a99 !important; -webkit-print-color-adjust: exact; }
+            .subheader-row { background-color: #e9ecef !important; -webkit-print-color-adjust: exact; }
+            .highlight { background-color: #fffdec !important; -webkit-print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="controls">
+        <div>
+            <strong>LOAD MASTER JSON:</strong>
+            <input type="file" id="jsonInput" accept=".json" style="margin-left:10px;">
+        </div>
+        <div>
+            <strong>SELECT LEVEL:</strong>
+            <select id="levelSelect" onchange="renderTable()" style="padding: 8px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; margin-right: 15px; margin-left: 5px;">
+                <option value="S5A">Level 1 (S-5A)</option>
+                <option value="S5B" selected>Level 2 (S-5B)</option>
+            </select>
+            <button class="btn" onclick="window.print()">PRINT / SAVE AS PDF</button>
+            <a href="index.html" class="btn" style="margin-left:10px;">HOME</a>
+        </div>
+    </div>
+
+    <h1 id="formTitle">Competency Form</h1>
+    <p id="formSubtitle" class="subtitle"></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="id-col">ID</th>
+                <th class="desc-col">Competency Description</th>
+                <th class="eng-col">Eng #</th>
+                <th class="detail-col">Education: Course Number & Name / Practice: Specific Detail of Gained Competency</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    const masterData = {
+        S5A: [{"type": "H", "id": "B1", "desc": "Mathematics, Statistics, Theory of Observations"}, {"type": "S", "id": "B1.1", "desc": "Geometry and Linear Algebra"}, {"type": "I", "id": "B1.1a", "desc": "Geometry"}, {"type": "I", "id": "B1.1b", "desc": "Linear algebra"}, {"type": "I", "id": "B1.1c", "desc": "Numerical methods for linear systems of equations"}, {"type": "S", "id": "B1.2", "desc": "Differential Calculus and Differential Equations"}, {"type": "I", "id": "B1.2a", "desc": "Differential and integral calculus"}, {"type": "I", "id": "B1.2b", "desc": "Numerical solutions of non-linear equation"}, {"type": "S", "id": "B1.3", "desc": "Probability and Statistics"}, {"type": "I", "id": "B1.3a", "desc": "Probabilities and Bayesian estimation"}, {"type": "I", "id": "B1.3b", "desc": "Statistics"}, {"type": "H", "id": "B2", "desc": "Information and Communication Technology"}, {"type": "I", "id": "B2.1", "desc": "Computer systems"}, {"type": "I", "id": "B2.2", "desc": "Office work software suites"}, {"type": "I", "id": "B2.3", "desc": "Programming"}, {"type": "I", "id": "B2.4", "desc": "Web and network services"}, {"type": "I", "id": "B2.5", "desc": "Databases"}, {"type": "H", "id": "B3", "desc": "Physics"}, {"type": "I", "id": "B3.1", "desc": "Kinematics"}, {"type": "I", "id": "B3.2", "desc": "Gravity"}, {"type": "I", "id": "B3.3", "desc": "Magnetism"}, {"type": "I", "id": "B3.4", "desc": "Waves"}, {"type": "I", "id": "B3.5", "desc": "Electromagnetic waves"}, {"type": "I", "id": "B3.6", "desc": "Geometrical optics"}, {"type": "I", "id": "B3.7", "desc": "Lasers"}, {"type": "I", "id": "B3.8", "desc": "Transducers and clocks"}, {"type": "H", "id": "B4", "desc": "Nautical Science"}, {"type": "I", "id": "B4.1", "desc": "Conventional aids to navigation"}, {"type": "I", "id": "B4.2", "desc": "GMDSS"}, {"type": "I", "id": "B4.3", "desc": "Nautical charts"}, {"type": "I", "id": "B4.4", "desc": "Navigation publications"}, {"type": "I", "id": "B4.5", "desc": "Compasses"}, {"type": "I", "id": "B4.6", "desc": "Emergency procedures"}, {"type": "I", "id": "B4.7", "desc": "Safe working practice"}, {"type": "I", "id": "B4.8", "desc": "Rope and wires"}, {"type": "I", "id": "B4.9", "desc": "Towed and over the side instruments"}, {"type": "I", "id": "B4.10", "desc": "Anchoring"}, {"type": "I", "id": "B4.11", "desc": "Instrument moorings"}, {"type": "H", "id": "B5", "desc": "Meteorology"}, {"type": "I", "id": "B5.1", "desc": "Weather fundamentals and observations"}, {"type": "I", "id": "B5.2", "desc": "Wind, waves and seas"}, {"type": "I", "id": "B5.3", "desc": "Weather forecasting"}, {"type": "H", "id": "F1", "desc": "Earth Models"}, {"type": "S", "id": "F1.1", "desc": "Physical Geodesy"}, {"type": "I", "id": "F1.1a", "desc": "The gravity field of the Earth"}, {"type": "I", "id": "F1.1b", "desc": "Gravity observations and their reduction"}, {"type": "I", "id": "F1.1c", "desc": "Height systems and height determination"}, {"type": "I", "id": "F1.1d", "desc": "Geopotential and geoidal modelling"}, {"type": "S", "id": "F1.2", "desc": "Coordinate Systems"}, {"type": "I", "id": "F1.2a", "desc": "Coordinate systems for positioning"}, {"type": "I", "id": "F1.2b", "desc": "Datum transformation techniques"}, {"type": "I", "id": "F1.2c", "desc": "Geodetic computations on the ellipsoid"}, {"type": "I", "id": "F1.2d", "desc": "Three-dimensional geodetic modelling"}, {"type": "S", "id": "F1.3", "desc": "Land Surveying Methods and Techniques"}, {"type": "I", "id": "F1.3a", "desc": "Trigonometric surveys"}, {"type": "I", "id": "F1.3b", "desc": "Existing survey control"}, {"type": "I", "id": "F1.3c", "desc": "Establishing survey control"}, {"type": "I", "id": "F1.3d", "desc": "Instrument tests"}, {"type": "I", "id": "F1.3e", "desc": "Historical surveys"}, {"type": "S", "id": "F1.4", "desc": "Levelling"}, {"type": "I", "id": "F1.4a", "desc": "Levelling instruments"}, {"type": "I", "id": "F1.4b", "desc": "Height reduction"}, {"type": "S", "id": "F1.5", "desc": "Map Projections"}, {"type": "I", "id": "F1.5a", "desc": "Map projections"}, {"type": "S", "id": "F1.6", "desc": "Trigonometry and Least-Squares"}, {"type": "I", "id": "F1.6a", "desc": "Trigonometry"}, {"type": "I", "id": "F1.6b", "desc": "Theory of observations"}, {"type": "I", "id": "F1.6c", "desc": "Least squares"}, {"type": "H", "id": "F2", "desc": "Oceanography"}, {"type": "S", "id": "F2.1", "desc": "Physical Oceanography and Measurements"}, {"type": "I", "id": "F2.1a", "desc": "Water masses and circulation"}, {"type": "I", "id": "F2.1b", "desc": "Physical properties of sea water"}, {"type": "I", "id": "F2.1c", "desc": "Oceanographic measurements"}, {"type": "I", "id": "F2.1d", "desc": "Waves"}, {"type": "H", "id": "F3", "desc": "Geology and Geophysics"}, {"type": "S", "id": "F3.1", "desc": "Geology"}, {"type": "I", "id": "F3.1a", "desc": "Earth structure"}, {"type": "I", "id": "F3.1b", "desc": "Geomorphology"}, {"type": "I", "id": "F3.1c", "desc": "Substrates"}, {"type": "S", "id": "F3.2", "desc": "Geophysics"}, {"type": "I", "id": "F3.2a", "desc": "Gravity fields and gravity surveys"}, {"type": "I", "id": "F3.2b", "desc": "Magnetic fields"}, {"type": "I", "id": "F3.2c", "desc": "Seismic surveys"}, {"type": "H", "id": "H1", "desc": "Positioning"}, {"type": "S", "id": "H1.1", "desc": "Vessel and Sensor Reference Frames"}, {"type": "I", "id": "H1.1a", "desc": "Common reference frames for sensors"}, {"type": "I", "id": "H1.1b", "desc": "Integration of reference frames"}, {"type": "S", "id": "H1.2", "desc": "GNSS Positioning"}, {"type": "I", "id": "H1.2a", "desc": "GNSS signals"}, {"type": "I", "id": "H1.2b", "desc": "GNSS observables"}, {"type": "I", "id": "H1.2c", "desc": "Relative and absolute techniques"}, {"type": "I", "id": "H1.2d", "desc": "Installation and operation"}, {"type": "I", "id": "H1.2e", "desc": "Quality control"}, {"type": "S", "id": "H1.3", "desc": "Inertial Navigation Systems"}, {"type": "I", "id": "H1.3a", "desc": "Accelerometers and gyroscopes, inclinometers, and compass"}, {"type": "I", "id": "H1.3b", "desc": "Strap down inertial measurement units"}, {"type": "I", "id": "H1.3c", "desc": "Kalman filtering"}, {"type": "I", "id": "H1.3d", "desc": "Aided inertial navigation"}, {"type": "S", "id": "H1.4", "desc": "Subsea Positioning"}, {"type": "I", "id": "H1.4a", "desc": "Acoustic positioning principles"}, {"type": "I", "id": "H1.4b", "desc": "Acoustic positioning systems"}, {"type": "I", "id": "H1.4c", "desc": "Acoustic positioning error analysis"}, {"type": "I", "id": "H1.4d", "desc": "Acoustic positioning applications"}, {"type": "S", "id": "H1.5", "desc": "Line Keeping"}, {"type": "I", "id": "H1.5a", "desc": "Track guidance"}, {"type": "H", "id": "H2", "desc": "Underwater Sensors and Data Processing"}, {"type": "S", "id": "H2.1", "desc": "Underwater Acoustics"}, {"type": "I", "id": "H2.1a", "desc": "Transducers and generation of acoustic waves"}, {"type": "I", "id": "H2.1b", "desc": "Propagation of acoustic waves"}, {"type": "I", "id": "H2.1c", "desc": "Acoustic noise"}, {"type": "I", "id": "H2.1d", "desc": "Reflection, scattering and system performance"}, {"type": "I", "id": "H2.1e", "desc": "Refraction and ray-tracing"}, {"type": "S", "id": "H2.2", "desc": "Single Beam Systems"}, {"type": "I", "id": "H2.2a", "desc": "Single beam echo sounders principles"}, {"type": "I", "id": "H2.2b", "desc": "Single beam returns interpretation"}, {"type": "I", "id": "H2.2c", "desc": "Single beam survey system"}, {"type": "I", "id": "H2.2d", "desc": "Processing of single beam data"}, {"type": "S", "id": "H2.3", "desc": "Sonar Imagery Systems"}, {"type": "I", "id": "H2.3a", "desc": "Side-scan sonar systems"}, {"type": "I", "id": "H2.3b", "desc": "Synthetic Aperture Sonar"}, {"type": "S", "id": "H2.4", "desc": "Swath Echo Sounder Systems"}, {"type": "I", "id": "H2.4a", "desc": "Multi-beam echo sounders"}, {"type": "I", "id": "H2.4b", "desc": "Multi-beam system parameters"}, {"type": "I", "id": "H2.4c", "desc": "Multi-beam systems"}, {"type": "I", "id": "H2.4d", "desc": "Multi-beam data processing"}, {"type": "I", "id": "H2.4e", "desc": "Interferometric Sonar"}, {"type": "S", "id": "H2.5", "desc": "Backscatter"}, {"type": "I", "id": "H2.5a", "desc": "Backscatter from side scan and MBES"}, {"type": "H", "id": "H3", "desc": "LiDAR and Remote Sensing"}, {"type": "S", "id": "H3.1", "desc": "LiDAR"}, {"type": "I", "id": "H3.1a", "desc": "Airborne LiDAR systems"}, {"type": "I", "id": "H3.1b", "desc": "Airborne LiDAR data products"}, {"type": "I", "id": "H3.1c", "desc": "Terrestrial LiDAR"}, {"type": "S", "id": "H3.2", "desc": "Remote Sensing"}, {"type": "I", "id": "H3.2a", "desc": "Remotely sensed bathymetry"}, {"type": "I", "id": "H3.2b", "desc": "Satellite altimetry"}, {"type": "I", "id": "H3.2c", "desc": "Optical methods of shoreline delineation"}, {"type": "H", "id": "H4", "desc": "Survey Operations and Applications"}, {"type": "S", "id": "H4.1", "desc": "Hydrographic Survey Projects"}, {"type": "I", "id": "H4.1a", "desc": "Hydrographic survey requirements"}, {"type": "I", "id": "H4.1b", "desc": "Hydrographic survey project management"}, {"type": "S", "id": "H4.2", "desc": "Hydrographic Survey Operations"}, {"type": "I", "id": "H4.2a", "desc": "Survey planning"}, {"type": "I", "id": "H4.2b", "desc": "Single Beam operations"}, {"type": "I", "id": "H4.2c", "desc": "Multi-beam and Interferometric operations"}, {"type": "I", "id": "H4.2d", "desc": "Magnetic surveys"}, {"type": "I", "id": "H4.2e", "desc": "Airborne LiDAR surveys"}, {"type": "I", "id": "H4.2f", "desc": "Side scan sonar operations"}, {"type": "I", "id": "H4.2g", "desc": "Side-scan sonar data interpretation"}, {"type": "S", "id": "H4.3", "desc": "Seabed Characterization"}, {"type": "I", "id": "H4.3a", "desc": "Classification from acoustic data"}, {"type": "I", "id": "H4.3b", "desc": "Classification from optical data"}, {"type": "I", "id": "H4.3c", "desc": "Seabed sampling"}, {"type": "I", "id": "H4.3d", "desc": "Seabed characterization"}, {"type": "H", "id": "H5", "desc": "Water Levels and Flow"}, {"type": "S", "id": "H5.1", "desc": "Principles of Water Levels"}, {"type": "I", "id": "H5.1a", "desc": "Tide theory"}, {"type": "I", "id": "H5.1b", "desc": "Non-tidal water level variations"}, {"type": "S", "id": "H5.2", "desc": "Water Level Measurements"}, {"type": "I", "id": "H5.2a", "desc": "Water level gauges"}, {"type": "I", "id": "H5.2b", "desc": "Tidal measurement"}, {"type": "I", "id": "H5.2c", "desc": "Uncertainty in water level"}, {"type": "S", "id": "H5.3", "desc": "Tide Modelling"}, {"type": "I", "id": "H5.3a", "desc": "Harmonic analysis"}, {"type": "I", "id": "H5.3b", "desc": "Ocean water level"}, {"type": "S", "id": "H5.4", "desc": "Ellipsoid Separation Models and Vertical Datums"}, {"type": "I", "id": "H5.4a", "desc": "Separation models"}, {"type": "I", "id": "H5.4b", "desc": "Vertical datums"}, {"type": "I", "id": "H5.4c", "desc": "Sounding reduction"}, {"type": "S", "id": "H5.5", "desc": "Currents"}, {"type": "I", "id": "H5.5a", "desc": "Tidally induced currents"}, {"type": "I", "id": "H5.5b", "desc": "Current measurement, portrayal and surveys"}, {"type": "H", "id": "H6", "desc": "Hydrographic Data Acquisition and Processing"}, {"type": "S", "id": "H6.1", "desc": "Real-Time Data Acquisition and Control"}, {"type": "I", "id": "H6.1a", "desc": "Hydrographic data acquisition"}, {"type": "I", "id": "H6.1b", "desc": "Real-time data monitoring"}, {"type": "I", "id": "H6.1c", "desc": "Survey data storage and transfer"}, {"type": "S", "id": "H6.2", "desc": "Bathymetric Data Filtering and Estimation"}, {"type": "I", "id": "H6.2a", "desc": "Filtering and estimation of single beam data"}, {"type": "I", "id": "H6.2b", "desc": "Filtering and estimation of multi-beam data"}, {"type": "I", "id": "H6.2c", "desc": "Spatial data quality control"}, {"type": "I", "id": "H6.2d", "desc": "Spatial data interpolation"}, {"type": "I", "id": "H6.2e", "desc": "Spatial data representation"}, {"type": "H", "id": "H7", "desc": "Management of Hydrographic Data"}, {"type": "S", "id": "H7.1", "desc": "Data Organization and Presentation"}, {"type": "I", "id": "H7.1a", "desc": "Databases"}, {"type": "I", "id": "H7.1b", "desc": "Marine GIS basics"}, {"type": "S", "id": "H7.2", "desc": "Marine Data Sources and Dissemination"}, {"type": "I", "id": "H7.2a", "desc": "MSDI"}, {"type": "I", "id": "H7.2b", "desc": "Open access marine data"}, {"type": "S", "id": "H7.3", "desc": "Spatial Data Integration and Deliverables"}, {"type": "I", "id": "H7.3a", "desc": "Spatial data integration"}, {"type": "I", "id": "H7.3b", "desc": "Spatial data visualisation"}, {"type": "I", "id": "H7.3c", "desc": "Deliverables"}, {"type": "H", "id": "H8", "desc": "Legal Aspects"}, {"type": "S", "id": "H8.1", "desc": "Product Liability"}, {"type": "I", "id": "H8.1a", "desc": "Responsibilities of the hydrographic surveyor"}, {"type": "I", "id": "H8.1b", "desc": "Contracts"}, {"type": "S", "id": "H8.2", "desc": "Maritime Zones"}, {"type": "I", "id": "H8.2a", "desc": "Delimitations"}, {"type": "I", "id": "H8.2b", "desc": "Impact of surveys"}],
+        S5B: [{"type": "H", "id": "B1", "desc": "Mathematics, Statistics, Theory of Observations"}, {"type": "I", "id": "B1.1", "desc": "Linear algebra"}, {"type": "I", "id": "B1.2", "desc": "Differential calculus"}, {"type": "I", "id": "B1.3", "desc": "Trigonometry"}, {"type": "I", "id": "B1.4", "desc": "Statistics"}, {"type": "I", "id": "B1.5", "desc": "Theory of errors"}, {"type": "I", "id": "B1.6", "desc": "Least squares"}, {"type": "I", "id": "B1.7", "desc": "Interpolation"}, {"type": "H", "id": "B2", "desc": "Information and Communication Technology"}, {"type": "I", "id": "B2.1", "desc": "Computer systems"}, {"type": "I", "id": "B2.2", "desc": "Office work software suites"}, {"type": "I", "id": "B2.3", "desc": "Programming"}, {"type": "I", "id": "B2.4", "desc": "Web and network services"}, {"type": "I", "id": "B2.5", "desc": "Databases"}, {"type": "H", "id": "B3", "desc": "Physics"}, {"type": "I", "id": "B3.1", "desc": "Kinematics"}, {"type": "I", "id": "B3.2", "desc": "Gravity"}, {"type": "I", "id": "B3.3", "desc": "Magnetism"}, {"type": "I", "id": "B3.4", "desc": "Waves"}, {"type": "I", "id": "B3.5", "desc": "Electromagnetic waves"}, {"type": "I", "id": "B3.6", "desc": "Geometrical optics"}, {"type": "I", "id": "B3.7", "desc": "Lasers"}, {"type": "I", "id": "B3.8", "desc": "Transducers and clocks"}, {"type": "H", "id": "B4", "desc": "Earth Sciences"}, {"type": "I", "id": "B4.1", "desc": "Geography and geology"}, {"type": "I", "id": "B4.2", "desc": "Substrates"}, {"type": "H", "id": "B5", "desc": "Nautical Science"}, {"type": "I", "id": "B5.1", "desc": "Conventional aids to navigation"}, {"type": "I", "id": "B5.2", "desc": "GMDSS"}, {"type": "I", "id": "B5.3", "desc": "Nautical charts"}, {"type": "I", "id": "B5.4", "desc": "Navigation publications"}, {"type": "I", "id": "B5.5", "desc": "Compasses"}, {"type": "I", "id": "B5.6", "desc": "Emergency procedures"}, {"type": "I", "id": "B5.7", "desc": "Safe working practice"}, {"type": "I", "id": "B5.8", "desc": "Rope and wires"}, {"type": "I", "id": "B5.9", "desc": "Towed and over the side instruments"}, {"type": "I", "id": "B5.10", "desc": "Anchoring"}, {"type": "I", "id": "B5.11", "desc": "Instrument moorings"}, {"type": "H", "id": "B6", "desc": "Meteorology"}, {"type": "I", "id": "B6.1", "desc": "Weather fundamentals and observations"}, {"type": "I", "id": "B6.2", "desc": "Wind, waves and seas"}, {"type": "I", "id": "B6.3", "desc": "Weather forecasting"}, {"type": "H", "id": "", "desc": "Essential Subjects"}, {"type": "H", "id": "E1", "desc": "Underwater Acoustics"}, {"type": "S", "id": "E1.1", "desc": "Acoustic Theory"}, {"type": "I", "id": "E1.1a", "desc": "Generation of acoustic waves"}, {"type": "I", "id": "E1.1b", "desc": "Propagation of acoustic waves"}, {"type": "I", "id": "E1.1c", "desc": "Reflection, scattering and system performance"}, {"type": "I", "id": "E1.1d", "desc": "Reception of acoustic waves"}, {"type": "S", "id": "E1.2", "desc": "Single Beam Systems & Side Scan Sonar"}, {"type": "I", "id": "E1.2a", "desc": "Single beam echo sounders"}, {"type": "I", "id": "E1.2b", "desc": "Single beam echo sounder data recording"}, {"type": "I", "id": "E1.2c", "desc": "Range uncertainty"}, {"type": "I", "id": "E1.2d", "desc": "Side scan sonar"}, {"type": "S", "id": "E1.3", "desc": "Swath Systems"}, {"type": "I", "id": "E1.3a", "desc": "Beam characteristics"}, {"type": "I", "id": "E1.3b", "desc": "Backscatter and water column returns"}, {"type": "I", "id": "E1.3c", "desc": "Bottom spatial coverage"}, {"type": "I", "id": "E1.3d", "desc": "Installation and configuration"}, {"type": "I", "id": "E1.3e", "desc": "Range and angle uncertainty"}, {"type": "I", "id": "E1.3f", "desc": "Operation"}, {"type": "H", "id": "E2", "desc": "Remote Sensing"}, {"type": "S", "id": "E2.1", "desc": "LiDAR"}, {"type": "I", "id": "E2.1a", "desc": "Airborne LiDAR systems"}, {"type": "I", "id": "E2.1b", "desc": "Airborne LiDAR data products"}, {"type": "I", "id": "E2.1c", "desc": "Terrestrial LiDAR"}, {"type": "S", "id": "E2.2", "desc": "Remote Sensing"}, {"type": "I", "id": "E2.2a", "desc": "Remotely sensed bathymetry"}, {"type": "I", "id": "E2.2b", "desc": "Shoreline deliniation"}, {"type": "H", "id": "E3", "desc": "Water Levels and Flow"}, {"type": "S", "id": "E3.1", "desc": "Principles of Water Levels"}, {"type": "I", "id": "E3.1a", "desc": "Tidal fundamentals"}, {"type": "I", "id": "E3.1b", "desc": "Tidal information"}, {"type": "I", "id": "E3.1c", "desc": "Non-tidal water level variations"}, {"type": "S", "id": "E3.2", "desc": "Water Level Measurements"}, {"type": "I", "id": "E3.2a", "desc": "Water level gauges"}, {"type": "I", "id": "E3.2b", "desc": "Tidal measurement"}, {"type": "I", "id": "E3.2c", "desc": "Water level datums"}, {"type": "I", "id": "E3.2d", "desc": "Uncertainty in water level"}, {"type": "S", "id": "E3.3", "desc": "Water Level Reduction"}, {"type": "I", "id": "E3.3a", "desc": "Water level reduction of soundings"}, {"type": "I", "id": "E3.3b", "desc": "Reduction of soundings using GNSS observations"}, {"type": "S", "id": "E3.4", "desc": "Currents"}, {"type": "I", "id": "E3.4a", "desc": "Tidal streams and currents"}, {"type": "I", "id": "E3.4b", "desc": "Current measurement and portrayal"}, {"type": "H", "id": "E4", "desc": "Positioning"}, {"type": "S", "id": "E4.1", "desc": "Geodesy"}, {"type": "I", "id": "E4.1a", "desc": "Introduction to geodesy"}, {"type": "I", "id": "E4.1b", "desc": "Coordinate systems, frames and datums"}, {"type": "I", "id": "E4.1c", "desc": "Geodetic transformations and associated computations"}, {"type": "I", "id": "E4.1d", "desc": "Ellipsoidal computations"}, {"type": "S", "id": "E4.2", "desc": "Principles of Cartography"}, {"type": "I", "id": "E4.2", "desc": "Map projections"}, {"type": "S", "id": "E4.3", "desc": "Positioning Measurements, Methods and Techniques"}, {"type": "I", "id": "E4.3a", "desc": "Positioning fundamentals"}, {"type": "I", "id": "E4.3b", "satellite_positioning":"Satellite positioning"}, {"type": "I", "id": "E4.3c", "desc": "Positioning systems"}, {"type": "I", "id": "E4.3d", "desc": "Historical surveys"}, {"type": "I", "id": "E4.3e", "desc": "Survey control"}, {"type": "S", "id": "E4.4", "desc": "Vertical Positioning"}, {"type": "I", "id": "E4.4a", "desc": "Height systems"}, {"type": "I", "id": "E4.4b", "desc": "Elevation measurements and computation"}, {"type": "S", "id": "E4.5", "desc": "Acoustic Positioning"}, {"type": "I", "id": "E4.5a", "desc": "Acoustic positioning concepts"}, {"type": "I", "id": "E4.5b", "desc": "Acoustic positioning systems"}, {"type": "S", "id": "E4.6", "desc": "Inertial Navigation"}, {"type": "I", "id": "E4.6a", "desc": "Inertial Measurement Units"}, {"type": "I", "id": "E4.6b", "desc": "Inertial Navigation Systems"}, {"type": "S", "id": "E4.7", "desc": "Uncertainty in Positioning"}, {"type": "I", "id": "E4.7", "desc": "Sources of uncertainty"}, {"type": "H", "id": "E5", "desc": "Hydrographic Practice"}, {"type": "S", "id": "E5.1", "desc": "Hydrographic Survey Projects"}, {"type": "I", "id": "E5.1a", "desc": "Hydrographic survey purposes"}, {"type": "I", "id": "E5.1b", "desc": "Hydrographic survey execution requirements"}, {"type": "I", "id": "E5.1c", "desc": "Hydrographic survey project organization"}, {"type": "S", "id": "E5.2", "desc": "Hydrographic Survey Operations"}, {"type": "I", "id": "E5.2a", "desc": "Operational survey data transfer"}, {"type": "I", "id": "E5.2b", "desc": "Survey systems"}, {"type": "I", "id": "E5.2c", "desc": "Calibration and corrections"}, {"type": "I", "id": "E5.2d", "desc": "Line planning"}, {"type": "I", "id": "E5.2e", "desc": "Line keeping"}, {"type": "I", "id": "E5.2f", "desc": "Survey operations"}, {"type": "I", "id": "E5.2g", "desc": "Quality control"}, {"type": "S", "id": "E5.3", "desc": "Hydrographic Survey Documentation"}, {"type": "I", "id": "E5.3", "desc": "Documentation"}, {"type": "S", "id": "E5.4", "desc": "Legal Aspects"}, {"type": "I", "id": "E5.4a", "desc": "Liability of the hydrographic surveyor"}, {"type": "I", "id": "E5.4b", "desc": "Delimitations"}, {"type": "H", "id": "E6", "desc": "Hydrographic Data Management"}, {"type": "S", "id": "E6.1", "desc": "Real-Time Data Acquisition and Control"}, {"type": "I", "id": "E6.1a", "desc": "Hydrographic data acquisition"}, {"type": "I", "id": "E6.1b", "desc": "Real-time data monitoring"}, {"type": "I", "id": "E6.1c", "desc": "Survey data storage and transfer"}, {"type": "S", "id": "E6.2", "desc": "Data Processing and Analysis"}, {"type": "I", "id": "E6.2a", "desc": "Spatial data cleaning"}, {"type": "I", "id": "E6.2b", "desc": "Spatial data quality control"}, {"type": "I", "id": "E6.2c", "desc": "Spatial data representation"}, {"type": "S", "id": "E6.3", "desc": "Data Organization and Presentation"}, {"type": "I", "id": "E6.3a", "desc": "Databases"}, {"type": "I", "id": "E6.3b", "desc": "Marine GIS basics"}, {"type": "I", "id": "E6.3c", "desc": "Visualization and presentation"}, {"type": "I", "id": "E6.3d", "desc": "Deliverables"}, {"type": "H", "id": "E7", "desc": "Environment"}, {"type": "S", "id": "E7.1", "desc": "Oceanography"}, {"type": "I", "id": "E7.1a", "desc": "Physical properties of sea water"}, {"type": "I", "id": "E7.1b", "desc": "Oceanographic measurements"}, {"type": "I", "id": "E7.1c", "desc": "Waves"}, {"type": "S", "id": "E7.2", "desc": "Marine Geology and Geophysics"}, {"type": "I", "id": "E7.2a", "desc": "Seabed characteristics"}, {"type": "I", "id": "E7.2b", "desc": "Magnetic surveys"}, {"type": "I", "id": "E7.2c", "desc": "Seismic surveys"}, {"type": "S", "id": "E7.3", "desc": "Environmental Impact"}, {"type": "I", "id": "E7.3a", "desc": "Impact of surveys"}]
+    };
+
+    let activeJSON = null;
+
+    document.getElementById('jsonInput').onchange = function(e) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            activeJSON = JSON.parse(event.target.result);
+            renderTable();
+        };
+        reader.readAsText(e.target.files[0]);
+    };
+
+    function renderTable() {
+        const levelKey = document.getElementById('levelSelect').value;
+        const tbody = document.getElementById('tableBody');
+        const title = document.getElementById('formTitle');
+        const subtitle = document.getElementById('formSubtitle');
+        
+        title.innerText = `Competency Form ${levelKey === 'S5A' ? 'S-5A' : 'S-5B'}`;
+        subtitle.innerText = levelKey === 'S5A' ? 'Level 1 - Certified Master Hydrographer (CMH)' : 'Level 2 - Certified Hydrographer (CH)';
+        tbody.innerHTML = "";
+
+        const tagMap = {};
+        if (activeJSON) {
+            activeJSON.data.forEach(eng => {
+                // SCAN ALL TEXT FIELDS (Project Description, Responsibilities, etc.)
+                const searchableText = [eng.j_proj, eng.j_resp, eng.j_comments].join(" ");
+                const regex = /@([A-Z0-9.]+)\s*\[(.*?)\]/g;
+                let match;
+                while ((match = regex.exec(searchableText)) !== null) {
+                    const id = match[1];
+                    if (!tagMap[id]) tagMap[id] = { engs: [], details: [] };
+                    tagMap[id].engs.push(eng.e_number);
+                    tagMap[id].details.push(`(Eng #${eng.e_number}): ${match[2]}`);
+                }
+            });
+        }
+
+        masterData[levelKey].forEach(item => {
+            const userData = tagMap[item.id] || null;
+            const row = document.createElement('tr');
+            
+            if (item.type === "H") {
+                row.className = "header-row";
+                row.innerHTML = `<td colspan="4">${item.desc}</td>`;
+            } else if (item.type === "S") {
+                row.className = "subheader-row";
+                row.innerHTML = `<td class="id-col">${item.id}</td><td colspan="3">${item.desc}</td>`;
+            } else {
+                if (userData) row.className = "highlight";
+                
+                // Content Columns (Editable)
+                row.innerHTML = `
+                    <td class="id-col">${item.id}</td>
+                    <td class="desc-col">${item.desc}</td>
+                    <td class="eng-col" contenteditable="true">${userData ? [...new Set(userData.engs)].sort((a,b)=>a-b).join(", ") : ""}</td>
+                    <td class="detail-col" contenteditable="true">${userData ? userData.details.join("<br>") : ""}</td>
+                `;
+            }
+            tbody.appendChild(row);
+        });
+    }
+
+    renderTable(); // Initial draw
+</script>
+
+</body>
+</html>
