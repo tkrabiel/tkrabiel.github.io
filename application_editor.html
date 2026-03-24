@@ -11,7 +11,8 @@
         .controls a, .controls button { color: white; text-decoration: none; font-weight: bold; font-size: 13px; padding: 10px 15px; border-radius: 4px; border: none; cursor: pointer; text-transform: uppercase; }
         .btn-home { background: #6c757d; }
         .btn-export { background: #e67e22; }
-        .btn-import { background: #17a2b8; } /* Teal color for import */
+        .btn-comp { background: #8e44ad; } /* Purple for Competency */
+        .btn-import { background: #17a2b8; } 
         .btn-add-pe { background: #004a99; }
         .btn-add-ee { background: #2c3e50; }
         .btn-save { background: #28a745; margin-left: auto; }
@@ -46,6 +47,7 @@
     <div class="controls">
         <a href="index.html" class="btn-home">← HOME</a>
         <a href="export.html" class="btn-export">GO TO EXPORT →</a>
+        <a href="competency_form.html" class="btn-comp">COMPETENCY FORM</a>
         
         <input type="file" id="jsonUpload" accept=".json" style="display: none;" onchange="loadJSON(event)">
         <button class="btn-import" onclick="document.getElementById('jsonUpload').click()">📂 LOAD JSON</button>
@@ -103,20 +105,16 @@
                 // Rebuild the Engagement Cards
                 if (json.data && Array.isArray(json.data)) {
                     json.data.forEach(eng => {
-                        // 1. Add the correct type of card
                         const type = eng.engagement_type === 'EE' ? 'EE' : 'PE';
                         addEngagement(type);
                         
-                        // 2. Target the newly created card
                         const card = document.getElementById(`eng_${engagementCount}`);
                         
-                        // 3. Helper function to populate fields safely
                         const setVal = (cls, val) => {
                             const el = card.querySelector(`.${cls}`);
                             if (el && val !== undefined) el.value = val;
                         };
 
-                        // 4. Fill in the data
                         setVal('f_name', eng.f_name);
                         setVal('s_name', eng.s_name);
                         setVal('d_from', eng.d_from);
@@ -135,7 +133,6 @@
                     });
                 }
                 
-                // Clear the file input so the user can re-upload the same file if needed
                 document.getElementById('jsonUpload').value = "";
                 
             } catch (err) {
@@ -202,7 +199,7 @@
             const getVal = (cls) => { const el = card.querySelector(`.${cls}`); return el ? el.value : ""; };
             
             data.push({
-                e_number: (index + 1).toString(), // Re-number cleanly on save
+                e_number: (index + 1).toString(), 
                 engagement_type: getVal('engagement_type'),
                 f_name: getVal('f_name'),
                 s_name: getVal('s_name'),
