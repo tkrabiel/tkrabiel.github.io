@@ -101,7 +101,6 @@
             margin: 15px 0;
         }
     </style>
-    <!-- GeoTIFF.js library -->
     <script src="https://cdn.jsdelivr.net/npm/geotiff@2.0.7/dist/geotiff.browser.js"></script>
 </head>
 <body>
@@ -154,21 +153,21 @@
 
 <script>
     // ---------- Global state ----------
-    let geotiffImage = null;          // geotiff.js image object
-    let rasterData = null;            // array of pixel values (first band)
+    let geotiffImage = null;          
+    let rasterData = null;            
     let imageWidth = 0, imageHeight = 0;
-    let minPixel = 0, maxPixel = 1;   // for normalisation
+    let minPixel = 0, maxPixel = 1;   
     let canvas = document.getElementById('imageCanvas');
     let ctx = canvas.getContext('2d');
     
     // Drawing state
-    let points = [];                  // [{x, y}] in original image coordinates
+    let points = [];                  
     let lineDrawn = false;
     
     // Audio state
     let audioContext = null;
     let currentSource = null;
-    let currentAudioBuffer = null;    // last generated buffer (for export)
+    let currentAudioBuffer = null;    
     
     // Canvas transform (display scaling)
     let drawOffsetX = 0, drawOffsetY = 0;
@@ -181,22 +180,28 @@
         const maxWidth = canvas.clientWidth;
         const maxHeight = canvas.clientHeight;
         const scale = Math.min(maxWidth / imageWidth, maxHeight / imageHeight);
-        drawWidth = imageWidth * scale;
-        drawHeight = imageHeight * scale;
-        drawOffsetX = (maxWidth - drawWidth) / 2;
-        drawOffsetY = (maxHeight - drawHeight) / 2;
+        
+        // FIX: Math.floor prevents floating-point indices breaking imageData arrays
+        drawWidth = Math.floor(imageWidth * scale);
+        drawHeight = Math.floor(imageHeight * scale);
+        drawOffsetX = Math.floor((maxWidth - drawWidth) / 2);
+        drawOffsetY = Math.floor((maxHeight - drawHeight) / 2);
+        
         // set canvas actual resolution
         canvas.width = maxWidth;
         canvas.height = maxHeight;
+        
         // redraw image if exists
         if (rasterData) drawImageOnCanvas();
     }
     
     // ---------- Draw image from rasterData ----------
     function drawImageOnCanvas() {
-        if (!rasterData || imageWidth === 0) return;
+        if (!rasterData || imageWidth === 0 || drawWidth <= 0 || drawHeight <= 0) return;
+        
         // Create ImageData
         let imgData = ctx.createImageData(drawWidth, drawHeight);
+        
         // For simplicity, map pixel values to grayscale
         for (let y = 0; y < drawHeight; y++) {
             for (let x = 0; x < drawWidth; x++) {
@@ -204,9 +209,12 @@
                 const srcY = Math.floor(y * imageHeight / drawHeight);
                 const idx = srcY * imageWidth + srcX;
                 let val = rasterData[idx];
-                // Normalize to 0-255
-                let norm = (val - minPixel) / (maxPixel - minPixel);
+                
+                // FIX: Prevent NaN if maxPixel == minPixel (flat image)
+                let norm = (maxPixel === minPixel) ? 0 : (val - minPixel) / (maxPixel - minPixel);
                 let gray = Math.min(255, Math.max(0, Math.floor(norm * 255)));
+                
+                // Now safely indexing into the 1D Array with an exact integer
                 const pixelIdx = (y * drawWidth + x) * 4;
                 imgData.data[pixelIdx] = gray;
                 imgData.data[pixelIdx+1] = gray;
@@ -240,6 +248,7 @@
         ctx.lineWidth = 3;
         ctx.setLineDash([8, 6]);
         ctx.stroke();
+        
         // draw endpoints
         points.forEach(p => {
             const cp = imgToCanvas(p);
@@ -260,21 +269,24 @@
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = '⏳ Reading GeoTIFF...';
         try {
-            const arrayBuffer = await file.arrayBuffer();
-            const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer);
+            // FIX: Using fromBlob is significantly safer for local files to avoid RAM crashes
+            const tiff = await GeoTIFF.fromBlob(file);
             const image = await tiff.getImage();
             const width = image.getWidth();
             const height = image.getHeight();
             const rasters = await image.readRasters();
+            
             // use first band
             let data = rasters[0];
             if (!data) throw new Error('No raster band found');
+            
             // find min/max for normalisation
             let minVal = Infinity, maxVal = -Infinity;
             for (let i=0; i<data.length; i++) {
                 if (data[i] < minVal) minVal = data[i];
                 if (data[i] > maxVal) maxVal = data[i];
             }
+            
             imageWidth = width;
             imageHeight = height;
             rasterData = data;
@@ -283,9 +295,9 @@
             geotiffImage = image;
             lineDrawn = false;
             points = [];
+            
             statusDiv.innerHTML = `✅ Loaded ${width}×${height} | values ${minVal.toFixed(2)} – ${maxVal.toFixed(2)}. Click two points to draw line.`;
             updateCanvasTransform();
-            drawImageOnCanvas();
         } catch (err) {
             console.error(err);
             statusDiv.innerHTML = `❌ Error loading GeoTIFF: ${err.message}`;
@@ -347,7 +359,7 @@
         const numSamples = values.length;
         const totalDuration = numSamples * durationPerSample;
         const totalFrames = Math.ceil(totalDuration * sampleRate);
-        const audioBuffer = new AudioContext({sampleRate}).createBuffer(1, totalFrames, sampleRate);
+        const audioBuffer = new (window.AudioContext || window.webkitAudioContext)({sampleRate}).createBuffer(1, totalFrames, sampleRate);
         const channelData = audioBuffer.getChannelData(0);
         
         const [minFreq, maxFreq] = getFreqRange();
@@ -502,6 +514,7 @@
         const scaleY = canvas.height / rect.height;
         let mouseX = (e.clientX - rect.left) * scaleX;
         let mouseY = (e.clientY - rect.top) * scaleY;
+        
         // convert to original image coordinates
         let imgX = (mouseX - drawOffsetX) / drawWidth * imageWidth;
         let imgY = (mouseY - drawOffsetY) / drawHeight * imageHeight;
