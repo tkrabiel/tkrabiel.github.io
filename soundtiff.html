@@ -27,7 +27,7 @@
             border-radius: 20px;
             padding: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative; /* Added to anchor the version tag */
+            position: relative;
         }
         .version-tag {
             position: absolute;
@@ -104,20 +104,12 @@
             margin-top: 15px;
             text-align: center;
         }
-        .range-info {
-            font-size: 0.8rem;
-            color: #ccc;
-        }
-        hr {
-            border-color: #4a4a5a;
-            margin: 15px 0;
-        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
 </head>
 <body>
 <div class="container">
-    <div class="version-tag">Version 3</div>
+    <div class="version-tag">Version 4</div>
     
     <h1>🎵 GeoTIFF Sonifier</h1>
     <div class="controls">
@@ -125,22 +117,42 @@
             <label>📁 GeoTIFF file</label>
             <input type="file" id="fileInput" accept=".tif,.tiff">
         </div>
+        
         <div class="ctrl-group">
-            <label>🎤 Vocal range</label>
+            <label>🎹 Mode</label>
+            <select id="modeSelect">
+                <option value="scale">Musical Scale (Notes)</option>
+                <option value="raw">Raw Frequency (Drone)</option>
+            </select>
+        </div>
+
+        <div class="ctrl-group" id="scaleGroup">
+            <label>🎼 Musical Scale</label>
+            <select id="scalePreset">
+                <option value="pentatonic">C Major Pentatonic (Dreamy)</option>
+                <option value="minor">A Minor (Moody)</option>
+                <option value="chromatic">Chromatic (All Notes)</option>
+            </select>
+        </div>
+
+        <div class="ctrl-group" id="rawFreqGroup" style="display:none">
+            <label>🎤 Vocal Range</label>
             <select id="rangePreset">
                 <option value="bass">Bass (80–320 Hz)</option>
                 <option value="tenor" selected>Tenor (130–520 Hz)</option>
                 <option value="alto">Alto (260–1040 Hz)</option>
                 <option value="soprano">Soprano (520–2080 Hz)</option>
-                <option value="custom">Custom</option>
             </select>
         </div>
-        <div class="ctrl-group" id="customRangeGroup" style="display:none">
-            <label>Min freq (Hz)</label>
-            <input type="number" id="customMin" value="130" step="10">
-            <label>Max freq (Hz)</label>
-            <input type="number" id="customMax" value="520" step="10">
+
+        <div class="ctrl-group">
+            <label>🗣️ Timbre / Voice</label>
+            <select id="voicePreset">
+                <option value="rich">Rich Organ / Choir</option>
+                <option value="sine">Pure Sine (Beep)</option>
+            </select>
         </div>
+
         <div class="ctrl-group">
             <label>⏱️ Duration per pixel (s)</label>
             <input type="number" id="duration" value="0.15" step="0.01" min="0.03" max="1.0">
@@ -179,44 +191,46 @@
     let lineDrawn = false;
     
     // Audio state
-    let audioContext = null;
+    let activeContext = null;
     let currentSource = null;
     let currentAudioBuffer = null;    
     
     // Canvas transform (display scaling)
     let drawOffsetX = 0, drawOffsetY = 0;
     let drawWidth = 0, drawHeight = 0;
+
+    // ---------- Musical Scales (MIDI Note Numbers) ----------
+    const scales = {
+        // C3 to C6 Pentatonic
+        pentatonic: [48, 50, 52, 55, 57, 60, 62, 64, 67, 69, 72, 74, 76, 79, 81, 84],
+        // A2 to A5 Minor
+        minor: [45, 47, 48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81],
+        // C3 to C5 Chromatic
+        chromatic: Array.from({length: 25}, (_, i) => 48 + i) 
+    };
     
     // ---------- Helper: update canvas transform ----------
     function updateCanvasTransform() {
         if (imageWidth === 0) return;
-        const canvasRect = canvas.getBoundingClientRect();
         const maxWidth = canvas.clientWidth;
         const maxHeight = canvas.clientHeight;
         const scale = Math.min(maxWidth / imageWidth, maxHeight / imageHeight);
         
-        // FIX: Math.floor prevents floating-point indices breaking imageData arrays
         drawWidth = Math.floor(imageWidth * scale);
         drawHeight = Math.floor(imageHeight * scale);
         drawOffsetX = Math.floor((maxWidth - drawWidth) / 2);
         drawOffsetY = Math.floor((maxHeight - drawHeight) / 2);
         
-        // set canvas actual resolution
         canvas.width = maxWidth;
         canvas.height = maxHeight;
-        
-        // redraw image if exists
         if (rasterData) drawImageOnCanvas();
     }
     
     // ---------- Draw image from rasterData ----------
     function drawImageOnCanvas() {
         if (!rasterData || imageWidth === 0 || drawWidth <= 0 || drawHeight <= 0) return;
-        
-        // Create ImageData
         let imgData = ctx.createImageData(drawWidth, drawHeight);
         
-        // For simplicity, map pixel values to grayscale
         for (let y = 0; y < drawHeight; y++) {
             for (let x = 0; x < drawWidth; x++) {
                 const srcX = Math.floor(x * imageWidth / drawWidth);
@@ -224,11 +238,9 @@
                 const idx = srcY * imageWidth + srcX;
                 let val = rasterData[idx];
                 
-                // FIX: Prevent NaN if maxPixel == minPixel (flat image)
                 let norm = (maxPixel === minPixel) ? 0 : (val - minPixel) / (maxPixel - minPixel);
                 let gray = Math.min(255, Math.max(0, Math.floor(norm * 255)));
                 
-                // Now safely indexing into the 1D Array with an exact integer
                 const pixelIdx = (y * drawWidth + x) * 4;
                 imgData.data[pixelIdx] = gray;
                 imgData.data[pixelIdx+1] = gray;
@@ -241,16 +253,16 @@
         drawLineOnCanvas();
     }
     
-    // ---------- Draw line overlay (in canvas coordinates) ----------
+    // ---------- Draw line overlay ----------
     function drawLineOnCanvas() {
         if (!lineDrawn || points.length < 2) return;
         ctx.save();
         ctx.beginPath();
-        // convert original image coords to canvas display coords
         function imgToCanvas(p) {
-            const canvasX = drawOffsetX + (p.x / imageWidth) * drawWidth;
-            const canvasY = drawOffsetY + (p.y / imageHeight) * drawHeight;
-            return {x: canvasX, y: canvasY};
+            return {
+                x: drawOffsetX + (p.x / imageWidth) * drawWidth,
+                y: drawOffsetY + (p.y / imageHeight) * drawHeight
+            };
         }
         const start = imgToCanvas(points[0]);
         ctx.moveTo(start.x, start.y);
@@ -263,7 +275,6 @@
         ctx.setLineDash([8, 6]);
         ctx.stroke();
         
-        // draw endpoints
         points.forEach(p => {
             const cp = imgToCanvas(p);
             ctx.beginPath();
@@ -283,26 +294,21 @@
         const statusDiv = document.getElementById('statusMsg');
         statusDiv.innerHTML = '⏳ Reading GeoTIFF...';
         try {
-            // FIX: Using fromBlob is significantly safer for local files to avoid RAM crashes
             const tiff = await GeoTIFF.fromBlob(file);
             const image = await tiff.getImage();
-            const width = image.getWidth();
-            const height = image.getHeight();
             const rasters = await image.readRasters();
             
-            // use first band
             let data = rasters[0];
             if (!data) throw new Error('No raster band found');
             
-            // find min/max for normalisation
             let minVal = Infinity, maxVal = -Infinity;
             for (let i=0; i<data.length; i++) {
                 if (data[i] < minVal) minVal = data[i];
                 if (data[i] > maxVal) maxVal = data[i];
             }
             
-            imageWidth = width;
-            imageHeight = height;
+            imageWidth = image.getWidth();
+            imageHeight = image.getHeight();
             rasterData = data;
             minPixel = minVal;
             maxPixel = maxVal;
@@ -310,27 +316,25 @@
             lineDrawn = false;
             points = [];
             
-            statusDiv.innerHTML = `✅ Loaded ${width}×${height} | values ${minVal.toFixed(2)} – ${maxVal.toFixed(2)}. Click two points to draw line.`;
+            statusDiv.innerHTML = `✅ Loaded ${imageWidth}×${imageHeight} | values ${minVal.toFixed(2)} – ${maxVal.toFixed(2)}. Click two points to draw line.`;
             updateCanvasTransform();
         } catch (err) {
             console.error(err);
-            statusDiv.innerHTML = `❌ Error loading GeoTIFF: ${err.message}`;
+            statusDiv.innerHTML = `❌ Error: ${err.message}`;
         }
     }
     
-    // ---------- Get pixel value at original image coordinates (bilinear) ----------
+    // ---------- Get pixel value (bilinear) ----------
     function getPixelValue(x, y) {
         if (x < 0 || x >= imageWidth-1 || y < 0 || y >= imageHeight-1) return minPixel;
         const x0 = Math.floor(x);
         const y0 = Math.floor(y);
-        const x1 = x0 + 1;
-        const y1 = y0 + 1;
         const fx = x - x0;
         const fy = y - y0;
         const v00 = rasterData[y0 * imageWidth + x0];
-        const v10 = rasterData[y0 * imageWidth + x1];
-        const v01 = rasterData[y1 * imageWidth + x0];
-        const v11 = rasterData[y1 * imageWidth + x1];
+        const v10 = rasterData[y0 * imageWidth + (x0+1)];
+        const v01 = rasterData[(y0+1) * imageWidth + x0];
+        const v11 = rasterData[(y0+1) * imageWidth + (x0+1)];
         const top = v00 * (1-fx) + v10 * fx;
         const bottom = v01 * (1-fx) + v11 * fx;
         return top * (1-fy) + bottom * fy;
@@ -338,67 +342,90 @@
     
     // ---------- Sample values along the line ----------
     function sampleLine(numSamples) {
-        if (points.length < 2) throw new Error('Draw a line first (two clicks).');
-        const p1 = points[0];
-        const p2 = points[1];
+        if (points.length < 2) throw new Error('Draw a line first.');
+        const p1 = points[0], p2 = points[1];
         const values = [];
         for (let i = 0; i < numSamples; i++) {
             const t = i / (numSamples - 1);
-            const x = p1.x + t * (p2.x - p1.x);
-            const y = p1.y + t * (p2.y - p1.y);
-            const val = getPixelValue(x, y);
-            values.push(val);
+            values.push(getPixelValue(p1.x + t * (p2.x - p1.x), p1.y + t * (p2.y - p1.y)));
         }
         return values;
     }
     
-    // ---------- Get frequency range from UI ----------
-    function getFreqRange() {
-        const preset = document.getElementById('rangePreset').value;
-        if (preset === 'bass') return [80, 320];
-        if (preset === 'tenor') return [130, 520];
-        if (preset === 'alto') return [260, 1040];
-        if (preset === 'soprano') return [520, 2080];
-        // custom
-        let minF = parseFloat(document.getElementById('customMin').value);
-        let maxF = parseFloat(document.getElementById('customMax').value);
-        if (isNaN(minF)) minF = 130;
-        if (isNaN(maxF)) maxF = 520;
-        if (minF >= maxF) maxF = minF + 10;
-        return [minF, maxF];
-    }
-    
-    // ---------- Generate AudioBuffer from values ----------
+    // ---------- Generate AudioBuffer ----------
     async function generateAudioBuffer(values, durationPerSample, sampleRate=44100) {
         const numSamples = values.length;
-        const totalDuration = numSamples * durationPerSample;
-        const totalFrames = Math.ceil(totalDuration * sampleRate);
+        const totalFrames = Math.ceil(numSamples * durationPerSample * sampleRate);
         const audioBuffer = new (window.AudioContext || window.webkitAudioContext)({sampleRate}).createBuffer(1, totalFrames, sampleRate);
         const channelData = audioBuffer.getChannelData(0);
         
-        const [minFreq, maxFreq] = getFreqRange();
+        const mode = document.getElementById('modeSelect').value;
+        const scalePreset = document.getElementById('scalePreset').value;
+        const voiceType = document.getElementById('voicePreset').value;
+        const currentScale = scales[scalePreset];
+        
+        // Get raw freq range if needed
+        let minFreq = 130, maxFreq = 520;
+        const rangeSel = document.getElementById('rangePreset').value;
+        if (rangeSel === 'bass') { minFreq = 80; maxFreq = 320; }
+        else if (rangeSel === 'alto') { minFreq = 260; maxFreq = 1040; }
+        else if (rangeSel === 'soprano') { minFreq = 520; maxFreq = 2080; }
+
         const minVal = Math.min(...values);
         const maxVal = Math.max(...values);
         const rangeVal = maxVal - minVal;
         
         let frameIndex = 0;
         for (let i = 0; i < numSamples; i++) {
-            // map pixel to frequency
             let freq;
-            if (rangeVal === 0) freq = (minFreq + maxFreq)/2;
-            else {
-                const t = (values[i] - minVal) / rangeVal;
+            let t = rangeVal === 0 ? 0.5 : (values[i] - minVal) / rangeVal;
+
+            if (mode === 'scale') {
+                // Quantize to musical scale
+                const scaleIndex = Math.min(currentScale.length - 1, Math.floor(t * currentScale.length));
+                const midiNote = currentScale[scaleIndex];
+                freq = 440 * Math.pow(2, (midiNote - 69) / 12);
+            } else {
+                // Raw continuous frequency
                 freq = minFreq + t * (maxFreq - minFreq);
             }
+
             const startFrame = frameIndex;
             const endFrame = startFrame + Math.floor(durationPerSample * sampleRate);
+            
             for (let f = startFrame; f < endFrame && f < totalFrames; f++) {
                 const time = (f - startFrame) / sampleRate;
-                channelData[f] += Math.sin(2 * Math.PI * freq * time);
+                
+                // Envelopes shape the note so it doesn't click.
+                // In Scale mode, we want a plucked/sung feel. In Raw mode, a continuous drone.
+                let envelope = 1.0;
+                if (mode === 'scale') {
+                    const attack = durationPerSample * 0.1;
+                    const release = durationPerSample * 0.3;
+                    if (time < attack) envelope = time / attack; // Fade in
+                    else if (time > durationPerSample - release) envelope = (durationPerSample - time) / release; // Fade out
+                }
+
+                // Voice synthesis
+                let sampleVal = 0;
+                if (voiceType === 'rich') {
+                    // Fundamental + overtones for a choir/organ sound
+                    sampleVal += Math.sin(2 * Math.PI * freq * time);
+                    sampleVal += 0.5 * Math.sin(2 * Math.PI * (freq * 2) * time); 
+                    sampleVal += 0.25 * Math.sin(2 * Math.PI * (freq * 3) * time); 
+                    sampleVal += 0.125 * Math.sin(2 * Math.PI * (freq * 4) * time); 
+                    sampleVal = sampleVal / 1.875; // Normalize volume
+                } else {
+                    // Pure Sine
+                    sampleVal = Math.sin(2 * Math.PI * freq * time);
+                }
+
+                channelData[f] += sampleVal * envelope;
             }
             frameIndex = endFrame;
         }
-        // normalize to avoid clipping
+
+        // Normalize to avoid clipping
         let maxAmp = 0;
         for (let i=0; i<totalFrames; i++) maxAmp = Math.max(maxAmp, Math.abs(channelData[i]));
         if (maxAmp > 0.95) {
@@ -407,168 +434,101 @@
         return audioBuffer;
     }
     
-    // ---------- Play buffer ----------
-    let activeContext = null;
+    // ---------- Play & Stop ----------
     function playBuffer(audioBuffer) {
-        if (activeContext) {
-            activeContext.close().catch(console.warn);
-        }
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioCtx();
-        activeContext = ctx;
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(ctx.destination);
-        source.onended = () => {
-            if (activeContext === ctx) activeContext = null;
-        };
-        source.start();
-        currentSource = source;
+        if (activeContext) activeContext.close().catch(console.warn);
+        activeContext = new (window.AudioContext || window.webkitAudioContext)();
+        currentSource = activeContext.createBufferSource();
+        currentSource.buffer = audioBuffer;
+        currentSource.connect(activeContext.destination);
+        currentSource.onended = () => { if (activeContext) activeContext = null; };
+        currentSource.start();
         document.getElementById('statusMsg').innerHTML = '🔊 Playing ...';
     }
     
     function stopPlayback() {
-        if (activeContext) {
-            activeContext.close().catch(console.warn);
-            activeContext = null;
-        }
-        if (currentSource) {
-            try { currentSource.stop(); } catch(e) {}
-            currentSource = null;
-        }
+        if (activeContext) { activeContext.close(); activeContext = null; }
+        if (currentSource) { try { currentSource.stop(); } catch(e) {} currentSource = null; }
         document.getElementById('statusMsg').innerHTML = '⏹️ Stopped.';
     }
     
-    // ---------- Export as WAV ----------
+    // ---------- WAV Export ----------
     function exportWav(audioBuffer) {
-        if (!audioBuffer) {
-            alert("No audio generated yet. Click 'Generate & Play' first.");
-            return;
+        if (!audioBuffer) return alert("Generate audio first.");
+        const buffer = new ArrayBuffer(44 + audioBuffer.length * 2);
+        const view = new DataView(buffer);
+        const writeString = (offset, str) => { for (let i=0; i<str.length; i++) view.setUint8(offset+i, str.charCodeAt(i)); };
+        
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + audioBuffer.length * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, audioBuffer.sampleRate, true);
+        view.setUint32(28, audioBuffer.sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, audioBuffer.length * 2, true);
+        
+        let offset = 44, data = audioBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            let s = Math.max(-1, Math.min(1, data[i]));
+            view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            offset += 2;
         }
-        const numChannels = 1;
-        const sampleRate = audioBuffer.sampleRate;
-        const data = audioBuffer.getChannelData(0);
-        const wav = encodeWAV(data, sampleRate, numChannels);
-        const blob = new Blob([wav], { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
+        
         const a = document.createElement('a');
-        a.href = url;
+        a.href = URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
         a.download = 'sonification.wav';
         a.click();
-        URL.revokeObjectURL(url);
         document.getElementById('statusMsg').innerHTML = '📀 WAV exported.';
     }
     
-    function encodeWAV(samples, sampleRate, numChannels) {
-        const buffer = new ArrayBuffer(44 + samples.length * 2);
-        const view = new DataView(buffer);
-        // RIFF chunk
-        writeString(view, 0, 'RIFF');
-        view.setUint32(4, 36 + samples.length * 2, true);
-        writeString(view, 8, 'WAVE');
-        writeString(view, 12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, numChannels, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * numChannels * 2, true);
-        view.setUint16(32, numChannels * 2, true);
-        view.setUint16(34, 16, true);
-        writeString(view, 36, 'data');
-        view.setUint32(40, samples.length * 2, true);
-        // write PCM samples
-        let offset = 44;
-        for (let i = 0; i < samples.length; i++) {
-            let s = Math.max(-1, Math.min(1, samples[i]));
-            s = s < 0 ? s * 0x8000 : s * 0x7FFF;
-            view.setInt16(offset, s, true);
-            offset += 2;
-        }
-        return buffer;
-    }
-    function writeString(view, offset, str) {
-        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-    }
-    
-    // ---------- Main generate action ----------
-    async function generateAndPlay() {
-        if (!rasterData) {
-            alert('Please upload a GeoTIFF first.');
-            return;
-        }
-        if (points.length < 2) {
-            alert('Draw a line on the image: click for start point, then click for end point.');
-            return;
-        }
-        const numSamples = parseInt(document.getElementById('numSamples').value);
-        const durationPerPixel = parseFloat(document.getElementById('duration').value);
-        const statusDiv = document.getElementById('statusMsg');
-        statusDiv.innerHTML = '🎛️ Sampling line & generating audio...';
-        try {
-            const values = sampleLine(numSamples);
-            const buffer = await generateAudioBuffer(values, durationPerPixel);
-            currentAudioBuffer = buffer;
-            playBuffer(buffer);
-            statusDiv.innerHTML = `✅ Generated ${numSamples} notes. Playing...`;
-        } catch (err) {
-            statusDiv.innerHTML = `❌ Error: ${err.message}`;
-            console.error(err);
-        }
-    }
-    
-    // ---------- Canvas interaction: two clicks for line ----------
-    let clickCount = 0;
-    function handleCanvasClick(e) {
-        if (!rasterData) {
-            alert('Load a GeoTIFF first.');
-            return;
-        }
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        let mouseX = (e.clientX - rect.left) * scaleX;
-        let mouseY = (e.clientY - rect.top) * scaleY;
-        
-        // convert to original image coordinates
-        let imgX = (mouseX - drawOffsetX) / drawWidth * imageWidth;
-        let imgY = (mouseY - drawOffsetY) / drawHeight * imageHeight;
-        if (imgX < 0 || imgX >= imageWidth || imgY < 0 || imgY >= imageHeight) return;
-        
-        if (clickCount === 0) {
-            points = [{x: imgX, y: imgY}];
-            clickCount = 1;
-            lineDrawn = false;
-            drawImageOnCanvas(); // redraw to clear previous line
-            document.getElementById('statusMsg').innerHTML = 'First point set. Click second point.';
+    // ---------- UI Events ----------
+    document.getElementById('modeSelect').addEventListener('change', (e) => {
+        if (e.target.value === 'scale') {
+            document.getElementById('scaleGroup').style.display = 'inline-flex';
+            document.getElementById('rawFreqGroup').style.display = 'none';
         } else {
-            points.push({x: imgX, y: imgY});
-            lineDrawn = true;
-            clickCount = 0;
-            drawImageOnCanvas();
-            document.getElementById('statusMsg').innerHTML = `Line drawn (${points[0].x.toFixed(0)},${points[0].y.toFixed(0)}) → (${points[1].x.toFixed(0)},${points[1].y.toFixed(0)}). Ready to generate.`;
+            document.getElementById('scaleGroup').style.display = 'none';
+            document.getElementById('rawFreqGroup').style.display = 'inline-flex';
         }
-    }
-    
-   // ---------- UI event binding ----------
-    document.getElementById('fileInput').addEventListener('change', (e) => {
-        if (e.target.files[0]) loadGeoTiff(e.target.files[0]);
     });
-    canvas.addEventListener('click', handleCanvasClick);
-    document.getElementById('generateBtn').addEventListener('click', generateAndPlay);
+
+    document.getElementById('fileInput').addEventListener('change', (e) => { if (e.target.files[0]) loadGeoTiff(e.target.files[0]); });
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+        if (!rasterData) return alert('Upload a GeoTIFF first.');
+        if (points.length < 2) return alert('Draw a line first.');
+        document.getElementById('statusMsg').innerHTML = '🎛️ Generating...';
+        try {
+            const values = sampleLine(parseInt(document.getElementById('numSamples').value));
+            currentAudioBuffer = await generateAudioBuffer(values, parseFloat(document.getElementById('duration').value));
+            playBuffer(currentAudioBuffer);
+        } catch (err) {
+            document.getElementById('statusMsg').innerHTML = `❌ Error: ${err.message}`;
+        }
+    });
     document.getElementById('stopBtn').addEventListener('click', stopPlayback);
     document.getElementById('exportBtn').addEventListener('click', () => exportWav(currentAudioBuffer));
     
-    // custom range visibility
-    document.getElementById('rangePreset').addEventListener('change', (e) => {
-        const customGroup = document.getElementById('customRangeGroup');
-        customGroup.style.display = e.target.value === 'custom' ? 'inline-flex' : 'none';
+    canvas.addEventListener('click', (e) => {
+        if (!rasterData) return alert('Load a GeoTIFF first.');
+        const rect = canvas.getBoundingClientRect();
+        let imgX = ((e.clientX - rect.left) * (canvas.width / rect.width) - drawOffsetX) / drawWidth * imageWidth;
+        let imgY = ((e.clientY - rect.top) * (canvas.height / rect.height) - drawOffsetY) / drawHeight * imageHeight;
+        if (imgX < 0 || imgX >= imageWidth || imgY < 0 || imgY >= imageHeight) return;
+        
+        if (points.length >= 2 || !lineDrawn) points = [];
+        points.push({x: imgX, y: imgY});
+        lineDrawn = points.length === 2;
+        drawImageOnCanvas();
+        document.getElementById('statusMsg').innerHTML = lineDrawn ? 'Ready to generate.' : 'First point set.';
     });
     
-    window.addEventListener('resize', () => {
-        if (rasterData) updateCanvasTransform();
-    });
-    
-    // initial canvas setup
+    window.addEventListener('resize', updateCanvasTransform);
     updateCanvasTransform();
 </script>
 </body>
