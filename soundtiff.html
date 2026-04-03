@@ -109,7 +109,7 @@
 </head>
 <body>
 <div class="container">
-    <div class="version-tag">Version 4</div>
+    <div class="version-tag">Version 4.1</div>
     
     <h1>🎵 GeoTIFF Sonifier</h1>
     <div class="controls">
@@ -397,7 +397,6 @@
                 const time = (f - startFrame) / sampleRate;
                 
                 // Envelopes shape the note so it doesn't click.
-                // In Scale mode, we want a plucked/sung feel. In Raw mode, a continuous drone.
                 let envelope = 1.0;
                 if (mode === 'scale') {
                     const attack = durationPerSample * 0.1;
@@ -521,11 +520,16 @@
         let imgY = ((e.clientY - rect.top) * (canvas.height / rect.height) - drawOffsetY) / drawHeight * imageHeight;
         if (imgX < 0 || imgX >= imageWidth || imgY < 0 || imgY >= imageHeight) return;
         
-        if (points.length >= 2 || !lineDrawn) points = [];
+        // FIX: Only reset the array if we already have two points
+        if (points.length >= 2) {
+            points = [];
+            lineDrawn = false;
+        }
+        
         points.push({x: imgX, y: imgY});
         lineDrawn = points.length === 2;
         drawImageOnCanvas();
-        document.getElementById('statusMsg').innerHTML = lineDrawn ? 'Ready to generate.' : 'First point set.';
+        document.getElementById('statusMsg').innerHTML = lineDrawn ? 'Ready to generate.' : 'First point set. Click second point.';
     });
     
     window.addEventListener('resize', updateCanvasTransform);
