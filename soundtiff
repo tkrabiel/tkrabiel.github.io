@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoTIFF Sonifier – Draw a line and hear the pixels</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e2f;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: #2d2d3a;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.8rem;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: flex-end;
+        }
+        .ctrl-group {
+            background: #3a3a4a;
+            padding: 8px 12px;
+            border-radius: 12px;
+            display: inline-flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .ctrl-group label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        button, input, select {
+            background: #4c4c5e;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        button:hover {
+            background: #6a6a80;
+        }
+        input[type="file"] {
+            background: #2d2d3a;
+            padding: 5px;
+        }
+        .canvas-area {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            background: #1e1e2a;
+            border-radius: 16px;
+            padding: 10px;
+        }
+        canvas {
+            border: 2px solid #5a5a70;
+            border-radius: 12px;
+            cursor: crosshair;
+            max-width: 100%;
+            height: auto;
+            background: #000;
+        }
+        .status {
+            background: #0f0f1a;
+            padding: 10px;
+            border-radius: 12px;
+            font-family: monospace;
+            margin-top: 15px;
+            text-align: center;
+        }
+        .range-info {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+        hr {
+            border-color: #4a4a5a;
+            margin: 15px 0;
+        }
+    </style>
+    <!-- GeoTIFF.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/geotiff@2.0.7/dist/geotiff.browser.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>🎵 GeoTIFF Sonifier</h1>
+    <div class="controls">
+        <div class="ctrl-group">
+            <label>📁 GeoTIFF file</label>
+            <input type="file" id="fileInput" accept=".tif,.tiff">
+        </div>
+        <div class="ctrl-group">
+            <label>🎤 Vocal range</label>
+            <select id="rangePreset">
+                <option value="bass">Bass (80–320 Hz)</option>
+                <option value="tenor" selected>Tenor (130–520 Hz)</option>
+                <option value="alto">Alto (260–1040 Hz)</option>
+                <option value="soprano">Soprano (520–2080 Hz)</option>
+                <option value="custom">Custom</option>
+            </select>
+        </div>
+        <div class="ctrl-group" id="customRangeGroup" style="display:none">
+            <label>Min freq (Hz)</label>
+            <input type="number" id="customMin" value="130" step="10">
+            <label>Max freq (Hz)</label>
+            <input type="number" id="customMax" value="520" step="10">
+        </div>
+        <div class="ctrl-group">
+            <label>⏱️ Duration per pixel (s)</label>
+            <input type="number" id="duration" value="0.15" step="0.01" min="0.03" max="1.0">
+        </div>
+        <div class="ctrl-group">
+            <label>🔢 Number of samples</label>
+            <input type="number" id="numSamples" value="150" step="10" min="10" max="1000">
+        </div>
+        <div class="ctrl-group">
+            <button id="generateBtn">🎧 Generate & Play</button>
+            <button id="stopBtn">⏹️ Stop</button>
+            <button id="exportBtn">💾 Export WAV</button>
+        </div>
+    </div>
+
+    <div class="canvas-area">
+        <canvas id="imageCanvas" width="800" height="600" style="width:100%; height:auto; max-width:800px"></canvas>
+    </div>
+
+    <div class="status" id="statusMsg">
+        ✅ Upload a GeoTIFF, then click two points on the image to draw a line.
+    </div>
+</div>
+
+<script>
+    // ---------- Global state ----------
+    let geotiffImage = null;          // geotiff.js image object
+    let rasterData = null;            // array of pixel values (first band)
+    let imageWidth = 0, imageHeight = 0;
+    let minPixel = 0, maxPixel = 1;   // for normalisation
+    let canvas = document.getElementById('imageCanvas');
+    let ctx = canvas.getContext('2d');
+    
+    // Drawing state
+    let points = [];                  // [{x, y}] in original image coordinates
+    let lineDrawn = false;
+    
+    // Audio state
+    let audioContext = null;
+    let currentSource = null;
+    let currentAudioBuffer = null;    // last generated buffer (for export)
+    
+    // Canvas transform (display scaling)
+    let drawOffsetX = 0, drawOffsetY = 0;
+    let drawWidth = 0, drawHeight = 0;
+    
+    // ---------- Helper: update canvas transform ----------
+    function updateCanvasTransform() {
+        if (imageWidth === 0) return;
+        const canvasRect = canvas.getBoundingClientRect();
+        const maxWidth = canvas.clientWidth;
+        const maxHeight = canvas.clientHeight;
+        const scale = Math.min(maxWidth / imageWidth, maxHeight / imageHeight);
+        drawWidth = imageWidth * scale;
+        drawHeight = imageHeight * scale;
+        drawOffsetX = (maxWidth - drawWidth) / 2;
+        drawOffsetY = (maxHeight - drawHeight) / 2;
+        // set canvas actual resolution
+        canvas.width = maxWidth;
+        canvas.height = maxHeight;
+        // redraw image if exists
+        if (rasterData) drawImageOnCanvas();
+    }
+    
+    // ---------- Draw image from rasterData ----------
+    function drawImageOnCanvas() {
+        if (!rasterData || imageWidth === 0) return;
+        // Create ImageData
+        let imgData = ctx.createImageData(drawWidth, drawHeight);
+        // For simplicity, map pixel values to grayscale
+        for (let y = 0; y < drawHeight; y++) {
+            for (let x = 0; x < drawWidth; x++) {
+                const srcX = Math.floor(x * imageWidth / drawWidth);
+                const srcY = Math.floor(y * imageHeight / drawHeight);
+                const idx = srcY * imageWidth + srcX;
+                let val = rasterData[idx];
+                // Normalize to 0-255
+                let norm = (val - minPixel) / (maxPixel - minPixel);
+                let gray = Math.min(255, Math.max(0, Math.floor(norm * 255)));
+                const pixelIdx = (y * drawWidth + x) * 4;
+                imgData.data[pixelIdx] = gray;
+                imgData.data[pixelIdx+1] = gray;
+                imgData.data[pixelIdx+2] = gray;
+                imgData.data[pixelIdx+3] = 255;
+            }
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(imgData, drawOffsetX, drawOffsetY);
+        drawLineOnCanvas();
+    }
+    
+    // ---------- Draw line overlay (in canvas coordinates) ----------
+    function drawLineOnCanvas() {
+        if (!lineDrawn || points.length < 2) return;
+        ctx.save();
+        ctx.beginPath();
+        // convert original image coords to canvas display coords
+        function imgToCanvas(p) {
+            const canvasX = drawOffsetX + (p.x / imageWidth) * drawWidth;
+            const canvasY = drawOffsetY + (p.y / imageHeight) * drawHeight;
+            return {x: canvasX, y: canvasY};
+        }
+        const start = imgToCanvas(points[0]);
+        ctx.moveTo(start.x, start.y);
+        for (let i = 1; i < points.length; i++) {
+            const pt = imgToCanvas(points[i]);
+            ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.strokeStyle = '#ff3366';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 6]);
+        ctx.stroke();
+        // draw endpoints
+        points.forEach(p => {
+            const cp = imgToCanvas(p);
+            ctx.beginPath();
+            ctx.arc(cp.x, cp.y, 6, 0, 2*Math.PI);
+            ctx.fillStyle = '#ffaa44';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cp.x, cp.y, 3, 0, 2*Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+        });
+        ctx.restore();
+    }
+    
+    // ---------- Load GeoTIFF ----------
+    async function loadGeoTiff(file) {
+        const statusDiv = document.getElementById('statusMsg');
+        statusDiv.innerHTML = '⏳ Reading GeoTIFF...';
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const tiff = await GeoTIFF.fromArrayBuffer(arrayBuffer);
+            const image = await tiff.getImage();
+            const width = image.getWidth();
+            const height = image.getHeight();
+            const rasters = await image.readRasters();
+            // use first band
+            let data = rasters[0];
+            if (!data) throw new Error('No raster band found');
+            // find min/max for normalisation
+            let minVal = Infinity, maxVal = -Infinity;
+            for (let i=0; i<data.length; i++) {
+                if (data[i] < minVal) minVal = data[i];
+                if (data[i] > maxVal) maxVal = data[i];
+            }
+            imageWidth = width;
+            imageHeight = height;
+            rasterData = data;
+            minPixel = minVal;
+            maxPixel = maxVal;
+            geotiffImage = image;
+            lineDrawn = false;
+            points = [];
+            statusDiv.innerHTML = `✅ Loaded ${width}×${height} | values ${minVal.toFixed(2)} – ${maxVal.toFixed(2)}. Click two points to draw line.`;
+            updateCanvasTransform();
+            drawImageOnCanvas();
+        } catch (err) {
+            console.error(err);
+            statusDiv.innerHTML = `❌ Error loading GeoTIFF: ${err.message}`;
+        }
+    }
+    
+    // ---------- Get pixel value at original image coordinates (bilinear) ----------
+    function getPixelValue(x, y) {
+        if (x < 0 || x >= imageWidth-1 || y < 0 || y >= imageHeight-1) return minPixel;
+        const x0 = Math.floor(x);
+        const y0 = Math.floor(y);
+        const x1 = x0 + 1;
+        const y1 = y0 + 1;
+        const fx = x - x0;
+        const fy = y - y0;
+        const v00 = rasterData[y0 * imageWidth + x0];
+        const v10 = rasterData[y0 * imageWidth + x1];
+        const v01 = rasterData[y1 * imageWidth + x0];
+        const v11 = rasterData[y1 * imageWidth + x1];
+        const top = v00 * (1-fx) + v10 * fx;
+        const bottom = v01 * (1-fx) + v11 * fx;
+        return top * (1-fy) + bottom * fy;
+    }
+    
+    // ---------- Sample values along the line ----------
+    function sampleLine(numSamples) {
+        if (points.length < 2) throw new Error('Draw a line first (two clicks).');
+        const p1 = points[0];
+        const p2 = points[1];
+        const values = [];
+        for (let i = 0; i < numSamples; i++) {
+            const t = i / (numSamples - 1);
+            const x = p1.x + t * (p2.x - p1.x);
+            const y = p1.y + t * (p2.y - p1.y);
+            const val = getPixelValue(x, y);
+            values.push(val);
+        }
+        return values;
+    }
+    
+    // ---------- Get frequency range from UI ----------
+    function getFreqRange() {
+        const preset = document.getElementById('rangePreset').value;
+        if (preset === 'bass') return [80, 320];
+        if (preset === 'tenor') return [130, 520];
+        if (preset === 'alto') return [260, 1040];
+        if (preset === 'soprano') return [520, 2080];
+        // custom
+        let minF = parseFloat(document.getElementById('customMin').value);
+        let maxF = parseFloat(document.getElementById('customMax').value);
+        if (isNaN(minF)) minF = 130;
+        if (isNaN(maxF)) maxF = 520;
+        if (minF >= maxF) maxF = minF + 10;
+        return [minF, maxF];
+    }
+    
+    // ---------- Generate AudioBuffer from values ----------
+    async function generateAudioBuffer(values, durationPerSample, sampleRate=44100) {
+        const numSamples = values.length;
+        const totalDuration = numSamples * durationPerSample;
+        const totalFrames = Math.ceil(totalDuration * sampleRate);
+        const audioBuffer = new AudioContext({sampleRate}).createBuffer(1, totalFrames, sampleRate);
+        const channelData = audioBuffer.getChannelData(0);
+        
+        const [minFreq, maxFreq] = getFreqRange();
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const rangeVal = maxVal - minVal;
+        
+        let frameIndex = 0;
+        for (let i = 0; i < numSamples; i++) {
+            // map pixel to frequency
+            let freq;
+            if (rangeVal === 0) freq = (minFreq + maxFreq)/2;
+            else {
+                const t = (values[i] - minVal) / rangeVal;
+                freq = minFreq + t * (maxFreq - minFreq);
+            }
+            const startFrame = frameIndex;
+            const endFrame = startFrame + Math.floor(durationPerSample * sampleRate);
+            for (let f = startFrame; f < endFrame && f < totalFrames; f++) {
+                const time = (f - startFrame) / sampleRate;
+                channelData[f] += Math.sin(2 * Math.PI * freq * time);
+            }
+            frameIndex = endFrame;
+        }
+        // normalize to avoid clipping
+        let maxAmp = 0;
+        for (let i=0; i<totalFrames; i++) maxAmp = Math.max(maxAmp, Math.abs(channelData[i]));
+        if (maxAmp > 0.95) {
+            for (let i=0; i<totalFrames; i++) channelData[i] *= 0.9 / maxAmp;
+        }
+        return audioBuffer;
+    }
+    
+    // ---------- Play buffer ----------
+    let activeContext = null;
+    function playBuffer(audioBuffer) {
+        if (activeContext) {
+            activeContext.close().catch(console.warn);
+        }
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioCtx();
+        activeContext = ctx;
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        source.onended = () => {
+            if (activeContext === ctx) activeContext = null;
+        };
+        source.start();
+        currentSource = source;
+        document.getElementById('statusMsg').innerHTML = '🔊 Playing ...';
+    }
+    
+    function stopPlayback() {
+        if (activeContext) {
+            activeContext.close().catch(console.warn);
+            activeContext = null;
+        }
+        if (currentSource) {
+            try { currentSource.stop(); } catch(e) {}
+            currentSource = null;
+        }
+        document.getElementById('statusMsg').innerHTML = '⏹️ Stopped.';
+    }
+    
+    // ---------- Export as WAV ----------
+    function exportWav(audioBuffer) {
+        if (!audioBuffer) {
+            alert("No audio generated yet. Click 'Generate & Play' first.");
+            return;
+        }
+        const numChannels = 1;
+        const sampleRate = audioBuffer.sampleRate;
+        const data = audioBuffer.getChannelData(0);
+        const wav = encodeWAV(data, sampleRate, numChannels);
+        const blob = new Blob([wav], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sonification.wav';
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById('statusMsg').innerHTML = '📀 WAV exported.';
+    }
+    
+    function encodeWAV(samples, sampleRate, numChannels) {
+        const buffer = new ArrayBuffer(44 + samples.length * 2);
+        const view = new DataView(buffer);
+        // RIFF chunk
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + samples.length * 2, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numChannels * 2, true);
+        view.setUint16(32, numChannels * 2, true);
+        view.setUint16(34, 16, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, samples.length * 2, true);
+        // write PCM samples
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++) {
+            let s = Math.max(-1, Math.min(1, samples[i]));
+            s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            view.setInt16(offset, s, true);
+            offset += 2;
+        }
+        return buffer;
+    }
+    function writeString(view, offset, str) {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    }
+    
+    // ---------- Main generate action ----------
+    async function generateAndPlay() {
+        if (!rasterData) {
+            alert('Please upload a GeoTIFF first.');
+            return;
+        }
+        if (points.length < 2) {
+            alert('Draw a line on the image: click for start point, then click for end point.');
+            return;
+        }
+        const numSamples = parseInt(document.getElementById('numSamples').value);
+        const durationPerPixel = parseFloat(document.getElementById('duration').value);
+        const statusDiv = document.getElementById('statusMsg');
+        statusDiv.innerHTML = '🎛️ Sampling line & generating audio...';
+        try {
+            const values = sampleLine(numSamples);
+            const buffer = await generateAudioBuffer(values, durationPerPixel);
+            currentAudioBuffer = buffer;
+            playBuffer(buffer);
+            statusDiv.innerHTML = `✅ Generated ${numSamples} notes. Playing...`;
+        } catch (err) {
+            statusDiv.innerHTML = `❌ Error: ${err.message}`;
+            console.error(err);
+        }
+    }
+    
+    // ---------- Canvas interaction: two clicks for line ----------
+    let clickCount = 0;
+    function handleCanvasClick(e) {
+        if (!rasterData) {
+            alert('Load a GeoTIFF first.');
+            return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let mouseX = (e.clientX - rect.left) * scaleX;
+        let mouseY = (e.clientY - rect.top) * scaleY;
+        // convert to original image coordinates
+        let imgX = (mouseX - drawOffsetX) / drawWidth * imageWidth;
+        let imgY = (mouseY - drawOffsetY) / drawHeight * imageHeight;
+        if (imgX < 0 || imgX >= imageWidth || imgY < 0 || imgY >= imageHeight) return;
+        
+        if (clickCount === 0) {
+            points = [{x: imgX, y: imgY}];
+            clickCount = 1;
+            lineDrawn = false;
+            drawImageOnCanvas(); // redraw to clear previous line
+            document.getElementById('statusMsg').innerHTML = 'First point set. Click second point.';
+        } else {
+            points.push({x: imgX, y: imgY});
+            lineDrawn = true;
+            clickCount = 0;
+            drawImageOnCanvas();
+            document.getElementById('statusMsg').innerHTML = `Line drawn (${points[0].x.toFixed(0)},${points[0].y.toFixed(0)}) → (${points[1].x.toFixed(0)},${points[1].y.toFixed(0)}). Ready to generate.`;
+        }
+    }
+    
+       // ---------- UI event binding ----------
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+        if (e.target.files[0]) loadGeoTiff(e.target.files[0]);
+    });
+    canvas.addEventListener('click', handleCanvasClick);
+    document.getElementById('generateBtn').addEventListener('click', generateAndPlay);
+    document.getElementById('stopBtn').addEventListener('click', stopPlayback);
+    document.getElementById('exportBtn').addEventListener('click', () => exportWav(currentAudioBuffer));
+    
+    // custom range visibility
+    document.getElementById('rangePreset').addEventListener('change', (e) => {
+        const customGroup = document.getElementById('customRangeGroup');
+        customGroup.style.display = e.target.value === 'custom' ? 'inline-flex' : 'none';
+    });
+    
+    window.addEventListener('resize', () => {
+        if (rasterData) updateCanvasTransform();
+    });
+    
+    // initial canvas setup
+    updateCanvasTransform();
+</script>
+</body>
+</html>
