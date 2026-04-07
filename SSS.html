@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>XTF Side-Scan Sonar Viewer – Interactive Averaging & Smoothing</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none; /* avoid accidental text selection on sliders */
+    }
+    body {
+      background: #1a2a2f;
+      font-family: 'Segoe UI', 'Roboto', system-ui, 'Helvetica Neue', sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .card {
+      max-width: 1400px;
+      width: 100%;
+      background: #fef9ef;
+      border-radius: 2rem;
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .toolbar {
+      background: #0b2b2b;
+      padding: 1rem 1.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1.5rem;
+      border-bottom: 2px solid #3e8e7e;
+    }
+    .file-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #1f4e4a;
+      padding: 5px 15px;
+      border-radius: 60px;
+      backdrop-filter: blur(2px);
+    }
+    .file-label {
+      background: #2c786c;
+      color: white;
+      padding: 8px 18px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: 0.2s;
+      border: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .file-label:hover {
+      background: #3fa394;
+      transform: scale(0.97);
+    }
+    #file-info {
+      color: #cfe6e2;
+      font-size: 0.8rem;
+      font-weight: 500;
+      max-width: 240px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.8rem;
+      align-items: center;
+      background: #093131b3;
+      padding: 0.5rem 1.2rem;
+      border-radius: 48px;
+    }
+    .ctrl-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #154f4a;
+      padding: 5px 18px;
+      border-radius: 40px;
+      color: white;
+      font-weight: 500;
+    }
+    .ctrl-group label {
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+    .ctrl-group span {
+      background: #00000055;
+      padding: 4px 10px;
+      border-radius: 30px;
+      font-family: monospace;
+      font-weight: bold;
+      min-width: 48px;
+      text-align: center;
+    }
+    input[type="range"] {
+      width: 180px;
+      cursor: pointer;
+      background: #cfe6e2;
+      height: 4px;
+      border-radius: 5px;
+    }
+    button {
+      background: #cb7b3c;
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 6px 20px;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 0.8rem;
+    }
+    button:active {
+      transform: scale(0.96);
+    }
+    .status {
+      background: #ffecb3;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #3d2a1a;
+    }
+    .canvas-container {
+      background: #1a2a2f;
+      padding: 1.2rem;
+      display: flex;
+      justify-content: center;
+      overflow-x: auto;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+      background: #021016;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      display: block;
+      margin: 0 auto;
+    }
+    .legend {
+      text-align: center;
+      font-size: 0.7rem;
+      padding: 10px;
+      background: #e7ddce;
+      color: #2c3e2f;
+      font-weight: 500;
+      border-top: 1px solid #cfba9a;
+    }
+    .footer {
+      font-size: 0.7rem;
+      text-align: center;
+      padding: 8px;
+      background: #0b2b2b;
+      color: #b9d8d2;
+    }
+    @media (max-width: 780px) {
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .controls { justify-content: space-between; }
+      .ctrl-group { justify-content: space-between; }
+      input[type="range"] { width: 140px; }
+    }
+  </style>
+  <!-- Pyodide + required polyfills -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "pyodide": "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"
+      }
+    }
+  </script>
+</head>
+<body>
+<div class="card">
+  <div class="toolbar">
+    <div class="file-area">
+      <label class="file-label" for="xtfInput">📁 Open XTF file</label>
+      <input type="file" id="xtfInput" accept=".xtf" style="display: none;">
+      <span id="file-info">No file loaded</span>
+    </div>
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>📊 PING AVERAGE</label>
+        <input type="range" id="avgSlider" min="1" max="15" step="1" value="1">
+        <span id="avgVal">1</span>
+      </div>
+      <div class="ctrl-group">
+        <label>🌀 SMOOTH (moving avg)</label>
+        <input type="range" id="smoothSlider" min="1" max="25" step="1" value="1">
+        <span id="smoothVal">1</span>
+      </div>
+      <button id="refreshBtn">⟳ APPLY & RENDER</button>
+    </div>
+    <div class="status" id="statusMsg">⚡ ready</div>
+  </div>
+  <div class="canvas-container">
+    <canvas id="sonarCanvas" width="800" height="400" style="width:100%; height:auto; max-width:1200px; image-rendering: crisp-edges;"></canvas>
+  </div>
+  <div class="legend">
+    🎛️ Adjust ping‑averaging (adjacent pings) + along‑track smoothing (sliding window). 
+    <strong>Large files</strong> may take few seconds – please wait.
+  </div>
+  <div class="footer">
+    powered by pyxtf + Pyodide • dynamic averaging & smoothing • side‑scan waterfall
+  </div>
+</div>
+
+<script>
+  // ------------------- GLOBALS -------------------
+  let pyodideReady = false;
+  let pyodide = null;
+  let currentFileData = null;     // raw ArrayBuffer of uploaded XTF
+  let currentImageData = null;    // store last processed image data URL for fallback
+  let processingLock = false;
+
+  // DOM elements
+  const fileInput = document.getElementById('xtfInput');
+  const fileInfoSpan = document.getElementById('file-info');
+  const avgSlider = document.getElementById('avgSlider');
+  const smoothSlider = document.getElementById('smoothSlider');
+  const avgValSpan = document.getElementById('avgVal');
+  const smoothValSpan = document.getElementById('smoothVal');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const canvas = document.getElementById('sonarCanvas');
+  const ctx = canvas.getContext('2d');
+  const statusSpan = document.getElementById('statusMsg');
+
+  // update numeric displays
+  avgSlider.addEventListener('input', () => { avgValSpan.innerText = avgSlider.value; });
+  smoothSlider.addEventListener('input', () => { smoothValSpan.innerText = smoothSlider.value; });
+  
+  // helper: set status with timeout auto-clear
+  let statusTimeout;
+  function setStatus(msg, isError = false) {
+    if (statusTimeout) clearTimeout(statusTimeout);
+    statusSpan.innerHTML = isError ? `⚠️ ${msg}` : `✨ ${msg}`;
+    statusSpan.style.background = isError ? '#ffcdb0' : '#ffecb3';
+    statusTimeout = setTimeout(() => {
+      if (statusSpan.innerHTML.includes(msg)) {
+        statusSpan.innerHTML = '⚡ ready';
+        statusSpan.style.background = '#ffecb3';
+      }
+    }, 2800);
+  }
+
+  // update canvas with grayscale image from raw uint8 array (width, height)
+  function renderImageToCanvas(uint8Array, width, height) {
+    if (!uint8Array || width <= 0 || height <= 0) {
+      setStatus("Invalid image dimensions", true);
+      return false;
+    }
+    // clamp canvas size to reasonable (max width 1800, height dynamic)
+    let dispWidth = width;
+    let dispHeight = height;
+    const maxCanvasWidth = 1400;
+    if (dispWidth > maxCanvasWidth) {
+      const ratio = maxCanvasWidth / dispWidth;
+      dispWidth = maxCanvasWidth;
+      dispHeight = Math.floor(height * ratio);
+    }
+    canvas.width = dispWidth;
+    canvas.height = dispHeight;
+    
+    // create ImageData (grayscale -> RGBA)
+    const imgData = ctx.createImageData(dispWidth, dispHeight);
+    const scaleX = width / dispWidth;
+    const scaleY = height / dispHeight;
+    
+    // simple nearest neighbor for speed, but high quality interpolation is fine for sonar
+    for (let y = 0; y < dispHeight; y++) {
+      const srcY = Math.min(Math.floor(y * scaleY), height - 1);
+      for (let x = 0; x < dispWidth; x++) {
+        const srcX = Math.min(Math.floor(x * scaleX), width - 1);
+        const idxSrc = srcY * width + srcX;
+        let gray = uint8Array[idxSrc] || 0;
+        const idx = (y * dispWidth + x) * 4;
+        imgData.data[idx] = gray;     // R
+        imgData.data[idx+1] = gray;   // G
+        imgData.data[idx+2] = gray;   // B
+        imgData.data[idx+3] = 255;    // A
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return true;
+  }
+
+  // ------------------- PYTHON PROCESSING ENGINE (Pyodide) -------------------
+  async function initPyodide() {
+    if (pyodideReady) return true;
+    setStatus("loading Pyodide + numpy + pyxtf ...", false);
+    try {
+      // load pyodide main bundle
+      pyodide = await loadPyodide({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/",
+      });
+      // load core packages: numpy and micropip
+      await pyodide.loadPackage(["numpy", "micropip"]);
+      // install pyxtf directly from PyPI (pure python wheels)
+      const micropip = pyodide.pyimport("micropip");
+      await micropip.install("pyxtf");
+      // pre-run some python setup
+      await pyodide.runPythonAsync(`
+import numpy as np
+import pyxtf
+from pyxtf import xtf_read, concatenate_channel, XTFHeaderType
+import io
+import base64
+import warnings
+warnings.filterwarnings('ignore')
+print("pyxtf ready")
+      `);
+      pyodideReady = true;
+      setStatus("✅ engine ready", false);
+      return true;
+    } catch (err) {
+      console.error(err);
+      setStatus("Pyodide init failed: " + err.toString(), true);
+      return false;
+    }
+  }
+
+  // core processing: receive arraybuffer, avg_window, smooth_window -> returns image data (uint8 array, width, height)
+  async function processXtfToImage(arrayBuffer, avgWindow, smoothWindow) {
+    if (!pyodideReady) throw new Error("Pyodide not ready");
+    // convert buffer to python bytes
+    const uint8Buf = new Uint8Array(arrayBuffer);
+    // pass to python side as bytes
+    pyodide.globals.set("xtf_bytes", uint8Buf);
+    // define processing function inside python
+    const processingCode = `
+def process_xtf_inline(xtf_bytes, avg_frames, smooth_kernel):
+    # avg_frames : number of pings to average (>=1)
+    # smooth_kernel : moving average window along sonar samples (>=1)
+    try:
+        import numpy as np
+        import pyxtf
+        from pyxtf import xtf_read, concatenate_channel, XTFHeaderType
+        import io
+        # write bytes to a temporary file-like buffer
+        from tempfile import NamedTemporaryFile
+        with NamedTemporaryFile(suffix='.xtf', delete=True) as tmp:
+            tmp.write(xtf_bytes)
+            tmp.flush()
+            fh, packets = xtf_read(tmp.name, verbose=False)
+        
+        # extract sonar packets
+        if XTFHeaderType.sonar not in packets:
+            return None, 0, 0
+        sonar_pings = packets[XTFHeaderType.sonar]
+        if len(sonar_pings) == 0:
+            return None, 0, 0
+        
+        # use channel 0 (typical side scan)
+        # get per-ping data using concatenate_channel with weighted=False (raw intensities)
+        # but we need individual pings for averaging? we'll extract each ping data separately.
+        # easier: create list of ping arrays (2D? each ping is 1D). but different pings may have diff lengths.
+        # we can compute global width = median length (or max) and interpolate? -> use concatenate_channel but that returns full matrix.
+        # better: concatenate_channel already builds 2D matrix of all pings (ping_count x samples_per_ping).
+        # However different pings may have different sample counts? XTF standard allows variable length.
+        # We use robust approach: create list of 1D arrays, then resample to common length (max length) for averaging.
+        # We'll collect raw channel data per ping.
+        raw_pings = []
+        for ping in sonar_pings:
+            # ping.data is bytes, need to extract channel samples: pyxtf provides convenience?
+            # we can use concatenate_channel but it returns entire 2D for a given channel.
+            # alternative: loop through and get channel samples:
+            # pyxtf internal: channel_samples = pyxtf.xtf_util.get_channel_samples(ping, channel=0, file_header=fh)
+            from pyxtf import xtf_util
+            samples = xtf_util.get_channel_samples(ping, channel=0, file_header=fh)
+            if samples is not None and len(samples) > 10:
+                raw_pings.append(samples.astype(np.float32))
+        
+        if len(raw_pings) == 0:
+            return None, 0, 0
+        
+        # determine target width (max length across pings)
+        max_len = max(len(p) for p in raw_pings)
+        # Resample / zero pad to max_len (use linear interpolation for better quality)
+        from scipy import interpolate
+        # but scipy not available; implement simple np.interp per ping:
+        def resample_to_length(arr, target_len):
+            x_old = np.linspace(0, 1, len(arr))
+            x_new = np.linspace(0, 1, target_len)
+            return np.interp(x_new, x_old, arr)
+        
+        # we don't have scipy, but numpy.interp works fine.
+        resampled_pings = []
+        for p in raw_pings:
+            if len(p) != max_len:
+                p_res = resample_to_length(p, max_len)
+            else:
+                p_res = p.copy()
+            resampled_pings.append(p_res)
+        
+        # stack into matrix (n_pings x max_len)
+        M = np.array(resampled_pings, dtype=np.float32)
+        
+        # 1) PING AVERAGING (moving average along ping axis)
+        if avg_frames > 1:
+            kernel_avg = np.ones(avg_frames, dtype=np.float32) / avg_frames
+            # apply 1d convolution along axis 0 (pings)
+            from scipy import ndimage
+            # but scipy may not be loaded; implement manually with np.cumsum for speed
+            # use simple cumsum method (sliding average)
+            M_avg = np.zeros_like(M)
+            cumsum = np.cumsum(np.vstack([np.zeros((1, M.shape[1])), M]), axis=0)
+            for i in range(M.shape[0]):
+                start = max(0, i - avg_frames + 1)
+                cnt = i - start + 1
+                win_sum = cumsum[i+1] - cumsum[start]
+                M_avg[i] = win_sum / cnt
+            M = M_avg
+        
+        # 2) SMOOTHING along each ping (horizontal smoothing)
+        if smooth_kernel > 1:
+            # moving average along samples (axis=1)
+            kernel_smooth = np.ones(smooth_kernel, dtype=np.float32) / smooth_kernel
+            M_smooth = np.zeros_like(M)
+            cum_horiz = np.cumsum(np.hstack([np.zeros((M.shape[0], 1)), M]), axis=1)
+            for j in range(M.shape[1]):
+                start = max(0, j - smooth_kernel + 1)
+                cnt = j - start + 1
+                win_sum = cum_horiz[:, j+1] - cum_horiz[:, start]
+                M_smooth[:, j] = win_sum / cnt
+            M = M_smooth
+        
+        # dynamic range compression (log scale, clip outliers)
+        # small epsilon to avoid log(0)
+        M = np.clip(M, 1, None)
+        M_log = np.log10(M)
+        # normalize 0-255 uint8 for display
+        vmin, vmax = np.percentile(M_log, 2), np.percentile(M_log, 98)
+        if vmax <= vmin:
+            vmax = vmin + 1e-5
+        M_norm = (M_log - vmin) / (vmax - vmin)
+        M_norm = np.clip(M_norm, 0, 1) * 255
+        img_uint8 = M_norm.astype(np.uint8)
+        height, width = img_uint8.shape
+        return img_uint8.tobytes(), width, height
+    except Exception as e:
+        print("ERROR in python:", e)
+        import traceback
+        traceback.print_exc()
+        return None, 0, 0
+    `;
+    await pyodide.runPythonAsync(processingCode);
+    // call the function with arguments
+    const result = await pyodide.runPythonAsync(`
+import numpy as np
+result_tuple = process_xtf_inline(xtf_bytes, ${avgWindow}, ${smoothWindow})
+if result_tuple[0] is not None:
+    # return bytes + width + height
+    (img_bytes, w, h) = result_tuple
+    img_bytes
+else:
+    None
+    `);
+    if (result === null || result === undefined) {
+      throw new Error("XTF processing failed: no sonar data or unsupported");
+    }
+    // result is bytes object in Python, convert to Uint8Array in JS
+    const imgBytesArray = result.toJs();
+    const widthVal = pyodide.globals.get('w');
+    const heightVal = pyodide.globals.get('h');
+    return { imageBytes: new Uint8Array(imgBytesArray), width: widthVal, height: heightVal };
+  }
+
+  // Main load + render pipeline
+  async function loadAndRender(fileBuffer, avg, smooth) {
+    if (processingLock) {
+      setStatus("processing in progress, wait...");
+      return false;
+    }
+    if (!pyodideReady) {
+      setStatus("Initializing, please wait...");
+      const ok = await initPyodide();
+      if (!ok) return false;
+    }
+    processingLock = true;
+    setStatus(`Processing XTF | avg=${avg} smooth=${smooth} ...`, false);
+    try {
+      const { imageBytes, width, height } = await processXtfToImage(fileBuffer, avg, smooth);
+      if (imageBytes && width > 0 && height > 0) {
+        renderImageToCanvas(imageBytes, width, height);
+        setStatus(`rendered ${width} x ${height} (avg=${avg}, smooth=${smooth})`);
+        return true;
+      } else {
+        setStatus("No sonar data in XTF file (or unsupported channel)", true);
+        return false;
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus(`Error: ${err.message.substring(0, 100)}`, true);
+      return false;
+    } finally {
+      processingLock = false;
+    }
+  }
+
+  // handle new file upload
+  fileInput.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.xtf')) {
+      setStatus("Please select a valid .xtf file", true);
+      return;
+    }
+    fileInfoSpan.innerText = file.name;
+    setStatus(`Loading ${file.name} ...`);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      currentFileData = e.target.result;   // arraybuffer
+      // reset sliders to default, but keep current UI values
+      const avgVal = parseInt(avgSlider.value, 10);
+      const smoothVal = parseInt(smoothSlider.value, 10);
+      await loadAndRender(currentFileData, avgVal, smoothVal);
+    };
+    reader.onerror = () => {
+      setStatus("File read error", true);
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  // refresh button re-render with current sliders
+  refreshBtn.addEventListener('click', async () => {
+    if (!currentFileData) {
+      setStatus("No XTF file loaded. Please choose a file first.", true);
+      return;
+    }
+    const avgVal = parseInt(avgSlider.value, 10);
+    const smoothVal = parseInt(smoothSlider.value, 10);
+    await loadAndRender(currentFileData, avgVal, smoothVal);
+  });
+
+  // preload pyodide in background for faster interaction
+  window.addEventListener('load', () => {
+    // start loading pyodide after page paints
+    setTimeout(() => {
+      if (!pyodideReady) initPyodide().catch(e => console.warn("bg init", e));
+    }, 300);
+  });
+</script>
+</body>
+</html>
