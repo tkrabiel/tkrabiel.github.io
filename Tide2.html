@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+  <title>🌊 Tide School · Constituents & NOAA Explorer</title>
+  <!-- Chart.js for tide predictions -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- modern font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f4f9fe;
+      color: #0b2b3c;
+      padding: 1.5rem 1rem 2.5rem;
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 2.5rem;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 0.5rem;
+      color: #0a3a4b;
+    }
+    h1 i {
+      font-size: 2.2rem;
+    }
+    .subhead {
+      font-size: 1.2rem;
+      color: #2c5a6e;
+      margin-bottom: 2rem;
+      border-left: 5px solid #2a9d8f;
+      padding-left: 1.2rem;
+      font-weight: 400;
+    }
+    h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      margin: 1.8rem 0 1rem;
+      color: #1d5a6d;
+      font-size: 1.8rem;
+      border-bottom: 2px solid #b3d9e6;
+      padding-bottom: 6px;
+    }
+    h3 {
+      font-weight: 500;
+      margin: 1.2rem 0 0.8rem;
+      color: #1f6e7c;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.2rem;
+      margin: 1.5rem 0;
+    }
+    .const-card {
+      background: white;
+      padding: 1.4rem 1.2rem;
+      border-radius: 24px;
+      box-shadow: 0 6px 14px rgba(0, 20, 30, 0.05);
+      border: 1px solid #d9ecf3;
+      transition: transform 0.1s ease;
+    }
+    .const-card:hover {
+      box-shadow: 0 12px 22px rgba(26, 117, 159, 0.08);
+    }
+    .const-name {
+      font-size: 1.8rem;
+      font-weight: 600;
+      font-family: 'Space Grotesk', monospace;
+      color: #0a5e6b;
+    }
+    .const-desc {
+      color: #2e5466;
+      margin-top: 8px;
+      font-size: 0.95rem;
+    }
+    .badge {
+      background: #e1f2f7;
+      padding: 3px 12px;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      color: #135e72;
+      display: inline-block;
+      margin-top: 10px;
+    }
+    .explorer-panel {
+      background: white;
+      border-radius: 28px;
+      padding: 1.8rem 1.8rem 2rem;
+      box-shadow: 0 10px 25px rgba(0,30,40,0.06);
+      border: 1px solid #cde3ec;
+      margin: 2.2rem 0;
+    }
+    .station-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px 30px;
+      margin-bottom: 28px;
+    }
+    .station-selector {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    select {
+      font-family: 'Inter', sans-serif;
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      border-radius: 48px;
+      border: 1.5px solid #aacfdf;
+      background: white;
+      color: #0b3b4a;
+      font-weight: 500;
+      min-width: 260px;
+      cursor: pointer;
+      outline: none;
+      transition: border 0.15s;
+    }
+    select:focus {
+      border-color: #2a9d8f;
+    }
+    .btn {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 60px;
+      font-weight: 500;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,60,70,0.1);
+      transition: 0.15s;
+      border: 1px solid #1a7a8c;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover {
+      background: #0f5e6f;
+      box-shadow: 0 8px 14px rgba(20,90,100,0.2);
+      transform: scale(1.01);
+    }
+    .btn-outline {
+      background: transparent;
+      color: #1a7a8c;
+      border: 1.5px solid #1a7a8c;
+      box-shadow: none;
+    }
+    .btn-outline:hover {
+      background: #e2f3f8;
+    }
+    .const-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0 15px;
+      font-size: 0.95rem;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    .const-table th {
+      background: #c3e2ed;
+      color: #083b48;
+      font-weight: 600;
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .const-table td {
+      background: #fafeff;
+      padding: 10px 8px;
+      text-align: center;
+      border-bottom: 1px solid #cde3ec;
+    }
+    .chart-container {
+      margin-top: 30px;
+      height: 280px;
+      position: relative;
+    }
+    .footnote {
+      margin-top: 18px;
+      color: #406e7e;
+      font-size: 0.85rem;
+      text-align: right;
+    }
+    .data-note {
+      background: #ecf7fa;
+      border-radius: 18px;
+      padding: 12px 20px;
+      margin: 20px 0 0;
+      font-size: 0.9rem;
+    }
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .legend {
+      display: flex;
+      gap: 16px;
+    }
+    .toggle-all {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0 4px;
+    }
+    .citation {
+      background: #e9f2f7;
+      border-radius: 20px;
+      padding: 1.2rem 1.8rem;
+      margin-top: 2rem;
+      font-size: 0.95rem;
+      border-left: 5px solid #1a7a8c;
+    }
+    .citation a {
+      color: #0a5e6b;
+      font-weight: 500;
+      text-decoration: none;
+      border-bottom: 1px dotted;
+    }
+    .active-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 10px;
+      background: #2a9d8f;
+      margin-right: 5px;
+    }
+    .inactive {
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>
+    <span>🌕🌊 Tidal Constituents</span>
+    <span style="font-size:1.2rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px; font-weight:400;">NOAA data inside</span>
+  </h1>
+  <div class="subhead">Learn the gravitational ingredients · then take apart real harmonic constants from NOAA stations</div>
+  
+  <!-- LEARN SECTION: Constitutional (constituents) explanation -->
+  <h2>📘 The “constitution” of tides — harmonic constituents</h2>
+  <p style="margin-bottom:0.5rem; max-width:900px;">Tides aren't just one wave; they're a symphony of many periodic motions driven by the Moon, Sun, and Earth's rotation. Scientists (and NOAA) break tides into <strong>harmonic constituents</strong> — each with a name, speed (frequency), amplitude, and phase. Below are the major players.</p>
+  
+  <div class="card-grid">
+    <div class="const-card">
+      <div class="const-name">M₂</div>
+      <div class="const-desc"><strong>Principal lunar semidiurnal</strong> — the Moon's main twice‑daily bulge. Largest constituent in most oceans.</div>
+      <span class="badge">🌕 period 12.42 h</span>
+    </div>
+    <div class="const-card">
+      <div class="const-name">S₂</div>
+      <div class="const-desc"><strong>Principal solar semidiurnal</strong> — due to the Sun. Slightly smaller, causes spring/neap cycle.</div>
+      <span class="badge">☀️ period 12.00 h</span>
+    </div>
+    <div class="const-card">
+      <div class="const-name">K₁</div>
+      <div class="const-desc"><strong>Luni-solar diurnal</strong> — once‑daily, accounts for declination effects of Moon and Sun.</div>
+      <span class="badge">🌍 period 23.93 h</span>
+    </div>
+    <div class="const-card">
+      <div class="const-name">O₁</div>
+      <div class="const-desc"><strong>Principal lunar diurnal</strong> — once‑daily, from Moon's declination. Important in diurnal regions.</div>
+      <span class="badge">🌙 period 25.82 h</span>
+    </div>
+    <div class="const-card">
+      <div class="const-name">N₂</div>
+      <div class="const-desc"><strong>Larger lunar elliptic semidiurnal</strong> — due to Moon's elliptical orbit. Modulates M₂.</div>
+      <span class="badge">📐 period 12.66 h</span>
+    </div>
+    <div class="const-card">
+      <div class="const-name">P₁</div>
+      <div class="const-desc"><strong>Solar diurnal</strong> — once‑daily solar constituent, smaller sibling of K₁.</div>
+      <span class="badge">☀️ period 24.07 h</span>
+    </div>
+  </div>
+  <p style="margin-top:0.2rem; font-style:italic; color:#346978;">👉 NOAA uses 37+ constituents for official predictions. Here we focus on the big six.</p>
+  
+  <!-- EXPLORER: Take apart NOAA ride/tide data set -->
+  <h2>🧩 Take apart a NOAA tide dataset</h2>
+  <div class="explorer-panel">
+    <div class="station-bar">
+      <div class="station-selector">
+        <label for="stationSelect" style="font-weight:600; color:#0b4b5c;">📍 NOAA Station</label>
+        <select id="stationSelect" aria-label="Select NOAA tide station">
+          <option value="sf" selected>🌉 San Francisco (9414290) · mixed tide</option>
+          <option value="boston">⚓ Boston (8443970) · semidiurnal</option>
+          <option value="seattle">🌲 Seattle (9447130) · mixed, mainly semidiurnal</option>
+          <option value="anchorage">❄️ Anchorage (9455920) · large diurnal</option>
+        </select>
+      </div>
+      <button class="btn" id="updatePredictionBtn"><span>⟳</span> Update prediction & table</button>
+      <button class="btn btn-outline" id="explainConstBtn" style="margin-left:auto;">📖 What am I seeing?</button>
+    </div>
+    
+    <!-- Toggle controls: add/remove constituents -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+      <div class="toggle-all">
+        <button class="btn-outline btn" id="checkAllBtn" style="padding: 6px 16px; font-size:0.9rem;">✓ Check all</button>
+        <button class="btn-outline btn" id="uncheckAllBtn" style="padding: 6px 16px; font-size:0.9rem;">✗ Uncheck all</button>
+        <span style="margin-left:12px; font-size:0.9rem; color:#2c6a7a;">⬤ Active constituents shape the prediction</span>
+      </div>
+      <span id="activeCountDisplay" style="font-weight:500;">6 active</span>
+    </div>
+    
+    <!-- CONSTITUENT TABLE with checkboxes -->
+    <div style="overflow-x: auto;">
+      <table class="const-table" id="constituentTable">
+        <thead>
+          <tr><th>Include?</th><th>Constituent</th><th>Name</th><th>Amplitude (m)</th><th>Phase (°, GMT)</th><th>Speed (°/hr)</th></tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- filled by JS -->
+        </tbody>
+      </table>
+    </div>
+    <div class="flex-row">
+      <div class="legend">
+        <span><span style="background:#1b7b8a; display:inline-block; width:12px; height:12px; border-radius:20px;"></span> Predicted water level (m)</span>
+      </div>
+      <span id="stationMeta" style="color:#2f6e80;">San Francisco · harmonic constants (demo)</span>
+    </div>
+    
+    <!-- CHART CANVAS -->
+    <div class="chart-container">
+      <canvas id="tideChart"></canvas>
+    </div>
+    <div class="data-note">
+      <strong>🧪 Toggle constituents above to see their effect:</strong> Each checkbox controls whether that wave is added to the prediction. 
+      <span id="sumAmpDisplay" style="font-weight:500;"></span><br>
+      The formula: <code>height = Σ (include ? Hₙ · cos(σₙ·t - gₙ) : 0)</code>.
+    </div>
+    <div class="footnote">
+      ⏱️ Prediction starts now (your local time) for next 48h · Data based on NOAA harmonic constants (educational approximation).
+    </div>
+  </div>
+  
+  <!-- Additional explainer -->
+  <div id="explainBox" style="background:#e5f3f9; border-radius:24px; padding:1.5rem; margin-top:1.8rem; display:none;">
+    <h3 style="margin-top:0;">🔍 How to read the “take‑apart” table</h3>
+    <p><strong>Amplitude (H):</strong> half the tidal range contributed by that constituent (meters). <br>
+    <strong>Phase (g):</strong> the lag (in degrees) of the maximum behind the equilibrium tide at Greenwich. Together with speed, it sets when high tide occurs.<br>
+    <strong>Speed (σ):</strong> angular speed in degrees per hour — directly linked to astronomical cycles. <br>
+    💡 Notice that semidiurnal (M₂, S₂) have speeds near 30°/h, diurnal (K₁, O₁) near 15°/h. The combination creates the daily inequality.</p>
+    <button class="btn-outline btn" id="hideExplainBtn" style="margin-top:10px;">Hide explanation</button>
+  </div>
+  
+  <!-- NOAA Citations -->
+  <div class="citation">
+    <strong>📚 Official NOAA documentation & further reading:</strong><br>
+    • <a href="https://tidesandcurrents.noaa.gov/harcon.html" target="_blank" rel="noopener">NOAA Harmonic Constituents</a> – explanation of tidal harmonic analysis.<br>
+    • <a href="https://tidesandcurrents.noaa.gov/publications/Understanding_Tides.pdf" target="_blank" rel="noopener">Understanding Tides (PDF)</a> – NOAA's guide to tide predictions.<br>
+    • <a href="https://tidesandcurrents.noaa.gov/stations.html" target="_blank" rel="noopener">NOAA Tide Stations</a> – real‑time data and harmonic constants for U.S. stations.<br>
+    <span style="display:block; margin-top:8px;">The harmonic constants used here are simplified for education but reflect typical NOAA published values.</span>
+  </div>
+  
+  <p style="margin-top:2rem; border-top:1px solid #bdd7e2; padding-top:1.5rem; text-align:center; color:#2e6477;">🌎 NOAA CO-OPS provides official tidal predictions. This tool uses harmonic constants for education — real tides include shallow-water and long-period constituents.</p>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+    
+    // ---------- HARDCODED NOAA-LIKE HARMONIC CONSTANTS ----------
+    const SPEEDS = {
+      M2: 28.984104,
+      S2: 30.0,
+      N2: 28.43973,
+      K1: 15.041069,
+      O1: 13.943035,
+      P1: 14.958931
+    };
+    
+    const STATIONS = {
+      sf: {
+        name: 'San Francisco (9414290)',
+        lat: 37.806, lon: -122.465,
+        constituents: [
+          { name: 'M2', amp: 0.542, phase: 330.5 },
+          { name: 'S2', amp: 0.142, phase: 358.9 },
+          { name: 'N2', amp: 0.112, phase: 306.7 },
+          { name: 'K1', amp: 0.368, phase: 342.3 },
+          { name: 'O1', amp: 0.233, phase: 315.8 },
+          { name: 'P1', amp: 0.122, phase: 340.1 }
+        ]
+      },
+      boston: {
+        name: 'Boston (8443970)',
+        lat: 42.355, lon: -71.050,
+        constituents: [
+          { name: 'M2', amp: 2.840, phase: 135.2 },
+          { name: 'S2', amp: 0.540, phase: 172.8 },
+          { name: 'N2', amp: 0.540, phase: 108.0 },
+          { name: 'K1', amp: 0.190, phase: 195.5 },
+          { name: 'O1', amp: 0.140, phase: 184.2 },
+          { name: 'P1', amp: 0.060, phase: 195.0 }
+        ]
+      },
+      seattle: {
+        name: 'Seattle (9447130)',
+        lat: 47.603, lon: -122.339,
+        constituents: [
+          { name: 'M2', amp: 0.961, phase: 222.5 },
+          { name: 'S2', amp: 0.231, phase: 247.3 },
+          { name: 'N2', amp: 0.199, phase: 195.6 },
+          { name: 'K1', amp: 0.523, phase: 230.4 },
+          { name: 'O1', amp: 0.323, phase: 211.2 },
+          { name: 'P1', amp: 0.171, phase: 229.1 }
+        ]
+      },
+      anchorage: {
+        name: 'Anchorage (9455920)',
+        lat: 61.238, lon: -149.89,
+        constituents: [
+          { name: 'M2', amp: 3.940, phase: 282.8 },
+          { name: 'S2', amp: 1.110, phase: 322.0 },
+          { name: 'N2', amp: 0.620, phase: 248.0 },
+          { name: 'K1', amp: 1.890, phase: 195.4 },
+          { name: 'O1', amp: 1.310, phase: 164.7 },
+          { name: 'P1', amp: 0.600, phase: 194.0 }
+        ]
+      }
+    };
+    
+    let currentStationKey = 'sf';
+    let tideChart = null;
+    const chartCtx = document.getElementById('tideChart').getContext('2d');
+    
+    // DOM elements
+    const stationSelect = document.getElementById('stationSelect');
+    const tableBody = document.getElementById('tableBody');
+    const stationMeta = document.getElementById('stationMeta');
+    const updateBtn = document.getElementById('updatePredictionBtn');
+    const explainBtn = document.getElementById('explainConstBtn');
+    const explainBox = document.getElementById('explainBox');
+    const hideExplainBtn = document.getElementById('hideExplainBtn');
+    const checkAllBtn = document.getElementById('checkAllBtn');
+    const uncheckAllBtn = document.getElementById('uncheckAllBtn');
+    const activeCountDisplay = document.getElementById('activeCountDisplay');
+    const sumAmpDisplay = document.getElementById('sumAmpDisplay');
+    
+    function deg2rad(deg) { return deg * Math.PI / 180.0; }
+    
+    // Build table with checkboxes
+    function renderConstituentTable(stationKey) {
+      const station = STATIONS[stationKey];
+      const consts = station.constituents;
+      let html = '';
+      for (let c of consts) {
+        const speed = SPEEDS[c.name] ? SPEEDS[c.name].toFixed(5) : '—';
+        html += `<tr data-const="${c.name}">
+          <td><input type="checkbox" class="const-checkbox" data-name="${c.name}" checked style="transform: scale(1.2); accent-color: #1a7a8c;"></td>
+          <td><strong>${c.name}</strong></td>
+          <td>${getFullName(c.name)}</td>
+          <td>${c.amp.toFixed(3)}</td>
+          <td>${c.phase.toFixed(1)}°</td>
+          <td>${speed}</td>
+        </tr>`;
+      }
+      tableBody.innerHTML = html;
+      stationMeta.textContent = `${station.name} · ${consts.length} primary constituents`;
+      
+      // Attach event listeners to checkboxes
+      document.querySelectorAll('.const-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          updateActiveCountAndSum();
+          updateChart(currentStationKey);
+        });
+      });
+      updateActiveCountAndSum();
+    }
+    
+    function getFullName(code) {
+      const map = {
+        'M2': 'Principal lunar semidiurnal',
+        'S2': 'Principal solar semidiurnal',
+        'N2': 'Larger lunar elliptic',
+        'K1': 'Luni-solar diurnal',
+        'O1': 'Principal lunar diurnal',
+        'P1': 'Principal solar diurnal'
+      };
+      return map[code] || code;
+    }
+    
+    // Get active constituent names from checkboxes
+    function getActiveConstituents() {
+      const checkboxes = document.querySelectorAll('.const-checkbox');
+      const active = [];
+      checkboxes.forEach(cb => { if (cb.checked) active.push(cb.dataset.name); });
+      return active;
+    }
+    
+    function updateActiveCountAndSum() {
+      const station = STATIONS[currentStationKey];
+      const consts = station.constituents;
+      const activeNames = getActiveConstituents();
+      const count = activeNames.length;
+      activeCountDisplay.textContent = `${count} active`;
+      
+      // Sum of amplitudes of active constituents
+      let sumAmp = 0;
+      consts.forEach(c => { if (activeNames.includes(c.name)) sumAmp += c.amp; });
+      sumAmpDisplay.textContent = `Sum of active amplitudes: ${sumAmp.toFixed(3)} m (max possible contribution).`;
+    }
+    
+    // Prediction using only checked constituents
+    function predictHeight(stationKey, tHours) {
+      const station = STATIONS[stationKey];
+      const consts = station.constituents;
+      const activeNames = getActiveConstituents();
+      let total = 0.0;
+      for (let c of consts) {
+        if (!activeNames.includes(c.name)) continue;
+        const speed = SPEEDS[c.name];
+        if (!speed) continue;
+        const phaseRad = deg2rad(c.phase);
+        const arg = deg2rad(speed) * tHours - phaseRad;
+        total += c.amp * Math.cos(arg);
+      }
+      return total;
+    }
+    
+    function generatePredictionData(stationKey) {
+      const now = new Date();
+      const startTime = new Date(now.getTime());
+      const hours = 48;
+      const step = 0.5;
+      const points = [];
+      const labels = [];
+      
+      for (let h = 0; h <= hours; h += step) {
+        const height = predictHeight(stationKey, h);
+        const forecastTime = new Date(startTime.getTime() + h * 3600 * 1000);
+        const label = forecastTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', weekday: 'short' });
+        labels.push(label);
+        points.push(height);
+      }
+      return { labels, points };
+    }
+    
+    function updateChart(stationKey) {
+      const { labels, points } = generatePredictionData(stationKey);
+      
+      if (tideChart) {
+        tideChart.destroy();
+      }
+      
+      tideChart = new Chart(chartCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Water level (m)',
+            data: points,
+            borderColor: '#1b7b8a',
+            backgroundColor: 'rgba(27, 123, 138, 0.03)',
+            borderWidth: 2.8,
+            pointRadius: 0,
+            tension: 0.25,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `Height: ${ctx.raw.toFixed(3)} m`
+              }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              ticks: { maxRotation: 30, autoSkip: true, maxTicksLimit: 14 },
+              grid: { color: '#cde3ec40' }
+            },
+            y: {
+              title: { display: true, text: 'meters above/below datum' },
+              grid: { color: '#c0dae6' }
+            }
+          }
+        }
+      });
+    }
+    
+    function refreshAll() {
+      const key = stationSelect.value;
+      currentStationKey = key;
+      renderConstituentTable(key);
+      updateChart(key);
+    }
+    
+    // Check/uncheck all
+    function setAllCheckboxes(checked) {
+      document.querySelectorAll('.const-checkbox').forEach(cb => cb.checked = checked);
+      updateActiveCountAndSum();
+      updateChart(currentStationKey);
+    }
+    
+    // Event listeners
+    updateBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      refreshAll();
+    });
+    
+    stationSelect.addEventListener('change', () => {
+      refreshAll();
+    });
+    
+    explainBtn.addEventListener('click', () => {
+      explainBox.style.display = 'block';
+    });
+    hideExplainBtn.addEventListener('click', () => {
+      explainBox.style.display = 'none';
+    });
+    
+    checkAllBtn.addEventListener('click', () => setAllCheckboxes(true));
+    uncheckAllBtn.addEventListener('click', () => setAllCheckboxes(false));
+    
+    window.addEventListener('DOMContentLoaded', () => {
+      stationSelect.value = 'sf';
+      refreshAll();
+    });
+    
+  })();
+</script>
+</body>
+</html>
