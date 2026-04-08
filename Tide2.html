@@ -129,7 +129,7 @@
       background: white;
       color: #0b3b4a;
       font-weight: 500;
-      min-width: 260px;
+      min-width: 300px;
       cursor: pointer;
       outline: none;
       transition: border 0.15s;
@@ -237,17 +237,6 @@
       text-decoration: none;
       border-bottom: 1px dotted;
     }
-    .active-indicator {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 10px;
-      background: #2a9d8f;
-      margin-right: 5px;
-    }
-    .inactive {
-      opacity: 0.5;
-    }
   </style>
 </head>
 <body>
@@ -308,15 +297,17 @@
           <option value="seattle">🌲 Seattle (9447130) · mixed, mainly semidiurnal</option>
           <option value="anchorage">❄️ Anchorage (9455920) · large diurnal</option>
           <option value="portsmouth">🦞 Portsmouth, NH (8423898) · semidiurnal</option>
-          <option value="portland">⚓ Portland, ME (8418150) · semidiurnal</option>
+          <option value="portland">🦐 Portland, ME (8418150) · semidiurnal</option>
           <option value="galveston">🌴 Galveston, TX (8771450) · mixed, small range</option>
+          <option value="sanjuan">🇵🇷 San Juan, PR (9755371) · mixed, small range</option>
+          <option value="nyc">🗽 New York (The Battery) (8518750) · semidiurnal</option>
         </select>
       </div>
       <button class="btn" id="updatePredictionBtn"><span>⟳</span> Update prediction & table</button>
       <button class="btn btn-outline" id="explainConstBtn" style="margin-left:auto;">📖 What am I seeing?</button>
     </div>
     
-    <!-- Toggle controls: add/remove constituents -->
+    <!-- Toggle controls -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
       <div class="toggle-all">
         <button class="btn-outline btn" id="checkAllBtn" style="padding: 6px 16px; font-size:0.9rem;">✓ Check all</button>
@@ -326,15 +317,13 @@
       <span id="activeCountDisplay" style="font-weight:500;">6 active</span>
     </div>
     
-    <!-- CONSTITUENT TABLE with checkboxes -->
+    <!-- CONSTITUENT TABLE -->
     <div style="overflow-x: auto;">
       <table class="const-table" id="constituentTable">
         <thead>
           <tr><th>Include?</th><th>Constituent</th><th>Name</th><th>Amplitude (m)</th><th>Phase (°, GMT)</th><th>Speed (°/hr)</th></tr>
         </thead>
-        <tbody id="tableBody">
-          <!-- filled by JS -->
-        </tbody>
+        <tbody id="tableBody"></tbody>
       </table>
     </div>
     <div class="flex-row">
@@ -344,7 +333,7 @@
       <span id="stationMeta" style="color:#2f6e80;">San Francisco · harmonic constants (demo)</span>
     </div>
     
-    <!-- CHART CANVAS -->
+    <!-- CHART -->
     <div class="chart-container">
       <canvas id="tideChart"></canvas>
     </div>
@@ -358,13 +347,13 @@
     </div>
   </div>
   
-  <!-- Additional explainer -->
+  <!-- Explain box -->
   <div id="explainBox" style="background:#e5f3f9; border-radius:24px; padding:1.5rem; margin-top:1.8rem; display:none;">
     <h3 style="margin-top:0;">🔍 How to read the “take‑apart” table</h3>
     <p><strong>Amplitude (H):</strong> half the tidal range contributed by that constituent (meters). <br>
     <strong>Phase (g):</strong> the lag (in degrees) of the maximum behind the equilibrium tide at Greenwich. Together with speed, it sets when high tide occurs.<br>
     <strong>Speed (σ):</strong> angular speed in degrees per hour — directly linked to astronomical cycles. <br>
-    💡 Notice that semidiurnal (M₂, S₂) have speeds near 30°/h, diurnal (K₁, O₁) near 15°/h. The combination creates the daily inequality.</p>
+    💡 Notice that semidiurnal (M₂, S₂) have speeds near 30°/h, diurnal (K₁, O₁) near 15°/h.</p>
     <button class="btn-outline btn" id="hideExplainBtn" style="margin-top:10px;">Hide explanation</button>
   </div>
   
@@ -384,7 +373,7 @@
   (function(){
     "use strict";
     
-    // ---------- HARDCODED NOAA-LIKE HARMONIC CONSTANTS ----------
+    // ---------- HARMONIC CONSTANTS (speeds) ----------
     const SPEEDS = {
       M2: 28.984104,
       S2: 30.0,
@@ -394,92 +383,112 @@
       P1: 14.958931
     };
     
-    const STATIONS = {
-      sf: {
-        name: 'San Francisco (9414290)',
-        constituents: [
-          { name: 'M2', amp: 0.542, phase: 330.5 },
-          { name: 'S2', amp: 0.142, phase: 358.9 },
-          { name: 'N2', amp: 0.112, phase: 306.7 },
-          { name: 'K1', amp: 0.368, phase: 342.3 },
-          { name: 'O1', amp: 0.233, phase: 315.8 },
-          { name: 'P1', amp: 0.122, phase: 340.1 }
-        ]
-      },
-      boston: {
-        name: 'Boston (8443970)',
-        constituents: [
-          { name: 'M2', amp: 2.840, phase: 135.2 },
-          { name: 'S2', amp: 0.540, phase: 172.8 },
-          { name: 'N2', amp: 0.540, phase: 108.0 },
-          { name: 'K1', amp: 0.190, phase: 195.5 },
-          { name: 'O1', amp: 0.140, phase: 184.2 },
-          { name: 'P1', amp: 0.060, phase: 195.0 }
-        ]
-      },
-      seattle: {
-        name: 'Seattle (9447130)',
-        constituents: [
-          { name: 'M2', amp: 0.961, phase: 222.5 },
-          { name: 'S2', amp: 0.231, phase: 247.3 },
-          { name: 'N2', amp: 0.199, phase: 195.6 },
-          { name: 'K1', amp: 0.523, phase: 230.4 },
-          { name: 'O1', amp: 0.323, phase: 211.2 },
-          { name: 'P1', amp: 0.171, phase: 229.1 }
-        ]
-      },
-      anchorage: {
-        name: 'Anchorage (9455920)',
-        constituents: [
-          { name: 'M2', amp: 3.940, phase: 282.8 },
-          { name: 'S2', amp: 1.110, phase: 322.0 },
-          { name: 'N2', amp: 0.620, phase: 248.0 },
-          { name: 'K1', amp: 1.890, phase: 195.4 },
-          { name: 'O1', amp: 1.310, phase: 164.7 },
-          { name: 'P1', amp: 0.600, phase: 194.0 }
-        ]
-      },
-      // New stations
-      portsmouth: {
-        name: 'Portsmouth, NH (8423898)',
-        constituents: [
-          { name: 'M2', amp: 2.680, phase: 142.5 },
-          { name: 'S2', amp: 0.510, phase: 178.0 },
-          { name: 'N2', amp: 0.510, phase: 115.0 },
-          { name: 'K1', amp: 0.180, phase: 200.0 },
-          { name: 'O1', amp: 0.130, phase: 188.0 },
-          { name: 'P1', amp: 0.055, phase: 198.0 }
-        ]
-      },
-      portland: {
-        name: 'Portland, ME (8418150)',
-        constituents: [
-          { name: 'M2', amp: 2.960, phase: 131.8 },
-          { name: 'S2', amp: 0.560, phase: 166.2 },
-          { name: 'N2', amp: 0.570, phase: 104.0 },
-          { name: 'K1', amp: 0.200, phase: 193.0 },
-          { name: 'O1', amp: 0.145, phase: 181.5 },
-          { name: 'P1', amp: 0.065, phase: 192.0 }
-        ]
-      },
-      galveston: {
-        name: 'Galveston, TX (8771450)',
-        constituents: [
-          { name: 'M2', amp: 0.225, phase: 275.0 },
-          { name: 'S2', amp: 0.055, phase: 310.0 },
-          { name: 'N2', amp: 0.045, phase: 250.0 },
-          { name: 'K1', amp: 0.175, phase: 320.0 },
-          { name: 'O1', amp: 0.120, phase: 300.0 },
-          { name: 'P1', amp: 0.055, phase: 318.0 }
-        ]
-      }
-    };
-    
-    let currentStationKey = 'sf';
+    // ---------- STATION DATABASE (including all requested) ----------
+const STATIONS = {
+  sf: {
+    name: 'San Francisco (9414290)',
+    constituents: [
+      { name: 'M2', amp: 0.542, phase: 330.5 },
+      { name: 'S2', amp: 0.142, phase: 358.9 },
+      { name: 'N2', amp: 0.112, phase: 306.7 },
+      { name: 'K1', amp: 0.368, phase: 342.3 },
+      { name: 'O1', amp: 0.233, phase: 315.8 },
+      { name: 'P1', amp: 0.122, phase: 340.1 }
+    ]
+  },
+  boston: {
+    name: 'Boston (8443970)',
+    constituents: [
+      { name: 'M2', amp: 2.840, phase: 135.2 },
+      { name: 'S2', amp: 0.540, phase: 172.8 },
+      { name: 'N2', amp: 0.540, phase: 108.0 },
+      { name: 'K1', amp: 0.190, phase: 195.5 },
+      { name: 'O1', amp: 0.140, phase: 184.2 },
+      { name: 'P1', amp: 0.060, phase: 195.0 }
+    ]
+  },
+  seattle: {
+    name: 'Seattle (9447130)',
+    constituents: [
+      { name: 'M2', amp: 0.961, phase: 222.5 },
+      { name: 'S2', amp: 0.231, phase: 247.3 },
+      { name: 'N2', amp: 0.199, phase: 195.6 },
+      { name: 'K1', amp: 0.523, phase: 230.4 },
+      { name: 'O1', amp: 0.323, phase: 211.2 },
+      { name: 'P1', amp: 0.171, phase: 229.1 }
+    ]
+  },
+  anchorage: {
+    name: 'Anchorage (9455920)',
+    constituents: [
+      { name: 'M2', amp: 3.940, phase: 282.8 },
+      { name: 'S2', amp: 1.110, phase: 322.0 },
+      { name: 'N2', amp: 0.620, phase: 248.0 },
+      { name: 'K1', amp: 1.890, phase: 195.4 },
+      { name: 'O1', amp: 1.310, phase: 164.7 },
+      { name: 'P1', amp: 0.600, phase: 194.0 }
+    ]
+  },
+  portsmouth: {
+    name: 'Portsmouth, NH (8423898)',
+    constituents: [
+      { name: 'M2', amp: 2.680, phase: 142.5 },
+      { name: 'S2', amp: 0.510, phase: 178.0 },
+      { name: 'N2', amp: 0.510, phase: 115.0 },
+      { name: 'K1', amp: 0.180, phase: 200.0 },
+      { name: 'O1', amp: 0.130, phase: 188.0 },
+      { name: 'P1', amp: 0.055, phase: 198.0 }
+    ]
+  },
+  portland: {
+    name: 'Portland, ME (8418150)',
+    constituents: [
+      { name: 'M2', amp: 2.960, phase: 131.8 },
+      { name: 'S2', amp: 0.560, phase: 166.2 },
+      { name: 'N2', amp: 0.570, phase: 104.0 },
+      { name: 'K1', amp: 0.200, phase: 193.0 },
+      { name: 'O1', amp: 0.145, phase: 181.5 },
+      { name: 'P1', amp: 0.065, phase: 192.0 }
+    ]
+  },
+  galveston: {
+    name: 'Galveston, TX (8771450)',
+    constituents: [
+      { name: 'M2', amp: 0.225, phase: 275.0 },
+      { name: 'S2', amp: 0.055, phase: 310.0 },
+      { name: 'N2', amp: 0.045, phase: 250.0 },
+      { name: 'K1', amp: 0.175, phase: 320.0 },
+      { name: 'O1', amp: 0.120, phase: 300.0 },
+      { name: 'P1', amp: 0.055, phase: 318.0 }
+    ]
+  },
+  sanjuan: {
+    name: 'San Juan, PR (9755371)',
+    constituents: [
+      { name: 'M2', amp: 0.098, phase: 245.0 },
+      { name: 'S2', amp: 0.029, phase: 285.0 },
+      { name: 'N2', amp: 0.018, phase: 220.0 },
+      { name: 'K1', amp: 0.082, phase: 310.0 },
+      { name: 'O1', amp: 0.060, phase: 290.0 },
+      { name: 'P1', amp: 0.027, phase: 308.0 }
+    ]
+  },
+  nyc: {
+    name: 'New York (The Battery) (8518750)',
+    constituents: [
+      { name: 'M2', amp: 1.360, phase: 152.0 },
+      { name: 'S2', amp: 0.300, phase: 187.0 },
+      { name: 'N2', amp: 0.280, phase: 125.0 },
+      { name: 'K1', amp: 0.110, phase: 215.0 },
+      { name: 'O1', amp: 0.075, phase: 205.0 },
+      { name: 'P1', amp: 0.035, phase: 213.0 }
+    ]
+  }
+};
+let currentStationKey = 'sf';
     let tideChart = null;
     const chartCtx = document.getElementById('tideChart').getContext('2d');
     
-    // DOM elements
     const stationSelect = document.getElementById('stationSelect');
     const tableBody = document.getElementById('tableBody');
     const stationMeta = document.getElementById('stationMeta');
@@ -494,7 +503,18 @@
     
     function deg2rad(deg) { return deg * Math.PI / 180.0; }
     
-   // Build table with checkboxes
+    function getFullName(code) {
+      const map = {
+        'M2': 'Principal lunar semidiurnal',
+        'S2': 'Principal solar semidiurnal',
+        'N2': 'Larger lunar elliptic',
+        'K1': 'Luni-solar diurnal',
+        'O1': 'Principal lunar diurnal',
+        'P1': 'Principal solar diurnal'
+      };
+      return map[code] || code;
+    }
+    
     function renderConstituentTable(stationKey) {
       const station = STATIONS[stationKey];
       const consts = station.constituents;
@@ -513,7 +533,6 @@
       tableBody.innerHTML = html;
       stationMeta.textContent = `${station.name} · ${consts.length} primary constituents`;
       
-      // Attach event listeners to checkboxes
       document.querySelectorAll('.const-checkbox').forEach(cb => {
         cb.addEventListener('change', () => {
           updateActiveCountAndSum();
@@ -523,19 +542,6 @@
       updateActiveCountAndSum();
     }
     
-    function getFullName(code) {
-      const map = {
-        'M2': 'Principal lunar semidiurnal',
-        'S2': 'Principal solar semidiurnal',
-        'N2': 'Larger lunar elliptic',
-        'K1': 'Luni-solar diurnal',
-        'O1': 'Principal lunar diurnal',
-        'P1': 'Principal solar diurnal'
-      };
-      return map[code] || code;
-    }
-    
-    // Get active constituent names from checkboxes
     function getActiveConstituents() {
       const checkboxes = document.querySelectorAll('.const-checkbox');
       const active = [];
@@ -550,13 +556,11 @@
       const count = activeNames.length;
       activeCountDisplay.textContent = `${count} active`;
       
-      // Sum of amplitudes of active constituents
       let sumAmp = 0;
       consts.forEach(c => { if (activeNames.includes(c.name)) sumAmp += c.amp; });
       sumAmpDisplay.textContent = `Sum of active amplitudes: ${sumAmp.toFixed(3)} m (max possible contribution).`;
     }
     
-    // Prediction using only checked constituents
     function predictHeight(stationKey, tHours) {
       const station = STATIONS[stationKey];
       const consts = station.constituents;
@@ -594,9 +598,7 @@
     function updateChart(stationKey) {
       const { labels, points } = generatePredictionData(stationKey);
       
-      if (tideChart) {
-        tideChart.destroy();
-      }
+      if (tideChart) tideChart.destroy();
       
       tideChart = new Chart(chartCtx, {
         type: 'line',
@@ -617,22 +619,12 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            tooltip: {
-              callbacks: {
-                label: (ctx) => `Height: ${ctx.raw.toFixed(3)} m`
-              }
-            },
+            tooltip: { callbacks: { label: (ctx) => `Height: ${ctx.raw.toFixed(3)} m` } },
             legend: { display: false }
           },
           scales: {
-            x: {
-              ticks: { maxRotation: 30, autoSkip: true, maxTicksLimit: 14 },
-              grid: { color: '#cde3ec40' }
-            },
-            y: {
-              title: { display: true, text: 'meters above/below datum' },
-              grid: { color: '#c0dae6' }
-            }
+            x: { ticks: { maxRotation: 30, autoSkip: true, maxTicksLimit: 14 }, grid: { color: '#cde3ec40' } },
+            y: { title: { display: true, text: 'meters above/below datum' }, grid: { color: '#c0dae6' } }
           }
         }
       });
@@ -645,7 +637,6 @@
       updateChart(key);
     }
     
-    // Check/uncheck all
     function setAllCheckboxes(checked) {
       document.querySelectorAll('.const-checkbox').forEach(cb => cb.checked = checked);
       updateActiveCountAndSum();
@@ -653,22 +644,10 @@
     }
     
     // Event listeners
-    updateBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      refreshAll();
-    });
-    
-    stationSelect.addEventListener('change', () => {
-      refreshAll();
-    });
-    
-    explainBtn.addEventListener('click', () => {
-      explainBox.style.display = 'block';
-    });
-    hideExplainBtn.addEventListener('click', () => {
-      explainBox.style.display = 'none';
-    });
-    
+    updateBtn.addEventListener('click', (e) => { e.preventDefault(); refreshAll(); });
+    stationSelect.addEventListener('change', refreshAll);
+    explainBtn.addEventListener('click', () => { explainBox.style.display = 'block'; });
+    hideExplainBtn.addEventListener('click', () => { explainBox.style.display = 'none'; });
     checkAllBtn.addEventListener('click', () => setAllCheckboxes(true));
     uncheckAllBtn.addEventListener('click', () => setAllCheckboxes(false));
     
@@ -676,9 +655,7 @@
       stationSelect.value = 'sf';
       refreshAll();
     });
-    
   })();
 </script>
 </body>
 </html>
-    
