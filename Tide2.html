@@ -307,6 +307,9 @@
           <option value="boston">⚓ Boston (8443970) · semidiurnal</option>
           <option value="seattle">🌲 Seattle (9447130) · mixed, mainly semidiurnal</option>
           <option value="anchorage">❄️ Anchorage (9455920) · large diurnal</option>
+          <option value="portsmouth">🦞 Portsmouth, NH (8423898) · semidiurnal</option>
+          <option value="portland">⚓ Portland, ME (8418150) · semidiurnal</option>
+          <option value="galveston">🌴 Galveston, TX (8771450) · mixed, small range</option>
         </select>
       </div>
       <button class="btn" id="updatePredictionBtn"><span>⟳</span> Update prediction & table</button>
@@ -394,7 +397,6 @@
     const STATIONS = {
       sf: {
         name: 'San Francisco (9414290)',
-        lat: 37.806, lon: -122.465,
         constituents: [
           { name: 'M2', amp: 0.542, phase: 330.5 },
           { name: 'S2', amp: 0.142, phase: 358.9 },
@@ -406,7 +408,6 @@
       },
       boston: {
         name: 'Boston (8443970)',
-        lat: 42.355, lon: -71.050,
         constituents: [
           { name: 'M2', amp: 2.840, phase: 135.2 },
           { name: 'S2', amp: 0.540, phase: 172.8 },
@@ -418,7 +419,6 @@
       },
       seattle: {
         name: 'Seattle (9447130)',
-        lat: 47.603, lon: -122.339,
         constituents: [
           { name: 'M2', amp: 0.961, phase: 222.5 },
           { name: 'S2', amp: 0.231, phase: 247.3 },
@@ -430,7 +430,6 @@
       },
       anchorage: {
         name: 'Anchorage (9455920)',
-        lat: 61.238, lon: -149.89,
         constituents: [
           { name: 'M2', amp: 3.940, phase: 282.8 },
           { name: 'S2', amp: 1.110, phase: 322.0 },
@@ -438,6 +437,40 @@
           { name: 'K1', amp: 1.890, phase: 195.4 },
           { name: 'O1', amp: 1.310, phase: 164.7 },
           { name: 'P1', amp: 0.600, phase: 194.0 }
+        ]
+      },
+      // New stations
+      portsmouth: {
+        name: 'Portsmouth, NH (8423898)',
+        constituents: [
+          { name: 'M2', amp: 2.680, phase: 142.5 },
+          { name: 'S2', amp: 0.510, phase: 178.0 },
+          { name: 'N2', amp: 0.510, phase: 115.0 },
+          { name: 'K1', amp: 0.180, phase: 200.0 },
+          { name: 'O1', amp: 0.130, phase: 188.0 },
+          { name: 'P1', amp: 0.055, phase: 198.0 }
+        ]
+      },
+      portland: {
+        name: 'Portland, ME (8418150)',
+        constituents: [
+          { name: 'M2', amp: 2.960, phase: 131.8 },
+          { name: 'S2', amp: 0.560, phase: 166.2 },
+          { name: 'N2', amp: 0.570, phase: 104.0 },
+          { name: 'K1', amp: 0.200, phase: 193.0 },
+          { name: 'O1', amp: 0.145, phase: 181.5 },
+          { name: 'P1', amp: 0.065, phase: 192.0 }
+        ]
+      },
+      galveston: {
+        name: 'Galveston, TX (8771450)',
+        constituents: [
+          { name: 'M2', amp: 0.225, phase: 275.0 },
+          { name: 'S2', amp: 0.055, phase: 310.0 },
+          { name: 'N2', amp: 0.045, phase: 250.0 },
+          { name: 'K1', amp: 0.175, phase: 320.0 },
+          { name: 'O1', amp: 0.120, phase: 300.0 },
+          { name: 'P1', amp: 0.055, phase: 318.0 }
         ]
       }
     };
@@ -461,7 +494,7 @@
     
     function deg2rad(deg) { return deg * Math.PI / 180.0; }
     
-    // Build table with checkboxes
+   // Build table with checkboxes
     function renderConstituentTable(stationKey) {
       const station = STATIONS[stationKey];
       const consts = station.constituents;
@@ -648,3 +681,4 @@
 </script>
 </body>
 </html>
+    
