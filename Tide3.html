@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
-  <title>🌍 Tide School 3 · Spring/Neap Bulge + Vector</title>
+  <title>🌍 Tide School 3 · Animation + Clock + Graphs</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -32,17 +32,30 @@
       border-left: 5px solid #2a9d8f;
       padding-left: 1.2rem;
     }
-    .dashboard {
-      display: grid;
-      grid-template-columns: 1fr 1.5fr;
+    /* Animation section on top */
+    .animation-section {
+      display: flex;
       gap: 20px;
+      margin-bottom: 30px;
     }
-    .card {
+    .animation-card {
       background: white;
       border-radius: 24px;
       padding: 1.5rem;
       box-shadow: 0 8px 20px rgba(0,30,40,0.04);
       border: 1px solid #cde3ec;
+      flex: 2;
+    }
+    .clock-card {
+      background: white;
+      border-radius: 24px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 20px rgba(0,30,40,0.04);
+      border: 1px solid #cde3ec;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
     .animation-container {
       aspect-ratio: 1/1;
@@ -83,6 +96,21 @@
     }
     .legend-item { display: flex; align-items: center; gap: 6px; }
     .color-dot { width: 12px; height: 12px; border-radius: 3px; }
+    
+    /* Graphs section below */
+    .graphs-section {
+      background: white;
+      border-radius: 24px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 20px rgba(0,30,40,0.04);
+      border: 1px solid #cde3ec;
+    }
+    .station-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
     .plots-grid {
       display: flex;
       flex-direction: column;
@@ -103,15 +131,15 @@
       color: #1a5f70;
     }
     .plot-canvas-container {
-      height: 50px;
+      height: 55px;
       width: 100%;
     }
     .total-plot-container {
-      height: 100px;
-      margin-top: 10px;
+      height: 110px;
+      margin-top: 15px;
       background: #ecf3f8;
       border-radius: 12px;
-      padding: 5px;
+      padding: 8px;
     }
     .info-panel {
       background: #e9f3f8;
@@ -122,18 +150,30 @@
     }
     .footnote { margin-top: 20px; color: #406e7e; text-align: center; }
     .speed-slider { display: flex; align-items: center; gap: 8px; }
+    .clock-display {
+      font-size: 2.5rem;
+      font-weight: 600;
+      font-family: 'Space Grotesk', monospace;
+      color: #0a3a4b;
+      text-align: center;
+    }
+    .clock-date {
+      font-size: 1.2rem;
+      color: #2c6a7a;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
 <div class="container">
   <h1>🌍🌕 Tide School 3 
-    <span style="font-size:1rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px;">spring/neap · total vector</span>
+    <span style="font-size:1rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px;">animation · clock · graphs</span>
   </h1>
-  <div class="subhead">Watch the Sun and Moon align → larger bulge (spring tide). Quadrature → smaller bulge (neap tide). Vector shows net force.</div>
+  <div class="subhead">Sun & Moon align → spring tide (larger bulge). Quadrature → neap tide. Watch vectors and clock advance from Jan 1, 2025.</div>
 
-  <div class="dashboard">
-    <!-- LEFT: ANIMATION -->
-    <div class="card">
+  <!-- TOP: Animation + Clock -->
+  <div class="animation-section">
+    <div class="animation-card">
       <h3 style="margin:0 0 8px;">🌞 Sun–Earth–Moon System</h3>
       <div class="animation-container">
         <canvas id="orbitCanvas" width="600" height="600"></canvas>
@@ -143,47 +183,53 @@
         <button class="btn-outline btn" id="resetViewBtn">⟲ Reset</button>
         <div class="speed-slider">
           <span>⏩</span>
-          <input type="range" id="speedSlider" min="0.2" max="3.0" step="0.1" value="1.0" style="width:100px;">
+          <input type="range" id="speedSlider" min="0.2" max="5.0" step="0.1" value="1.0" style="width:100px;">
         </div>
-        <label><input type="checkbox" id="showForcesCheck" checked> Vectors</label>
+        <label><input type="checkbox" id="showForcesCheck" checked> Show vectors</label>
       </div>
       <div class="legend">
-        <div class="legend-item"><span class="color-dot" style="background:#3a9bdc;"></span> Lunar bulge</div>
-        <div class="legend-item"><span class="color-dot" style="background:#f4c542;"></span> Solar bulge</div>
+        <div class="legend-item"><span class="color-dot" style="background:#3a9bdc;"></span> Lunar force</div>
+        <div class="legend-item"><span class="color-dot" style="background:#f4c542;"></span> Solar force</div>
         <div class="legend-item"><span class="color-dot" style="background:#ffffff; border:1px solid #aaa;"></span> Total vector</div>
       </div>
       <div class="info-panel" id="animationNote">🌕 Moon angle updates with time.</div>
     </div>
-
-    <!-- RIGHT: STATION + INDIVIDUAL CONSTITUENT PLOTS -->
-    <div class="card">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-        <label style="font-weight:600;">📍 Station</label>
-        <select id="stationSelect" style="flex:1;">
-          <option value="sf">🌉 San Francisco</option>
-          <option value="boston">⚓ Boston</option>
-          <option value="anchorage">❄️ Anchorage</option>
-          <option value="seattle">🌲 Seattle</option>
-          <option value="portsmouth">🦞 Portsmouth</option>
-          <option value="portland">🦐 Portland</option>
-          <option value="galveston">🌴 Galveston</option>
-          <option value="sanjuan">🇵🇷 San Juan</option>
-          <option value="nyc">🗽 New York</option>
-          <option value="stpete">🌴 St. Petersburg</option>
-        </select>
-      </div>
-      
-      <div class="plots-grid" id="plotsContainer"></div>
-      
-      <div class="total-plot-container">
-        <div class="plot-header"><strong>📈 TOTAL TIDE (sum of all constituents)</strong> <span id="totalRange"></span></div>
-        <div style="height:90px;"><canvas id="totalChartCanvas"></canvas></div>
-      </div>
-      <div class="footnote" style="margin-top:8px;" id="chartFootnote">Each graph scrolls with animation time · window: 48h</div>
+    <div class="clock-card">
+      <div class="clock-date" id="clockDate">January 1, 2025</div>
+      <div class="clock-display" id="clockTime">00:00:00</div>
+      <div style="margin-top:15px; text-align:center; color:#406e7e;">GMT (UTC)</div>
     </div>
   </div>
+
+  <!-- BOTTOM: Graphs and station selector -->
+  <div class="graphs-section">
+    <div class="station-row">
+      <label style="font-weight:600;">📍 NOAA Station</label>
+      <select id="stationSelect" style="min-width:240px;">
+        <option value="sf">🌉 San Francisco</option>
+        <option value="boston">⚓ Boston</option>
+        <option value="anchorage">❄️ Anchorage</option>
+        <option value="seattle">🌲 Seattle</option>
+        <option value="portsmouth">🦞 Portsmouth</option>
+        <option value="portland">🦐 Portland</option>
+        <option value="galveston">🌴 Galveston</option>
+        <option value="sanjuan">🇵🇷 San Juan</option>
+        <option value="nyc">🗽 New York</option>
+        <option value="stpete">🌴 St. Petersburg</option>
+      </select>
+      <span style="margin-left:auto; font-size:0.9rem;">⏱️ 48‑hour window · scrolling</span>
+    </div>
+    
+    <div class="plots-grid" id="plotsContainer"></div>
+    
+    <div class="total-plot-container">
+      <div class="plot-header"><strong>📈 TOTAL TIDE (sum of all constituents)</strong> <span id="totalRange"></span></div>
+      <div style="height:100px;"><canvas id="totalChartCanvas"></canvas></div>
+    </div>
+    <div class="footnote" style="margin-top:8px;" id="chartFootnote">Each constituent plotted separately. Animation drives the clock and data.</div>
+  </div>
   <div class="footnote">
-    ⏱️ Animation drives all plots in real time. Bulge size reflects Sun‑Moon alignment. White vector = net tidal force direction.
+    🌊 Tidal bulges respond to combined lunar/solar force. White vector = net direction & strength. Clock starts Jan 1, 2025 00:00 GMT.
   </div>
 </div>
 
@@ -210,7 +256,7 @@
     
     // State
     let currentStationKey = 'sf';
-    let animationTime = 0;
+    let animationTime = 0; // hours since Jan 1, 2025 00:00 GMT
     let isPlaying = true;
     let speed = 1.0;
     const maxWindowHours = 48;
@@ -233,6 +279,11 @@
     const totalChartCanvas = document.getElementById('totalChartCanvas').getContext('2d');
     const totalRangeSpan = document.getElementById('totalRange');
     const chartFootnote = document.getElementById('chartFootnote');
+    const clockDate = document.getElementById('clockDate');
+    const clockTime = document.getElementById('clockTime');
+    
+    // Clock start: Jan 1, 2025 00:00 GMT
+    const START_DATE = new Date(Date.UTC(2025, 0, 1, 0, 0, 0));
     
     function deg2rad(d) { return d * Math.PI/180; }
     
@@ -245,7 +296,6 @@
     }
     
     function computeAll(t) {
-      const s = STATIONS[currentStationKey];
       const vals = CONST_ORDER.map((_, i) => computeConstituent(t, i));
       const total = vals.reduce((a,b) => a+b, 0);
       return { vals, total };
@@ -286,7 +336,12 @@
     
     function updateAllCharts() {
       if (dataBuffer.length === 0) return;
-      const labels = dataBuffer.map(d => `${Math.floor(d.time/24)}d ${(d.time%24).toFixed(1)}h`);
+      const labels = dataBuffer.map(d => {
+        const totalHours = d.time;
+        const days = Math.floor(totalHours / 24);
+        const hours = totalHours % 24;
+        return `${days}d ${hours.toFixed(1)}h`;
+      });
       
       CONST_ORDER.forEach((_, i) => {
         const chart = constituentCharts[i];
@@ -323,11 +378,19 @@
       chartFootnote.textContent = `${STATIONS[currentStationKey].name} · ${dataBuffer.length} points · window ${maxWindowHours}h`;
     }
     
+    function updateClock() {
+      const currentDate = new Date(START_DATE.getTime() + animationTime * 3600 * 1000);
+      const options = { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'GMT' };
+      clockDate.textContent = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'GMT' });
+      clockTime.textContent = currentDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'GMT' });
+    }
+    
     function resetSimulation() {
       animationTime = 0;
       dataBuffer = [];
       addDataPoint(0);
       updateAllCharts();
+      updateClock();
       drawScene();
     }
     
@@ -341,13 +404,13 @@
       drawScene();
     }
     
-    // ---------- ANIMATION (with spring/neap and total vector) ----------
+    // ---------- ANIMATION ----------
     const earthRadius = 20;
     const moonOrbitRadius = 80;
     const moonRadius = 6;
     const sunRadius = 30;
-    const moonPeriod = 24.84;
-    const earthPeriod = 8766;
+    const moonPeriod = 24.84;      // hours
+    const earthPeriod = 8766;       // hours (~1 year)
     const declinationAngle = 0.41;
     
     function drawScene() {
@@ -358,8 +421,7 @@
       const moonAngle = (animationTime * 2 * Math.PI / moonPeriod) % (2*Math.PI);
       const earthAngle = (animationTime * 2 * Math.PI / earthPeriod) % (2*Math.PI);
       
-      // Increased Earth orbit radius to move Sun farther away
-      const earthOrbitRad = 200; // was 120
+      const earthOrbitRad = 200; // Sun farther away
       const earthX = cx + Math.cos(earthAngle) * earthOrbitRad;
       const earthY = cy + Math.sin(earthAngle) * earthOrbitRad * 0.5;
       const moonX = earthX + Math.cos(moonAngle) * moonOrbitRadius;
@@ -387,12 +449,9 @@
       ctx.fillStyle = '#d4d9e0'; ctx.fill();
       
       // Directions
-      const sunDir = earthAngle; // from Earth to Sun is opposite? Actually vector from Sun to Earth matters, but for tide we consider direction of tide-raising force.
-      // Tide-raising force points toward (and away from) the body. We'll use the direction from Earth to Moon and Earth to Sun.
       const toMoonDir = Math.atan2(moonY - earthY, moonX - earthX);
       const toSunDir = Math.atan2(sunY - earthY, sunX - earthX);
       
-      // Compute combined bulge factor (spring/neap)
       const angleDiff = toMoonDir - toSunDir;
       const lunarStrength = 1.0;
       const solarStrength = 0.46;
@@ -400,18 +459,17 @@
       const baseBulgeSize = 12;
       const bulgeSize = baseBulgeSize * combinedFactor;
       
-      // Combined bulge direction (weighted average of force vectors)
       const totalX = lunarStrength * Math.cos(toMoonDir) + solarStrength * Math.cos(toSunDir);
       const totalY = lunarStrength * Math.sin(toMoonDir) + solarStrength * Math.sin(toSunDir);
       const bulgeDir = Math.atan2(totalY, totalX);
       
-      // Draw combined equilibrium tide bulge
+      // Combined bulge
       ctx.beginPath();
       ctx.ellipse(earthX, earthY, earthRadius + bulgeSize, earthRadius + bulgeSize*0.5, bulgeDir, 0, 2*Math.PI);
       ctx.fillStyle = '#3a9bdc80';
       ctx.fill();
       
-      // Optional: faint individual components
+      // Faint components
       ctx.beginPath();
       ctx.ellipse(earthX, earthY, earthRadius+12, earthRadius+6, toMoonDir, 0, 2*Math.PI);
       ctx.fillStyle = '#3a9bdc30'; ctx.fill();
@@ -419,38 +477,29 @@
       ctx.ellipse(earthX, earthY, earthRadius+5.5, earthRadius+2.8, toSunDir, 0, 2*Math.PI);
       ctx.fillStyle = '#f4c54230'; ctx.fill();
       
-      // Draw total tide vector (white arrow) from Earth center showing net direction and magnitude
+      // Vectors
       if (showForcesCheck.checked) {
-        // Lunar vector
         ctx.beginPath(); ctx.moveTo(earthX, earthY); ctx.lineTo(earthX + Math.cos(toMoonDir)*50, earthY + Math.sin(toMoonDir)*50);
         ctx.strokeStyle = '#3a9bdc'; ctx.lineWidth = 2; ctx.stroke();
-        // Solar vector
         ctx.beginPath(); ctx.moveTo(earthX, earthY); ctx.lineTo(earthX + Math.cos(toSunDir)*40, earthY + Math.sin(toSunDir)*40);
         ctx.strokeStyle = '#f4c542'; ctx.stroke();
         
-        // Total vector (thick white)
         const totalMagnitude = Math.sqrt(totalX*totalX + totalY*totalY);
-        const totalLength = 30 + 40 * (combinedFactor / 1.46); // scale with strength
+        const totalLength = 30 + 40 * (combinedFactor / 1.46);
         ctx.beginPath(); ctx.moveTo(earthX, earthY); 
         ctx.lineTo(earthX + (totalX/totalMagnitude)*totalLength, earthY + (totalY/totalMagnitude)*totalLength);
         ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3.5; ctx.stroke();
         ctx.beginPath(); ctx.arc(earthX + (totalX/totalMagnitude)*totalLength, earthY + (totalY/totalMagnitude)*totalLength, 4, 0, 2*Math.PI);
         ctx.fillStyle = '#ffffff'; ctx.fill();
       }
-      
-      // Declination indicator
+      // Declination
       ctx.save(); ctx.translate(earthX, earthY); ctx.rotate(declinationAngle * Math.sin(animationTime/12));
       ctx.beginPath(); ctx.moveTo(0, -earthRadius-5); ctx.lineTo(0, -earthRadius-15);
       ctx.strokeStyle = '#7b68c4'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
       
-      // Spring/neap status
       const cosDiff = Math.cos(angleDiff);
-      let tideType = '';
-      if (cosDiff > 0.8) tideType = '🌕🌑 Spring tide (aligned)';
-      else if (cosDiff < -0.8) tideType = '🌓 Neap tide (quadrature)';
-      else tideType = '↗️ Mixed';
-      
-      animationNote.innerHTML = `🌕 Moon ${(moonAngle*180/Math.PI).toFixed(0)}° · Sun-Moon angle ${Math.abs(angleDiff*180/Math.PI).toFixed(0)}° · ${tideType} · Bulge ${bulgeSize.toFixed(1)}`;
+      let tideType = cosDiff > 0.8 ? '🌕🌑 Spring' : (cosDiff < -0.8 ? '🌓 Neap' : '↗️ Mixed');
+      animationNote.innerHTML = `Moon ${(moonAngle*180/Math.PI).toFixed(0)}° · Sun-Moon ${Math.abs(angleDiff*180/Math.PI).toFixed(0)}° · ${tideType} · Bulge ${bulgeSize.toFixed(1)}`;
     }
     
     function animationFrame() {
@@ -461,6 +510,7 @@
           addDataPoint(animationTime);
           updateAllCharts();
         }
+        updateClock();
         drawScene();
       }
       requestAnimationFrame(animationFrame);
