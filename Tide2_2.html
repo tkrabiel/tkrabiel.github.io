@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
-  <title>🌊 Tide School 2 · Build Your Own Prediction (GMT)</title>
+  <title>🌊 Tide School 2 · Build Your Own Prediction (MLLW · GMT)</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -140,21 +140,46 @@
       font-weight: 600;
       margin-left: 12px;
     }
-    .warning { color: #b45f06; background: #fff3e0; border-radius: 30px; padding: 2px 12px; }
+    .datum-badge {
+      background: #2a9d8f;
+      color: white;
+      padding: 2px 12px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    .unit-toggle {
+      background: #d9ecf3;
+      border-radius: 40px;
+      padding: 5px;
+      display: inline-flex;
+    }
+    .unit-option {
+      padding: 6px 18px;
+      border-radius: 40px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .unit-option.active {
+      background: #1a7a8c;
+      color: white;
+    }
   </style>
 </head>
 <body>
 <div class="container">
   <h1>🌊🧪 Tide School 2 
     <span style="font-size:1rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px;">build your own prediction</span>
-    <span class="gmt-badge">🕒 All times in GMT</span>
+    <span class="gmt-badge">🕒 GMT</span>
+    <span class="datum-badge">📏 Datum: MLLW</span>
   </h1>
-  <div class="subhead">Learn where harmonic constants come from · enter data from any NOAA station · time reference: GMT</div>
+  <div class="subhead">Learn where harmonic constants come from · enter data from any NOAA station · all times GMT · heights relative to MLLW</div>
 
-  <!-- STEP 1: Choose example or start custom -->
+  <!-- STEP 1: Choose example or custom -->
   <div class="card">
     <span class="step-badge">STEP 1 — Pick a starting point</span>
-    <p style="margin-bottom: 12px;">Choose an example station to see how the data looks, or jump straight to entering your own.</p>
+    <p style="margin-bottom: 12px;">Choose an example station to see how the data looks, or start from scratch.</p>
     <div class="flex-row">
       <select id="exampleStationSelect" style="min-width:240px;">
         <option value="sf">🌉 San Francisco (example)</option>
@@ -162,66 +187,71 @@
         <option value="boston">⚓ Boston (example)</option>
         <option value="custom">📝 Start from scratch (custom)</option>
       </select>
-      <button class="btn" id="loadExampleBtn">📋 Load example into form</button>
+      <button class="btn" id="loadExampleBtn">📋 Load example</button>
       <span style="margin-left:auto; font-size:0.9rem;">or</span>
-      <button class="btn-outline btn" id="clearFormBtn">🧹 Clear all fields</button>
+      <button class="btn-outline btn" id="clearFormBtn">🧹 Clear all</button>
     </div>
   </div>
 
-  <!-- STEP 2: Find NOAA data (guided) -->
+  <!-- STEP 2: Find NOAA data -->
   <div class="card">
     <span class="step-badge">STEP 2 — Find NOAA harmonic constants (GMT phases)</span>
     <p><strong>You need the 7‑digit NOAA station ID.</strong> Find it on the <a href="https://tidesandcurrents.noaa.gov/map/" target="_blank" rel="noopener">NOAA map</a>.</p>
     <div class="flex-row">
       <label style="font-weight:600;">Station ID:</label>
-      <input type="text" id="stationIdInput" placeholder="e.g., 9414290 (SF)" value="" style="width:140px;">
+      <input type="text" id="stationIdInput" placeholder="e.g., 9414290" value="" style="width:140px;">
       <button class="btn-outline btn" id="openHarconBtn">🔗 Open NOAA Harmonic Page</button>
-      <span class="helper">(harcon.html?id=...)</span>
     </div>
     <div class="info-box">
-      <strong>📖 How to read the NOAA table:</strong> Look for rows <strong>M2, S2, N2, K1, O1, P1</strong>.<br>
-      • <strong>Amplitude</strong> – enter in FEET (we convert to meters). <br>
-      • <strong>Phase</strong> – use the value under <strong>"Phase (GMT)"</strong> in degrees.<br>
-      ⚠️ If P1 is missing, estimate it as <code>K1 amplitude × 0.33</code> with similar phase.<br>
-      🕒 <strong>All times and phases are referenced to GMT.</strong>
+      <strong>📖 Reading the NOAA table:</strong> Look for rows <strong>M2, S2, N2, K1, O1, P1</strong>.<br>
+      • <strong>Amplitude</strong> – you can enter in <strong>feet or meters</strong> (toggle below).<br>
+      • <strong>Phase</strong> – use <strong>"Phase (GMT)"</strong> in degrees.<br>
+      ⚠️ If P1 missing, estimate as <code>K1 × 0.33</code> with similar phase.<br>
+      🕒 All times and phases are GMT. Heights are relative to <strong>MLLW</strong> (Mean Lower Low Water).
     </div>
   </div>
 
-  <!-- STEP 3: Enter constituent data -->
+  <!-- STEP 3: Enter constituents -->
   <div class="card">
     <span class="step-badge">STEP 3 — Enter the six primary constituents</span>
-    <div id="constituentFields" class="constituent-grid"></div>
     <div class="flex-row" style="justify-content: space-between;">
-      <div><input type="checkbox" id="includeAllCheck" checked> <label for="includeAllCheck">Include all in prediction</label></div>
-      <button class="btn" id="updatePredictionBtn">✨ Update tide prediction</button>
+      <div>
+        <span style="font-weight:600; margin-right:12px;">Input unit:</span>
+        <div class="unit-toggle" id="unitToggle">
+          <span class="unit-option active" data-unit="ft">Feet (ft)</span>
+          <span class="unit-option" data-unit="m">Meters (m)</span>
+        </div>
+      </div>
+      <div><input type="checkbox" id="includeAllCheck" checked> <label for="includeAllCheck">Include all</label></div>
+    </div>
+    <div id="constituentFields" class="constituent-grid"></div>
+    <div class="flex-row" style="justify-content: flex-end;">
+      <button class="btn" id="updatePredictionBtn">✨ Update prediction</button>
     </div>
     <div style="margin-top:12px;">
       <span id="meterNote" style="background:#d9eef5; padding:5px 15px; border-radius:30px;"></span>
     </div>
   </div>
 
-  <!-- CHART & SUMMARY -->
+  <!-- CHART -->
   <div class="card">
-    <span class="step-badge">📈 LIVE PREDICTION (next 48 hours in GMT)</span>
+    <span class="step-badge">📈 LIVE PREDICTION (next 48h GMT, MLLW datum)</span>
     <div class="chart-container">
       <canvas id="tideChart"></canvas>
     </div>
-    <div class="footnote" id="chartFootnote">Using entered constants. Toggle constituents above to see individual effects.</div>
-    <div style="margin-top:20px;">
-      <p><strong>🧪 Experiment:</strong> Change one amplitude or phase and click "Update prediction". Notice how the curve shifts. All times are GMT.</p>
-    </div>
+    <div class="footnote" id="chartFootnote"></div>
+    <p style="margin-top:16px;">🧪 Toggle constituents or change values – the curve updates instantly.</p>
   </div>
 
-  <!-- Reference table -->
   <div style="display: flex; justify-content: space-between; color:#3a6e80;">
     <span>⚡ Speeds (°/h): M2=28.984, S2=30.0, N2=28.440, K1=15.041, O1=13.943, P1=14.959</span>
-    <span>🌎 NOAA data source · educational use · GMT reference</span>
+    <span>🌎 NOAA data · educational use · MLLW · GMT</span>
   </div>
 </div>
 
 <script>
   (function(){
-    // ---------- fixed speeds (deg/hour) ----------
+    // ---------- fixed speeds ----------
     const SPEEDS = {
       M2: 28.984104, S2: 30.0, N2: 28.43973,
       K1: 15.041069, O1: 13.943035, P1: 14.958931
@@ -233,12 +263,16 @@
       O1:'Principal lunar diurnal', P1:'Principal solar diurnal'
     };
 
-    // Example stations (pre-filled data in feet & degrees, GMT phases)
+    // Example data (stored in feet, GMT phases)
     const EXAMPLES = {
       sf: { name:'San Francisco', amps_ft:[1.778,0.466,0.367,1.207,0.764,0.400], phases:[330.5,358.9,306.7,342.3,315.8,340.1] },
       anchorage: { name:'Anchorage', amps_ft:[12.93,3.64,2.03,6.20,4.30,1.97], phases:[282.8,322.0,248.0,195.4,164.7,194.0] },
       boston: { name:'Boston', amps_ft:[9.32,1.77,1.77,0.62,0.46,0.20], phases:[135.2,172.8,108.0,195.5,184.2,195.0] }
     };
+
+    // State
+    let currentUnit = 'ft'; // 'ft' or 'm'
+    let tideChart = null;
 
     // DOM elements
     const fieldsContainer = document.getElementById('constituentFields');
@@ -253,75 +287,65 @@
     const chartFootnote = document.getElementById('chartFootnote');
     const canvas = document.getElementById('tideChart');
     const ctx = canvas.getContext('2d');
-    let tideChart = null;
+    const unitOptions = document.querySelectorAll('.unit-option');
 
     const deg2rad = deg => deg * Math.PI / 180.0;
 
-    // Build input fields
-    function buildFields() {
+    // Build fields based on unit
+    function renderFields() {
       let html = '';
       CONST_NAMES.forEach(name => {
+        const unitLabel = currentUnit === 'ft' ? 'ft' : 'm';
+        const placeholder = `Amplitude (${unitLabel})`;
         html += `<div class="const-field" id="field-${name}">
           <label><input type="checkbox" class="include-const" data-name="${name}" checked> ${name} – ${FULL_NAMES[name]}</label>
-          <input type="number" step="0.001" id="amp_ft_${name}" placeholder="Amplitude (ft)" value="0.000" style="width:100%;">
+          <input type="number" step="0.001" id="amp_${name}" placeholder="${placeholder}" value="0.000">
           <input type="number" step="0.1" id="phase_${name}" placeholder="Phase (° GMT)" value="0.0">
-          <div class="helper">→ <span id="amp_m_${name}">0.000</span> m</div>
+          <div class="helper" id="helper_${name}">→ <span id="amp_m_${name}">0.000</span> m</div>
         </div>`;
       });
       fieldsContainer.innerHTML = html;
 
+      // Attach conversion display listeners
       CONST_NAMES.forEach(name => {
-        const ampFtInput = document.getElementById(`amp_ft_${name}`);
-        const ampMSpan = document.getElementById(`amp_m_${name}`);
-        const updateMeter = () => {
-          const ft = parseFloat(ampFtInput.value) || 0;
-          ampMSpan.textContent = (ft * 0.3048).toFixed(3);
+        const ampInput = document.getElementById(`amp_${name}`);
+        const helperSpan = document.getElementById(`amp_m_${name}`);
+        const updateHelper = () => {
+          let val = parseFloat(ampInput.value) || 0;
+          let meters;
+          if (currentUnit === 'ft') {
+            meters = val * 0.3048;
+          } else {
+            meters = val;
+          }
+          helperSpan.textContent = meters.toFixed(3);
+          // Show both if in ft mode
+          const helperDiv = document.getElementById(`helper_${name}`);
+          if (currentUnit === 'ft') {
+            helperDiv.innerHTML = `→ <span id="amp_m_${name}">${meters.toFixed(3)}</span> m  (${val.toFixed(3)} ft)`;
+          } else {
+            helperDiv.innerHTML = `→ <span id="amp_m_${name}">${meters.toFixed(3)}</span> m`;
+          }
+          // re-assign span for future updates
+          document.getElementById(`amp_m_${name}`).textContent = meters.toFixed(3);
         };
-        ampFtInput.addEventListener('input', updateMeter);
-        updateMeter();
+        ampInput.addEventListener('input', updateHelper);
+        updateHelper();
       });
 
+      // Sync include all
       includeAllCheck.addEventListener('change', () => {
-        const checked = includeAllCheck.checked;
-        document.querySelectorAll('.include-const').forEach(cb => cb.checked = checked);
+        document.querySelectorAll('.include-const').forEach(cb => cb.checked = includeAllCheck.checked);
       });
     }
-    buildFields();
 
-    function loadExample(stationKey) {
-      const ex = EXAMPLES[stationKey];
-      if (!ex) return;
-      stationIdInput.value = stationKey === 'sf' ? '9414290' : (stationKey==='anchorage'?'9455920':'8443970');
-      CONST_NAMES.forEach((name, idx) => {
-        document.getElementById(`amp_ft_${name}`).value = ex.amps_ft[idx].toFixed(3);
-        document.getElementById(`phase_${name}`).value = ex.phases[idx].toFixed(1);
-        document.getElementById(`amp_ft_${name}`).dispatchEvent(new Event('input'));
-        document.querySelector(`.include-const[data-name="${name}"]`).checked = true;
-      });
-      includeAllCheck.checked = true;
-      meterNote.textContent = `✅ Loaded ${ex.name} example. Amplitudes in feet → meters. Phases are GMT.`;
-      updatePrediction();
-    }
-
-    function clearForm() {
-      CONST_NAMES.forEach(name => {
-        document.getElementById(`amp_ft_${name}`).value = '0.000';
-        document.getElementById(`phase_${name}`).value = '0.0';
-        document.getElementById(`amp_ft_${name}`).dispatchEvent(new Event('input'));
-        document.querySelector(`.include-const[data-name="${name}"]`).checked = false;
-      });
-      includeAllCheck.checked = false;
-      stationIdInput.value = '';
-      meterNote.textContent = '🧹 Fields cleared. Enter your own data (feet, GMT phases).';
-      updatePrediction();
-    }
-
+    // Get entered constituents (always returns meters)
     function getEnteredConstituents() {
       const consts = [];
       CONST_NAMES.forEach(name => {
         const include = document.querySelector(`.include-const[data-name="${name}"]`).checked;
-        const ampFt = parseFloat(document.getElementById(`amp_ft_${name}`).value) || 0;
-        const ampM = ampFt * 0.3048;
+        let ampVal = parseFloat(document.getElementById(`amp_${name}`).value) || 0;
+        let ampM = (currentUnit === 'ft') ? ampVal * 0.3048 : ampVal;
         const phase = parseFloat(document.getElementById(`phase_${name}`).value) || 0;
         const speed = SPEEDS[name];
         consts.push({ name, include, amp: ampM, phase, speed });
@@ -329,6 +353,46 @@
       return consts;
     }
 
+    // Set form values from stored data (data in feet always)
+    function setFormAmps(amps_ft, phases) {
+      CONST_NAMES.forEach((name, idx) => {
+        const ampInput = document.getElementById(`amp_${name}`);
+        const phaseInput = document.getElementById(`phase_${name}`);
+        let ampVal = amps_ft[idx];
+        if (currentUnit === 'm') {
+          ampVal = ampVal * 0.3048;
+        }
+        ampInput.value = ampVal.toFixed(3);
+        phaseInput.value = phases[idx].toFixed(1);
+        ampInput.dispatchEvent(new Event('input'));
+        document.querySelector(`.include-const[data-name="${name}"]`).checked = true;
+      });
+      includeAllCheck.checked = true;
+    }
+
+    function loadExample(stationKey) {
+      const ex = EXAMPLES[stationKey];
+      if (!ex) return;
+      stationIdInput.value = stationKey === 'sf' ? '9414290' : (stationKey==='anchorage'?'9455920':'8443970');
+      setFormAmps(ex.amps_ft, ex.phases);
+      meterNote.textContent = `✅ Loaded ${ex.name} · Amplitudes originally in feet · Datum MLLW · GMT phases.`;
+      updatePrediction();
+    }
+
+    function clearForm() {
+      CONST_NAMES.forEach(name => {
+        document.getElementById(`amp_${name}`).value = '0.000';
+        document.getElementById(`phase_${name}`).value = '0.0';
+        document.getElementById(`amp_${name}`).dispatchEvent(new Event('input'));
+        document.querySelector(`.include-const[data-name="${name}"]`).checked = false;
+      });
+      includeAllCheck.checked = false;
+      stationIdInput.value = '';
+      meterNote.textContent = `🧹 Cleared · Enter your data (${currentUnit}) · GMT phases.`;
+      updatePrediction();
+    }
+
+    // Prediction (t in hours from GMT now)
     function predictHeight(tHours, consts) {
       let total = 0;
       consts.forEach(c => {
@@ -340,7 +404,6 @@
     }
 
     function generateLabelsAndData(consts) {
-      // Use GMT reference: current time in UTC
       const now = new Date();
       const startTime = Date.UTC(
         now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
@@ -351,7 +414,6 @@
       for (let h = 0; h <= hours; h += step) {
         const height = predictHeight(h, consts);
         const forecastTime = new Date(startTime + h * 3600 * 1000);
-        // Format as GMT
         const label = forecastTime.toLocaleTimeString('en-GB', { 
           hour: '2-digit', minute: '2-digit', timeZone: 'GMT', weekday: 'short' 
         });
@@ -371,7 +433,7 @@
         data: {
           labels,
           datasets: [{
-            label: 'Water level (m)',
+            label: 'Water level (m above MLLW)',
             data: points,
             borderColor: '#1b7b8a',
             backgroundColor: 'rgba(27,123,138,0.03)',
@@ -384,19 +446,50 @@
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: {
-            tooltip: { callbacks: { label: (ctx) => `Height: ${ctx.raw.toFixed(3)} m` } },
+            tooltip: { callbacks: { label: (ctx) => `Height: ${ctx.raw.toFixed(3)} m (MLLW)` } },
             legend: { display: false }
           },
           scales: {
-            x: { ticks: { maxRotation: 30, maxTicksLimit: 12 }, grid: { color: '#cde3ec40' } },
-            y: { title: { display: true, text: 'meters' }, grid: { color: '#c0dae6' } }
+            x: { ticks: { maxRotation: 30, maxTicksLimit: 12 }, grid: { color: '#cde3ec40' }, title: { display: true, text: 'Time (GMT)' } },
+            y: { title: { display: true, text: 'meters above MLLW' }, grid: { color: '#c0dae6' } }
           }
         }
       });
 
       const activeConsts = consts.filter(c => c.include);
       const sumAmp = activeConsts.reduce((s,c) => s + c.amp, 0);
-      chartFootnote.innerHTML = `Active constituents: ${activeConsts.length} · Sum of amplitudes: ${sumAmp.toFixed(3)} m. Time axis: GMT.`;
+      chartFootnote.innerHTML = `Active: ${activeConsts.length} · Sum amplitudes: ${sumAmp.toFixed(3)} m · Datum: MLLW · Time: GMT.`;
+    }
+
+    // Switch unit
+    function switchUnit(unit) {
+      if (unit === currentUnit) return;
+      // convert current input values
+      CONST_NAMES.forEach(name => {
+        const ampInput = document.getElementById(`amp_${name}`);
+        let val = parseFloat(ampInput.value) || 0;
+        if (currentUnit === 'ft' && unit === 'm') {
+          val = val * 0.3048;
+        } else if (currentUnit === 'm' && unit === 'ft') {
+          val = val / 0.3048;
+        }
+        ampInput.value = val.toFixed(3);
+      });
+      currentUnit = unit;
+      // update UI active class
+      unitOptions.forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.unit === unit);
+      });
+      // re-render fields to update placeholders and helper text
+      renderFields();
+      // re-populate with current values (they were preserved in renderFields because we set .value before)
+      // But we must re-attach values after re-render:
+      CONST_NAMES.forEach(name => {
+        const ampInput = document.getElementById(`amp_${name}`);
+        // values already set? need to re-dispatch input event to update helper
+        ampInput.dispatchEvent(new Event('input'));
+      });
+      meterNote.textContent = `🔁 Unit switched to ${unit === 'ft' ? 'feet' : 'meters'}. Datum remains MLLW.`;
     }
 
     // Event listeners
@@ -411,7 +504,7 @@
       let id = stationIdInput.value.trim();
       if (!id) { alert('Enter a 7‑digit NOAA station ID.'); return; }
       window.open(`https://tidesandcurrents.noaa.gov/harcon.html?id=${id}`, '_blank', 'noopener');
-      meterNote.textContent = `📂 Opened harcon for ${id}. Copy amplitude (ft) and Phase (GMT).`;
+      meterNote.textContent = `📂 Opened harcon for ${id}. Copy amplitude and Phase (GMT).`;
     });
 
     updateBtn.addEventListener('click', updatePrediction);
@@ -427,8 +520,13 @@
       document.querySelectorAll('.include-const').forEach(cb => cb.checked = includeAllCheck.checked);
     });
 
-    // Initialize with SF example
+    unitOptions.forEach(opt => {
+      opt.addEventListener('click', () => switchUnit(opt.dataset.unit));
+    });
+
+    // Initialize
     window.addEventListener('DOMContentLoaded', () => {
+      renderFields();
       exampleSelect.value = 'sf';
       loadExample('sf');
     });
