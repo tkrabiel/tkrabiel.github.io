@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+  <title>🌍 Tide School 4 · Declination & Diurnal Tides</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f4f9fe;
+      color: #0b2b3c;
+      padding: 1.5rem 1.5rem 2.5rem;
+      line-height: 1.5;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 2.2rem;
+      color: #0a3a4b;
+      margin-bottom: 0.5rem;
+    }
+    .subhead {
+      color: #2c5a6e;
+      margin-bottom: 1.8rem;
+      border-left: 5px solid #2a9d8f;
+      padding-left: 1.2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 1.8rem;
+      box-shadow: 0 8px 20px rgba(0,30,40,0.04);
+      border: 1px solid #cde3ec;
+      margin-bottom: 25px;
+    }
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 25px;
+      align-items: flex-start;
+    }
+    .canvas-container {
+      flex: 2;
+      min-width: 500px;
+    }
+    .explanation-panel {
+      flex: 1.2;
+      min-width: 280px;
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      background: #0b1a24;
+      border-radius: 20px;
+      display: block;
+    }
+    .control-group {
+      margin: 20px 0;
+    }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+    }
+    input[type=range] { width: 100%; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 15px 0;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .color-dot { width: 14px; height: 14px; border-radius: 4px; }
+    .btn {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-right: 10px;
+    }
+    .btn-outline { background: transparent; color: #1a7a8c; border: 1.5px solid #1a7a8c; }
+    .info-box {
+      background: #e9f3f8;
+      border-radius: 18px;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+    .kpi {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #0a4b5c;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+  <h1>🌍🌙 Tide School 4 · Declination & Diurnal Inequality</h1>
+  <div class="subhead">Why do some places have one high tide per day? It's all about tilt — Earth's axis, Moon's orbit, and the ecliptic.</div>
+
+  <div class="card">
+    <div class="flex-row">
+      <div class="canvas-container">
+        <canvas id="declinationCanvas" width="700" height="500"></canvas>
+        <div class="control-group">
+          <div class="slider-label"><span>🌙 Moon's declination (orbit inclination effect)</span> <span id="moonDeclValue">+15°</span></div>
+          <input type="range" id="moonDeclSlider" min="-28" max="28" value="15" step="0.5">
+          <div class="slider-label" style="margin-top:10px;"><span>☀️ Sun's declination (season)</span> <span id="sunDeclValue">+10°</span></div>
+          <input type="range" id="sunDeclSlider" min="-23.5" max="23.5" value="10" step="0.5">
+          <div style="margin-top:12px;">
+            <button class="btn" id="animateBtn">▶ Play seasonal cycle</button>
+            <button class="btn-outline" id="resetDeclBtn">⟲ Reset to equinox</button>
+          </div>
+        </div>
+      </div>
+      <div class="explanation-panel">
+        <h3 style="margin-top:0;">📐 The geometry of diurnal tides</h3>
+        <p>Tide‑generating forces act symmetrically, but <strong>declination</strong> (angle above/below equator) breaks the twice‑daily symmetry.</p>
+        <div class="info-box">
+          <strong>🌕 Lunar declination</strong> varies from -28.6° to +28.6° over 18.6 years (due to Moon's 5.1° orbital inclination + ecliptic obliquity).<br>
+          <strong>☀️ Solar declination</strong> ranges ±23.5° annually.
+        </div>
+        <p>When the Moon or Sun is off the equator, the two tidal bulges are not aligned with the equator. A point on Earth rotates through <strong>unequal highs</strong> — that's <strong>diurnal inequality</strong>.</p>
+        <p><strong>Constituents born from declination:</strong> K₁ (luni-solar declinational), O₁ (lunar declinational), P₁ (solar declinational).</p>
+        <div class="legend">
+          <div class="legend-item"><span class="color-dot" style="background:#3a9bdc;"></span> Lunar bulge</div>
+          <div class="legend-item"><span class="color-dot" style="background:#f4c542;"></span> Solar bulge</div>
+          <div class="legend-item"><span class="color-dot" style="background:#7b68c4;"></span> Equatorial plane</div>
+          <div class="legend-item"><span class="color-dot" style="background:#e06060;"></span> Observer latitude</div>
+        </div>
+        <div class="info-box" id="tideTypeDisplay">
+          <span class="kpi" id="diurnalRatio">0.32</span> <span id="diurnalDesc">(K₁+O₁)/(M₂+S₂) ratio</span>
+          <p style="margin-top:8px;">⬤ Ratio > 0.5 → mixed tide; > 3.0 → diurnal.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🌊 How declination creates diurnal constituents</h3>
+    <p>The equilibrium tidal potential expands into harmonics. Declination introduces terms with periods of ~24h (diurnal). The main ones:</p>
+    <ul style="columns:2; margin:15px 0;">
+      <li><strong>K₁</strong> – Luni-solar declinational (23.93 h)</li>
+      <li><strong>O₁</strong> – Principal lunar declinational (25.82 h)</li>
+      <li><strong>P₁</strong> – Principal solar declinational (24.07 h)</li>
+    </ul>
+    <p>In the visualization, the offset of the tidal bulges from the equator means an observer (red dot) experiences different high water heights on successive passes — the diurnal inequality. Adjust sliders to see the effect.</p>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const canvas = document.getElementById('declinationCanvas');
+    const ctx = canvas.getContext('2d');
+    const moonDeclSlider = document.getElementById('moonDeclSlider');
+    const sunDeclSlider = document.getElementById('sunDeclSlider');
+    const moonDeclValue = document.getElementById('moonDeclValue');
+    const sunDeclValue = document.getElementById('sunDeclValue');
+    const animateBtn = document.getElementById('animateBtn');
+    const resetDeclBtn = document.getElementById('resetDeclBtn');
+    const diurnalRatioSpan = document.getElementById('diurnalRatio');
+    const diurnalDesc = document.getElementById('diurnalDesc');
+
+    let moonDecl = 15;   // degrees
+    let sunDecl = 10;
+    let animInterval = null;
+    let seasonTime = 0; // 0 to 2PI
+
+    // Fixed parameters
+    const earthRadius = 80;
+    const centerX = 350, centerY = 250;
+    
+    // Observer latitude (fixed at 40° N for demonstration)
+    const observerLat = 40 * Math.PI/180;
+
+    function updateSliders() {
+      moonDecl = parseFloat(moonDeclSlider.value);
+      sunDecl = parseFloat(sunDeclSlider.value);
+      moonDeclValue.textContent = (moonDecl > 0 ? '+' : '') + moonDecl.toFixed(1) + '°';
+      sunDeclValue.textContent = (sunDecl > 0 ? '+' : '') + sunDecl.toFixed(1) + '°';
+      drawScene();
+      updateDiurnalRatio();
+    }
+
+    // Simple estimate of diurnal inequality based on declination
+    function updateDiurnalRatio() {
+      // Approximate: diurnal amplitude proportional to sin(2*declination) * sin(latitude)
+      const lunarDiurnalFactor = Math.abs(Math.sin(2 * moonDecl * Math.PI/180)) * Math.sin(observerLat);
+      const solarDiurnalFactor = Math.abs(Math.sin(2 * sunDecl * Math.PI/180)) * Math.sin(observerLat);
+      // Semidiurnal proportional to cos^2(declination)
+      const lunarSemi = Math.pow(Math.cos(moonDecl * Math.PI/180), 2);
+      const solarSemi = Math.pow(Math.cos(sunDecl * Math.PI/180), 2);
+      const diurnalSum = lunarDiurnalFactor * 0.8 + solarDiurnalFactor * 0.4; // approximate weights
+      const semiSum = lunarSemi * 1.0 + solarSemi * 0.46;
+      const ratio = diurnalSum / (semiSum + 0.001);
+      diurnalRatioSpan.textContent = ratio.toFixed(3);
+      if (ratio < 0.5) diurnalDesc.textContent = 'semidiurnal dominant';
+      else if (ratio < 1.5) diurnalDesc.textContent = 'mixed, mainly semidiurnal';
+      else if (ratio < 3.0) diurnalDesc.textContent = 'mixed, mainly diurnal';
+      else diurnalDesc.textContent = 'diurnal dominant';
+    }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw background grid
+      ctx.strokeStyle = '#ffffff20';
+      ctx.lineWidth = 0.5;
+      for (let i = -2; i <= 2; i++) {
+        const y = centerY + i * 70;
+        ctx.beginPath();
+        ctx.moveTo(50, y); ctx.lineTo(650, y);
+        ctx.stroke();
+      }
+      
+      // Draw Earth
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, earthRadius, 0, 2*Math.PI);
+      ctx.fillStyle = '#1a4b6d';
+      ctx.fill();
+      ctx.strokeStyle = '#3a7a9c';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // Draw axis tilt (fixed 23.5° relative to vertical)
+      const axisTilt = 23.5 * Math.PI/180;
+      const axisLength = earthRadius + 15;
+      ctx.beginPath();
+      ctx.moveTo(centerX - Math.sin(axisTilt)*axisLength, centerY - Math.cos(axisTilt)*axisLength);
+      ctx.lineTo(centerX + Math.sin(axisTilt)*axisLength, centerY + Math.cos(axisTilt)*axisLength);
+      ctx.strokeStyle = '#aaaaaa';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Equatorial plane (line through center perpendicular to axis)
+      const eqAngle = axisTilt + Math.PI/2;
+      const eqLen = earthRadius + 40;
+      ctx.beginPath();
+      ctx.moveTo(centerX - Math.cos(eqAngle)*eqLen, centerY - Math.sin(eqAngle)*eqLen);
+      ctx.lineTo(centerX + Math.cos(eqAngle)*eqLen, centerY + Math.sin(eqAngle)*eqLen);
+      ctx.strokeStyle = '#7b68c4';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // Label equator
+      ctx.fillStyle = '#7b68c4';
+      ctx.font = '12px Inter';
+      ctx.fillText('Equator', centerX + 40, centerY - 30);
+      
+      // Draw tidal bulges (lunar and solar) offset by declination
+      // Lunar bulge direction: from center towards declination angle relative to equatorial plane
+      const lunarDir = eqAngle + (moonDecl * Math.PI/180); // angle of bulge axis
+      const solarDir = eqAngle + (sunDecl * Math.PI/180);
+      
+      // Lunar bulge (blue)
+      const lunarBulgeLength = 45;
+      const lunarBulgeWidth = 20;
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(lunarDir);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, earthRadius + lunarBulgeLength, earthRadius + lunarBulgeWidth, 0, 0, 2*Math.PI);
+      ctx.fillStyle = '#3a9bdc60';
+      ctx.fill();
+      ctx.strokeStyle = '#3a9bdc';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+      
+      // Solar bulge (yellow)
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(solarDir);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, earthRadius + 35, earthRadius + 15, 0, 0, 2*Math.PI);
+      ctx.fillStyle = '#f4c54260';
+      ctx.fill();
+      ctx.strokeStyle = '#f4c542';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+      
+      // Observer point (latitude 40°N) - a red dot on Earth surface
+      const obsAngle = eqAngle + observerLat; // angle from equator
+      const obsX = centerX + Math.cos(obsAngle) * earthRadius;
+      const obsY = centerY + Math.sin(obsAngle) * earthRadius;
+      ctx.beginPath();
+      ctx.arc(obsX, obsY, 5, 0, 2*Math.PI);
+      ctx.fillStyle = '#e06060';
+      ctx.shadowColor = '#ff8080';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 12px Inter';
+      ctx.fillText('Observer', obsX + 10, obsY - 10);
+      
+      // Annotate declination angles
+      ctx.fillStyle = '#3a9bdc';
+      ctx.fillText(`Lunar decl: ${moonDecl.toFixed(1)}°`, centerX + 80, centerY - 60);
+      ctx.fillStyle = '#f4c542';
+      ctx.fillText(`Solar decl: ${sunDecl.toFixed(1)}°`, centerX + 80, centerY - 40);
+      
+      // Show diurnal inequality explanation
+      ctx.fillStyle = '#cccccc';
+      ctx.font = '11px Inter';
+      ctx.fillText('Offset bulges → unequal highs at observer', 30, 460);
+    }
+
+    // Animation: seasonal cycle (sun declination varies)
+    function startAnimation() {
+      if (animInterval) {
+        clearInterval(animInterval);
+        animInterval = null;
+        animateBtn.textContent = '▶ Play seasonal cycle';
+        return;
+      }
+      animateBtn.textContent = '⏸️ Pause';
+      animInterval = setInterval(() => {
+        seasonTime += 0.02;
+        if (seasonTime > 2*Math.PI) seasonTime -= 2*Math.PI;
+        const newSunDecl = 23.5 * Math.sin(seasonTime);
+        sunDeclSlider.value = newSunDecl;
+        // Also vary moon decl slightly (simplified)
+        const newMoonDecl = 15 + 13 * Math.sin(seasonTime * 1.5);
+        moonDeclSlider.value = newMoonDecl;
+        updateSliders();
+      }, 50);
+    }
+
+    function stopAnimation() {
+      if (animInterval) {
+        clearInterval(animInterval);
+        animInterval = null;
+        animateBtn.textContent = '▶ Play seasonal cycle';
+      }
+    }
+
+    resetDeclBtn.addEventListener('click', () => {
+      stopAnimation();
+      moonDeclSlider.value = 0;
+      sunDeclSlider.value = 0;
+      updateSliders();
+    });
+
+    animateBtn.addEventListener('click', startAnimation);
+
+    moonDeclSlider.addEventListener('input', () => {
+      stopAnimation();
+      updateSliders();
+    });
+    sunDeclSlider.addEventListener('input', () => {
+      stopAnimation();
+      updateSliders();
+    });
+
+    window.addEventListener('resize', () => {
+      // keep canvas size
+    });
+
+    // Initialize
+    updateSliders();
+    drawScene();
+  })();
+</script>
+</body>
+</html>
