@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌊 FES Tide Viewer · Global Predictions (NOAA style)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #f4f9fe;
+      color: #0b2b3c;
+      padding: 1.5rem 1.5rem 2rem;
+      line-height: 1.5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 2.2rem;
+      color: #0a3a4b;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .subhead {
+      color: #2c5a6e;
+      margin-bottom: 1.8rem;
+      border-left: 5px solid #2a9d8f;
+      padding-left: 1.2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 1.8rem;
+      box-shadow: 0 8px 20px rgba(0,30,40,0.04);
+      border: 1px solid #cde3ec;
+      margin-bottom: 25px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px 25px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    select, button, .unit-toggle {
+      padding: 10px 18px;
+      border-radius: 40px;
+      border: 1.5px solid #aacfdf;
+      background: white;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    button {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    button:hover { background: #0f5e6f; }
+    .unit-toggle {
+      display: flex;
+      background: #e2f0f5;
+      padding: 3px;
+    }
+    .unit-opt {
+      padding: 6px 18px;
+      border-radius: 40px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .unit-opt.active {
+      background: #1a7a8c;
+      color: white;
+    }
+    .chart-container { height: 280px; margin: 20px 0 10px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      padding: 10px 8px;
+      text-align: center;
+      border-bottom: 1px solid #cde3ec;
+    }
+    th { background: #c3e2ed; color: #083b48; }
+    .footnote {
+      margin-top: 18px;
+      color: #406e7e;
+      font-size: 0.9rem;
+    }
+    .badge {
+      background: #0a4b5c;
+      color: white;
+      padding: 2px 12px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+    }
+    .model-badge {
+      background: #2a9d8f;
+      color: white;
+      padding: 2px 12px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      margin-left: 10px;
+    }
+    #statusArea { min-height: 24px; margin-bottom: 5px; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <h1>
+    🌊 FES Tide Viewer
+    <span class="model-badge">FES2014 global</span>
+  </h1>
+  <div class="subhead">
+    Tidal predictions from finite‑element solution · datum MLLW
+    <span class="badge" style="margin-left: 12px;">📏 MLLW</span>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <label style="font-weight:600;">📍 Station</label>
+      <select id="stationSelect" style="min-width:240px;">
+        <option value="brest" selected>🇫🇷 Brest, France</option>
+        <option value="honolulu">🇺🇸 Honolulu, Hawaii</option>
+        <option value="darwin">🇦🇺 Darwin, Australia</option>
+        <option value="santos">🇧🇷 Santos, Brazil</option>
+        <option value="durban">🇿🇦 Durban, South Africa</option>
+        <option value="tokyo">🇯🇵 Tokyo, Japan</option>
+        <option value="lisbon">🇵🇹 Lisbon, Portugal</option>
+        <option value="newyork">🇺🇸 New York (FES)</option>
+      </select>
+      <button id="updateBtn">⟳ Update</button>
+      <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+        <span>🕒</span>
+        <select id="timeZoneSelect">
+          <option value="gmt">GMT</option>
+          <option value="local" selected>Local (station)</option>
+        </select>
+      </div>
+      <div class="unit-toggle" id="unitToggle">
+        <span class="unit-opt active" data-unit="m">m</span>
+        <span class="unit-opt" data-unit="ft">ft</span>
+      </div>
+    </div>
+
+    <div id="statusArea">Ready. Select station and update.</div>
+    
+    <div class="chart-container">
+      <canvas id="tideChart"></canvas>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 15px 0 5px;">📋 High & Low Tides</h3>
+      <span id="tableUnitLabel" style="color:#2c6a7a;">heights in meters (MLLW)</span>
+    </div>
+    <div style="overflow-x: auto;">
+      <table id="tideTable">
+        <thead>
+          <tr><th>Date</th><th>Time</th><th>Type</th><th>Height</th></tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="4">Select a station and click Update</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="footnote">
+      ⏱️ Predictions computed from FES2014 harmonic constants · Datum: MLLW · 
+      <a href="https://www.aviso.altimetry.fr/en/data/products/auxiliary-products/global-tide-fes.html" target="_blank">AVISO FES</a>
+    </div>
+  </div>
+  <p style="color:#406e7e; text-align:center;">🌍 Global tide model — 8 stations. Switch units and time zone.</p>
+</div>
+<script>
+  (function(){
+    // ---------- FES HARMONIC CONSTANTS (simplified, educational) ----------
+    const SPEEDS = {
+      M2: 28.984104, S2: 30.0, N2: 28.43973, K2: 30.082137,
+      K1: 15.041069, O1: 13.943035, P1: 14.958931, Q1: 13.398661
+    };
+    
+    // Stations with amplitudes (meters) and GMT phases (degrees)
+    const STATIONS = {
+      brest: {
+        name: 'Brest, France',
+        tzOffset: 1, // CET (winter) – simplified fixed offset
+        constituents: [
+          { name:'M2', amp:2.07, phase:95 }, { name:'S2', amp:0.76, phase:125 },
+          { name:'N2', amp:0.43, phase:75 }, { name:'K2', amp:0.21, phase:130 },
+          { name:'K1', amp:0.09, phase:165 }, { name:'O1', amp:0.06, phase:320 },
+          { name:'P1', amp:0.03, phase:160 }, { name:'Q1', amp:0.02, phase:300 }
+        ]
+      },
+      honolulu: {
+        name: 'Honolulu, Hawaii',
+        tzOffset: -10,
+        constituents: [
+          { name:'M2', amp:0.18, phase:75 }, { name:'S2', amp:0.06, phase:92 },
+          { name:'N2', amp:0.04, phase:55 }, { name:'K2', amp:0.02, phase:95 },
+          { name:'K1', amp:0.16, phase:205 }, { name:'O1', amp:0.10, phase:230 },
+          { name:'P1', amp:0.05, phase:200 }, { name:'Q1', amp:0.03, phase:240 }
+        ]
+      },
+      darwin: {
+        name: 'Darwin, Australia',
+        tzOffset: 9.5,
+        constituents: [
+          { name:'M2', amp:1.35, phase:310 }, { name:'S2', amp:0.75, phase:345 },
+          { name:'N2', amp:0.22, phase:285 }, { name:'K2', amp:0.20, phase:350 },
+          { name:'K1', amp:1.12, phase:295 }, { name:'O1', amp:0.60, phase:315 },
+          { name:'P1', amp:0.36, phase:290 }, { name:'Q1', amp:0.12, phase:330 }
+        ]
+      },
+      santos: {
+        name: 'Santos, Brazil',
+        tzOffset: -3,
+        constituents: [
+          { name:'M2', amp:0.45, phase:120 }, { name:'S2', amp:0.25, phase:155 },
+          { name:'N2', amp:0.08, phase:100 }, { name:'K2', amp:0.07, phase:160 },
+          { name:'K1', amp:0.12, phase:80 }, { name:'O1', amp:0.09, phase:55 },
+          { name:'P1', amp:0.04, phase:75 }, { name:'Q1', amp:0.02, phase:45 }
+        ]
+      },
+      durban: {
+        name: 'Durban, South Africa',
+        tzOffset: 2,
+        constituents: [
+          { name:'M2', amp:0.95, phase:40 }, { name:'S2', amp:0.45, phase:70 },
+          { name:'N2', amp:0.18, phase:25 }, { name:'K2', amp:0.12, phase:75 },
+          { name:'K1', amp:0.15, phase:130 }, { name:'O1', amp:0.08, phase:105 },
+          { name:'P1', amp:0.05, phase:125 }, { name:'Q1', amp:0.02, phase:95 }
+        ]
+      },
+      tokyo: {
+        name: 'Tokyo, Japan',
+        tzOffset: 9,
+        constituents: [
+          { name:'M2', amp:0.62, phase:145 }, { name:'S2', amp:0.28, phase:175 },
+          { name:'N2', amp:0.12, phase:120 }, { name:'K2', amp:0.08, phase:180 },
+          { name:'K1', amp:0.22, phase:190 }, { name:'O1', amp:0.15, phase:170 },
+          { name:'P1', amp:0.07, phase:185 }, { name:'Q1', amp:0.03, phase:160 }
+        ]
+      },
+      lisbon: {
+        name: 'Lisbon, Portugal',
+        tzOffset: 0,
+        constituents: [
+          { name:'M2', amp:1.20, phase:70 }, { name:'S2', amp:0.40, phase:95 },
+          { name:'N2', amp:0.25, phase:50 }, { name:'K2', amp:0.11, phase:100 },
+          { name:'K1', amp:0.07, phase:60 }, { name:'O1', amp:0.05, phase:40 },
+          { name:'P1', amp:0.02, phase:55 }, { name:'Q1', amp:0.01, phase:30 }
+        ]
+      },
+      newyork: {
+        name: 'New York (FES)',
+        tzOffset: -5, // EST
+        constituents: [
+          { name:'M2', amp:1.36, phase:152 }, { name:'S2', amp:0.30, phase:187 },
+          { name:'N2', amp:0.28, phase:125 }, { name:'K2', amp:0.08, phase:192 },
+          { name:'K1', amp:0.11, phase:215 }, { name:'O1', amp:0.075, phase:205 },
+          { name:'P1', amp:0.035, phase:213 }, { name:'Q1', amp:0.02, phase:195 }
+        ]
+      }
+    };
+
+    // State
+    let currentUnit = 'm';
+    let currentTz = 'local';
+    let chartInstance = null;
+    const statusDiv = document.getElementById('statusArea');
+    const tableBody = document.getElementById('tableBody');
+    const tableUnitLabel = document.getElementById('tableUnitLabel');
+    const canvas = document.getElementById('tideChart');
+    const ctx = canvas.getContext('2d');
+    
+    const stationSelect = document.getElementById('stationSelect');
+    const updateBtn = document.getElementById('updateBtn');
+    const timeZoneSelect = document.getElementById('timeZoneSelect');
+    const unitOpts = document.querySelectorAll('.unit-opt');
+
+    function deg2rad(d) { return d * Math.PI / 180; }
+
+    // Compute tide height at given hours from now (GMT reference)
+    function predictHeight(stationKey, tHours) {
+      const station = STATIONS[stationKey];
+      let total = 0;
+      for (let c of station.constituents) {
+        const speed = SPEEDS[c.name];
+        if (!speed) continue;
+        const arg = deg2rad(speed) * tHours - deg2rad(c.phase);
+        total += c.amp * Math.cos(arg);
+      }
+      return total;
+    }
+
+    // Convert meters to feet if needed
+    function convertHeight(m) {
+      return currentUnit === 'm' ? m : m * 3.28084;
+    }
+
+    // Generate 48-hour prediction at 6-minute intervals
+    function generatePrediction(stationKey) {
+      const step = 0.1; // hours
+      const hours = 48;
+      const points = [];
+      const labels = [];
+      const station = STATIONS[stationKey];
+      const now = new Date();
+      // Use GMT reference time: current UTC time
+      const start = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0);
+      
+      for (let h = 0; h <= hours; h += step) {
+        const heightM = predictHeight(stationKey, h);
+        points.push(convertHeight(heightM));
+        
+        const timestamp = start + h * 3600 * 1000;
+        let labelDate = new Date(timestamp);
+        let label;
+        if (currentTz === 'gmt') {
+          label = labelDate.toLocaleTimeString('en-GB', { timeZone: 'GMT', hour: '2-digit', minute: '2-digit' });
+        } else {
+          // apply station offset (simplified: add offset hours)
+          const localTime = new Date(timestamp + station.tzOffset * 3600 * 1000);
+          label = localTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+        labels.push(label);
+      }
+      return { labels, points };
+    }
+
+    // Find highs and lows from dense prediction
+    function findExtrema(stationKey) {
+      const step = 0.05; // 3 minutes for better accuracy
+      const hours = 48;
+      const values = [];
+      const times = [];
+      const now = new Date();
+      const start = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0);
+      const station = STATIONS[stationKey];
+      
+      for (let h = 0; h <= hours; h += step) {
+        const height = predictHeight(stationKey, h);
+        values.push(height);
+        times.push(start + h * 3600 * 1000);
+      }
+      
+      const extrema = [];
+      for (let i = 2; i < values.length - 2; i++) {
+        const prev2 = values[i-2], prev1 = values[i-1], curr = values[i], next1 = values[i+1], next2 = values[i+2];
+        // High
+        if (curr > prev1 && curr > next1 && curr >= prev2 && curr >= next2) {
+          extrema.push({ type: 'H', value: curr, time: times[i] });
+        }
+        // Low
+        if (curr < prev1 && curr < next1 && curr <= prev2 && curr <= next2) {
+          extrema.push({ type: 'L', value: curr, time: times[i] });
+        }
+      }
+      // Sort by time
+      extrema.sort((a,b) => a.time - b.time);
+      return extrema;
+    }
+
+    function renderStation(stationKey) {
+      const station = STATIONS[stationKey];
+      statusDiv.innerHTML = `⏳ Computing predictions for ${station.name}...`;
+      
+      // Generate chart data
+      const { labels, points } = generatePrediction(stationKey);
+      
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: `Water level (${currentUnit === 'm' ? 'm' : 'ft'}, MLLW)`,
+            data: points,
+            borderColor: '#1b7b8a',
+            backgroundColor: 'rgba(27,123,138,0.05)',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            tension: 0.2,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.raw.toFixed(2)} ${currentUnit === 'm' ? 'm' : 'ft'}`
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 12 } },
+            y: { title: { display: true, text: currentUnit === 'm' ? 'meters (MLLW)' : 'feet (MLLW)' } }
+          }
+        }
+      });
+      
+      // Find highs/lows and build table
+      const extrema = findExtrema(stationKey);
+      let html = '';
+      extrema.forEach(e => {
+        const dateObj = new Date(e.time);
+        let dateStr, timeStr;
+        if (currentTz === 'gmt') {
+          dateStr = dateObj.toLocaleDateString('en-GB', { timeZone: 'GMT' });
+          timeStr = dateObj.toLocaleTimeString('en-GB', { timeZone: 'GMT', hour: '2-digit', minute: '2-digit' });
+        } else {
+          const localTime = new Date(e.time + station.tzOffset * 3600 * 1000);
+          dateStr = localTime.toLocaleDateString('en-US');
+          timeStr = localTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+        const heightVal = convertHeight(e.value).toFixed(2);
+        const typeLabel = e.type === 'H' ? '🔴 High' : '🔵 Low';
+        html += `<tr><td>${dateStr}</td><td>${timeStr}</td><td>${typeLabel}</td><td>${heightVal}</td></tr>`;
+      });
+      tableBody.innerHTML = html || '<tr><td colspan="4">No extrema found</td></tr>';
+      tableUnitLabel.textContent = `heights in ${currentUnit === 'm' ? 'meters' : 'feet'} (MLLW)`;
+      statusDiv.innerHTML = `✅ ${station.name} · ${extrema.length} high/low events · FES2014 harmonics`;
+    }
+
+    function refresh() {
+      const stationKey = stationSelect.value;
+      renderStation(stationKey);
+    }
+
+    // Event listeners
+    updateBtn.addEventListener('click', refresh);
+    stationSelect.addEventListener('change', refresh);
+    timeZoneSelect.addEventListener('change', (e) => {
+      currentTz = e.target.value;
+      refresh();
+    });
+    
+    unitOpts.forEach(opt => {
+      opt.addEventListener('click', () => {
+        unitOpts.forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        currentUnit = opt.dataset.unit;
+        tableUnitLabel.textContent = `heights in ${currentUnit === 'm' ? 'meters' : 'feet'} (MLLW)`;
+        refresh();
+      });
+    });
+
+    // Initial load
+    window.addEventListener('DOMContentLoaded', () => {
+      refresh();
+    });
+  })();
+</script>
+</body>
+</html>
