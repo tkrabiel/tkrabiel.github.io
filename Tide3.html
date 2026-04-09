@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+  <title>🌍 Tide School 3 · Animated Tidal Constituents</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f4f9fe;
+      color: #0b2b3c;
+      padding: 1.5rem 1.5rem 2.5rem;
+      line-height: 1.5;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #0a3a4b;
+      margin-bottom: 0.5rem;
+    }
+    .subhead {
+      color: #2c5a6e;
+      margin-bottom: 1.5rem;
+      border-left: 5px solid #2a9d8f;
+      padding-left: 1.2rem;
+      font-size: 1.1rem;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 20px rgba(0,30,40,0.04);
+      border: 1px solid #cde3ec;
+    }
+    .animation-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1/1;
+      background: radial-gradient(circle at 20% 30%, #1a2a3a, #0b1a24);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: inset 0 0 30px #00000030;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .controls {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid #1a7a8c;
+      font-size: 0.9rem;
+    }
+    .btn-outline {
+      background: transparent;
+      color: #1a7a8c;
+      border: 1.5px solid #1a7a8c;
+    }
+    select {
+      padding: 8px 16px;
+      border-radius: 40px;
+      border: 1.5px solid #aacfdf;
+      background: white;
+      font-family: 'Inter', sans-serif;
+    }
+    .constituent-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px 25px;
+      margin: 15px 0 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .color-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+    .chart-container {
+      height: 220px;
+      margin-top: 10px;
+    }
+    .info-panel {
+      background: #e9f3f8;
+      border-radius: 18px;
+      padding: 14px 18px;
+      font-size: 0.9rem;
+    }
+    .footnote {
+      margin-top: 20px;
+      color: #406e7e;
+      text-align: center;
+    }
+    .speed-slider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🌍🌕 Tide School 3 
+    <span style="font-size:1rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px;">animated physics · constituents in motion</span>
+  </h1>
+  <div class="subhead">See how the Sun, Moon, and Earth create M₂, S₂, K₁, O₁ — then compare real NOAA station predictions.</div>
+
+  <div class="dashboard">
+    <!-- LEFT: ANIMATION -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between;">
+        <h3 style="margin:0 0 8px;">🌞 Sun-Earth-Moon System</h3>
+        <span style="background:#2a9d8f20; padding:2px 12px; border-radius:30px;">equilibrium tide bulge</span>
+      </div>
+      <div class="animation-container">
+        <canvas id="orbitCanvas" width="600" height="600"></canvas>
+      </div>
+      <div class="controls">
+        <button class="btn" id="playPauseBtn">⏸️ Pause</button>
+        <button class="btn-outline btn" id="resetViewBtn">⟲ Reset</button>
+        <div class="speed-slider">
+          <span>⏩ Speed</span>
+          <input type="range" id="speedSlider" min="0.2" max="3.0" step="0.1" value="1.0" style="width:120px;">
+        </div>
+        <label style="margin-left:auto;"><input type="checkbox" id="showForcesCheck" checked> Show tidal vectors</label>
+      </div>
+      <div class="constituent-legend">
+        <div class="legend-item"><span class="color-dot" style="background:#3a9bdc;"></span> Lunar bulge (M₂, N₂)</div>
+        <div class="legend-item"><span class="color-dot" style="background:#f4c542;"></span> Solar bulge (S₂)</div>
+        <div class="legend-item"><span class="color-dot" style="background:#7b68c4;"></span> Declination (K₁, O₁)</div>
+      </div>
+      <div class="info-panel" id="animationNote">
+        🌕 The Moon's orbit creates the twice-daily M₂ tide. The Sun adds S₂. Declination (tilt) produces diurnal K₁/O₁. 
+        <strong>Watch the combined bulge rotate!</strong>
+      </div>
+    </div>
+
+    <!-- RIGHT: STATION & CHART -->
+    <div class="card">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+        <label style="font-weight:600;">📍 NOAA Station</label>
+        <select id="stationSelect" style="flex:1;">
+          <option value="sf">🌉 San Francisco (9414290)</option>
+          <option value="boston">⚓ Boston (8443970)</option>
+          <option value="anchorage">❄️ Anchorage (9455920)</option>
+          <option value="seattle">🌲 Seattle (9447130)</option>
+          <option value="portsmouth">🦞 Portsmouth, NH</option>
+          <option value="portland">🦐 Portland, ME</option>
+          <option value="galveston">🌴 Galveston, TX</option>
+          <option value="sanjuan">🇵🇷 San Juan, PR</option>
+          <option value="nyc">🗽 New York</option>
+          <option value="stpete">🌴 St. Petersburg, FL</option>
+        </select>
+      </div>
+      <div style="margin-bottom:10px;">
+        <strong>Harmonic constants (meters, GMT):</strong>
+        <div style="overflow-x:auto;">
+          <table style="width:100%; font-size:0.8rem; border-collapse:collapse;" id="constTable">
+            <thead><tr><th>Const</th><th>M₂</th><th>S₂</th><th>N₂</th><th>K₁</th><th>O₁</th><th>P₁</th></tr></thead>
+            <tbody id="constTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="tideChart"></canvas>
+      </div>
+      <div class="footnote" style="margin-top:8px;" id="chartFootnote"></div>
+      <p style="margin-top:10px; font-size:0.85rem;">🧪 The animation shows the equilibrium tide — real tides are modified by basin shape.</p>
+    </div>
+  </div>
+  <div class="footnote">
+    🌊 Tidal constituents emerge from orbital periods: M₂ (lunar semidiurnal) ~12.42h, S₂ (solar) 12.00h, K₁/O₁ from declination. Animation speed adjustable.
+  </div>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+    
+    // ---------- STATION DATABASE (same as before) ----------
+    const SPEEDS = { M2:28.984104, S2:30.0, N2:28.43973, K1:15.041069, O1:13.943035, P1:14.958931 };
+    const STATIONS = {
+      sf: { name:'San Francisco', consts:[0.542,0.142,0.112,0.368,0.233,0.122], phases:[330.5,358.9,306.7,342.3,315.8,340.1] },
+      boston: { name:'Boston', consts:[2.840,0.540,0.540,0.190,0.140,0.060], phases:[135.2,172.8,108.0,195.5,184.2,195.0] },
+      anchorage: { name:'Anchorage', consts:[3.940,1.110,0.620,1.890,1.310,0.600], phases:[282.8,322.0,248.0,195.4,164.7,194.0] },
+      seattle: { name:'Seattle', consts:[0.961,0.231,0.199,0.523,0.323,0.171], phases:[222.5,247.3,195.6,230.4,211.2,229.1] },
+      portsmouth: { name:'Portsmouth', consts:[2.680,0.510,0.510,0.180,0.130,0.055], phases:[142.5,178.0,115.0,200.0,188.0,198.0] },
+      portland: { name:'Portland', consts:[2.960,0.560,0.570,0.200,0.145,0.065], phases:[131.8,166.2,104.0,193.0,181.5,192.0] },
+      galveston: { name:'Galveston', consts:[0.225,0.055,0.045,0.175,0.120,0.055], phases:[275.0,310.0,250.0,320.0,300.0,318.0] },
+      sanjuan: { name:'San Juan', consts:[0.098,0.029,0.018,0.082,0.060,0.027], phases:[245.0,285.0,220.0,310.0,290.0,308.0] },
+      nyc: { name:'New York', consts:[1.360,0.300,0.280,0.110,0.075,0.035], phases:[152.0,187.0,125.0,215.0,205.0,213.0] },
+      stpete: { name:'St. Petersburg', consts:[0.165,0.052,0.027,0.162,0.146,0.053], phases:[54.5,64.8,48.2,334.6,326.8,333.0] }
+    };
+    const CONST_ORDER = ['M2','S2','N2','K1','O1','P1'];
+    
+    // ---------- ANIMATION ----------
+    const canvas = document.getElementById('orbitCanvas');
+    const ctx = canvas.getContext('2d');
+    let animationId = null;
+    let isPlaying = true;
+    let speed = 1.0;
+    let time = 0; // in hours
+    
+    // Orbital parameters (scaled for visualization)
+    const earthRadius = 20;
+    const moonOrbitRadius = 80;
+    const moonRadius = 6;
+    const sunDistance = 200;
+    const sunRadius = 30;
+    
+    // Angles
+    let moonAngle = 0;        // relative to Earth-Sun line
+    let earthAngle = 0;       // around Sun
+    const moonPeriod = 24.84;  // hours (approx M2 period * 2)
+    const earthPeriod = 8766;  // hours (1 year)
+    const declinationAngle = 0.41; // ~23.5 degrees in radians
+    
+    // UI elements
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const resetViewBtn = document.getElementById('resetViewBtn');
+    const speedSlider = document.getElementById('speedSlider');
+    const showForcesCheck = document.getElementById('showForcesCheck');
+    const animationNote = document.getElementById('animationNote');
+    
+    // Tide chart
+    let tideChart = null;
+    const chartCtx = document.getElementById('tideChart').getContext('2d');
+    const stationSelect = document.getElementById('stationSelect');
+    const constTableBody = document.getElementById('constTableBody');
+    const chartFootnote = document.getElementById('chartFootnote');
+    
+    function deg2rad(d) { return d * Math.PI/180; }
+    
+    // Update table
+    function updateConstTable(stationKey) {
+      const s = STATIONS[stationKey];
+      let row = '<tr>';
+      CONST_ORDER.forEach((c, i) => {
+        const amp = s.consts[i].toFixed(3);
+        row += `<td>${amp}</td>`;
+      });
+      row += '</tr><tr>';
+      CONST_ORDER.forEach((c, i) => {
+        row += `<td>${s.phases[i].toFixed(1)}°</td>`;
+      });
+      row += '</tr>';
+      constTableBody.innerHTML = row;
+    }
+    
+    // Predict tide height (meters)
+    function predictHeight(stationKey, tHours) {
+      const s = STATIONS[stationKey];
+      let total = 0;
+      CONST_ORDER.forEach((name, idx) => {
+        const amp = s.consts[idx];
+        const phase = s.phases[idx];
+        const spd = SPEEDS[name];
+        total += amp * Math.cos(deg2rad(spd) * tHours - deg2rad(phase));
+      });
+      return total;
+    }
+    
+    function updateTideChart() {
+      const key = stationSelect.value;
+      const now = new Date();
+      const start = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), 0, 0);
+      const hours = 48, step = 0.5;
+      const labels = [], points = [];
+      for (let h=0; h<=hours; h+=step) {
+        const ht = predictHeight(key, h);
+        const ft = new Date(start + h*3600*1000);
+        labels.push(ft.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'GMT', weekday:'short' }));
+        points.push(ht);
+      }
+      if (tideChart) tideChart.destroy();
+      tideChart = new Chart(chartCtx, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'm (MLLW)', data: points, borderColor: '#1b7b8a', borderWidth: 2, pointRadius:0, tension:0.2 }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { x: { ticks: { maxTicksLimit: 8 } }, y: { title: { display: true, text: 'meters' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+      chartFootnote.textContent = `${STATIONS[key].name} · 48h GMT prediction · Datum MLLW`;
+    }
+    
+    // ---------- ANIMATION LOOP ----------
+    function drawScene() {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      
+      // Center of canvas
+      const cx = w/2, cy = h/2;
+      
+      // Update angles based on time
+      const timeStep = 0.1 * speed; // hours per frame
+      time += timeStep;
+      
+      // Moon orbit period ~ 24.84h (twice M2 period)
+      moonAngle = (time * 2 * Math.PI / 24.84) % (2*Math.PI);
+      earthAngle = (time * 2 * Math.PI / (365.25*24)) % (2*Math.PI);
+      
+      // Sun position (fixed in center for simplicity, but we'll draw Earth orbit)
+      const sunX = cx, sunY = cy;
+      
+      // Earth position (distance from Sun, but we keep Sun center, Earth offset for visualization)
+      // For better visualization, we place Sun at left, Earth orbits? Let's do Sun at center, Earth orbits.
+      const earthOrbitRad = 120;
+      const earthX = cx + Math.cos(earthAngle) * earthOrbitRad;
+      const earthY = cy + Math.sin(earthAngle) * earthOrbitRad * 0.5; // elliptical flattening for perspective
+      
+      // Moon position relative to Earth
+      const moonX = earthX + Math.cos(moonAngle) * moonOrbitRadius;
+      const moonY = earthY + Math.sin(moonAngle) * moonOrbitRadius * 0.7; // slight tilt
+      
+      // Draw orbit paths
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, earthOrbitRad, earthOrbitRad*0.5, 0, 0, 2*Math.PI);
+      ctx.strokeStyle = '#ffffff30'; ctx.lineWidth = 1; ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.ellipse(earthX, earthY, moonOrbitRadius, moonOrbitRadius*0.7, 0, 0, 2*Math.PI);
+      ctx.strokeStyle = '#ffffff20'; ctx.stroke();
+      
+      // Draw Sun
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, sunRadius, 0, 2*Math.PI);
+      ctx.fillStyle = '#f9d71c'; ctx.shadowColor = '#f9a81c'; ctx.shadowBlur = 25;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // Draw Earth
+      ctx.beginPath();
+      ctx.arc(earthX, earthY, earthRadius, 0, 2*Math.PI);
+      ctx.fillStyle = '#2b7a9c'; ctx.fill();
+      ctx.strokeStyle = '#1a4b5c'; ctx.lineWidth = 2; ctx.stroke();
+      
+      // Draw Moon
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius, 0, 2*Math.PI);
+      ctx.fillStyle = '#d4d9e0'; ctx.fill();
+      
+      // Tidal bulges (equilibrium)
+      // Lunar bulge aligned with Moon
+      const bulgeLength = 35;
+      const lunarDir = Math.atan2(moonY - earthY, moonX - earthX);
+      const lunarPerp = lunarDir + Math.PI/2;
+      
+      // Solar bulge aligned with Sun
+      const solarDir = Math.atan2(sunY - earthY, sunX - earthX);
+      
+      // Combined bulge (weighted)
+      const lunarStrength = 1.0;
+      const solarStrength = 0.46;
+      
+      // Draw two opposite bulges (lunar)
+      ctx.beginPath();
+      const bulge1x = earthX + Math.cos(lunarDir) * bulgeLength * lunarStrength;
+      const bulge1y = earthY + Math.sin(lunarDir) * bulgeLength * lunarStrength;
+      const bulge2x = earthX - Math.cos(lunarDir) * bulgeLength * lunarStrength;
+      const bulge2y = earthY - Math.sin(lunarDir) * bulgeLength * lunarStrength;
+      
+      ctx.ellipse(earthX, earthY, earthRadius+12, earthRadius+6, lunarDir, 0, 2*Math.PI);
+      ctx.fillStyle = '#3a9bdc60'; ctx.fill();
+      
+      // Solar bulge (smaller)
+      ctx.beginPath();
+      ctx.ellipse(earthX, earthY, earthRadius+8, earthRadius+4, solarDir, 0, 2*Math.PI);
+      ctx.fillStyle = '#f4c54260'; ctx.fill();
+      
+      // Show force vectors if enabled
+      if (showForcesCheck.checked) {
+        ctx.beginPath();
+        ctx.moveTo(earthX, earthY);
+        ctx.lineTo(earthX + Math.cos(lunarDir)*50, earthY + Math.sin(lunarDir)*50);
+        ctx.strokeStyle = '#3a9bdc'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(earthX, earthY);
+        ctx.lineTo(earthX + Math.cos(solarDir)*40, earthY + Math.sin(solarDir)*40);
+        ctx.strokeStyle = '#f4c542'; ctx.stroke();
+      }
+      
+      // Declination indicator (tilt)
+      ctx.save();
+      ctx.translate(earthX, earthY);
+      ctx.rotate(declinationAngle * Math.sin(time/12)); // slowly varying
+      ctx.beginPath();
+      ctx.moveTo(0, -earthRadius-5);
+      ctx.lineTo(0, -earthRadius-15);
+      ctx.strokeStyle = '#7b68c4'; ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.restore();
+      
+      // Update note with current constituent emphasis
+      const lunarPhase = (moonAngle * 180/Math.PI).toFixed(0);
+      animationNote.innerHTML = `🌕 Moon angle: ${lunarPhase}° · M₂/S₂ combine to form spring/neap. Declination (purple) creates K₁/O₁.`;
+    }
+    
+    function animate() {
+      if (isPlaying) {
+        drawScene();
+      }
+      animationId = requestAnimationFrame(animate);
+    }
+    
+    // Controls
+    playPauseBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      playPauseBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+    });
+    
+    resetViewBtn.addEventListener('click', () => {
+      time = 0;
+      if (!isPlaying) drawScene();
+    });
+    
+    speedSlider.addEventListener('input', (e) => {
+      speed = parseFloat(e.target.value);
+    });
+    
+    // Station change
+    stationSelect.addEventListener('change', () => {
+      updateConstTable(stationSelect.value);
+      updateTideChart();
+    });
+    
+    // Initialize
+    function init() {
+      updateConstTable('sf');
+      updateTideChart();
+      animate();
+    }
+    
+    // Resize canvas
+    function resizeCanvas() {
+      const container = canvas.parentElement;
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientWidth; // square
+      drawScene();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Start
+    window.addEventListener('DOMContentLoaded', () => {
+      resizeCanvas();
+      init();
+    });
+    
+  })();
+</script>
+</body>
+</html>
