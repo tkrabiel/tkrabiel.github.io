@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
-  <title>🌍 Tide School 3 · Live Constituent Decomposition</title>
+  <title>🌍 Tide School 3 · Individual Constituent Plots</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -15,11 +15,11 @@
       padding: 1.5rem 1.5rem 2.5rem;
       line-height: 1.5;
     }
-    .container { max-width: 1400px; margin: 0 auto; }
+    .container { max-width: 1600px; margin: 0 auto; }
     h1 {
       font-family: 'Space Grotesk', sans-serif;
       font-weight: 500;
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -31,13 +31,11 @@
       margin-bottom: 1.5rem;
       border-left: 5px solid #2a9d8f;
       padding-left: 1.2rem;
-      font-size: 1.1rem;
     }
     .dashboard {
       display: grid;
-      grid-template-columns: 1fr 1.2fr;
+      grid-template-columns: 1fr 1.5fr;
       gap: 20px;
-      margin-bottom: 25px;
     }
     .card {
       background: white;
@@ -47,18 +45,15 @@
       border: 1px solid #cde3ec;
     }
     .animation-container {
-      position: relative;
-      width: 100%;
       aspect-ratio: 1/1;
       background: radial-gradient(circle at 20% 30%, #1a2a3a, #0b1a24);
       border-radius: 20px;
       overflow: hidden;
-      box-shadow: inset 0 0 30px #00000030;
     }
     canvas { display: block; width: 100%; height: 100%; }
     .controls {
       display: flex;
-      gap: 15px;
+      gap: 10px;
       align-items: center;
       margin-top: 12px;
       flex-wrap: wrap;
@@ -67,11 +62,10 @@
       background: #1a7a8c;
       color: white;
       border: none;
-      padding: 8px 18px;
+      padding: 8px 16px;
       border-radius: 40px;
       font-weight: 500;
       cursor: pointer;
-      border: 1px solid #1a7a8c;
       font-size: 0.9rem;
     }
     .btn-outline { background: transparent; color: #1a7a8c; border: 1.5px solid #1a7a8c; }
@@ -80,90 +74,91 @@
       border-radius: 40px;
       border: 1.5px solid #aacfdf;
       background: white;
-      font-family: 'Inter', sans-serif;
     }
-    .constituent-legend {
+    .legend {
       display: flex;
       flex-wrap: wrap;
-      gap: 15px 25px;
-      margin: 15px 0 10px;
+      gap: 15px;
+      margin: 10px 0;
     }
-    .legend-item {
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .color-dot { width: 12px; height: 12px; border-radius: 3px; }
+    .plots-grid {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 8px;
-    }
-    .color-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 4px;
-    }
-    .chart-container {
-      height: 260px;
       margin-top: 10px;
+    }
+    .plot-row {
+      background: #f9fcfe;
+      border-radius: 12px;
+      padding: 5px;
+      border: 1px solid #d0e4ed;
+    }
+    .plot-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      padding: 0 5px;
+      color: #1a5f70;
+    }
+    .plot-canvas-container {
+      height: 50px;
+      width: 100%;
+    }
+    .total-plot-container {
+      height: 100px;
+      margin-top: 10px;
+      background: #ecf3f8;
+      border-radius: 12px;
+      padding: 5px;
     }
     .info-panel {
       background: #e9f3f8;
       border-radius: 18px;
-      padding: 14px 18px;
+      padding: 12px;
       font-size: 0.9rem;
+      margin-top: 12px;
     }
-    .footnote {
-      margin-top: 20px;
-      color: #406e7e;
-      text-align: center;
-    }
-    .speed-slider { display: flex; align-items: center; gap: 10px; }
-    .realtime-badge {
-      background: #2a9d8f;
-      color: white;
-      padding: 2px 12px;
-      border-radius: 30px;
-      font-size: 0.8rem;
-    }
+    .footnote { margin-top: 20px; color: #406e7e; text-align: center; }
+    .speed-slider { display: flex; align-items: center; gap: 8px; }
   </style>
 </head>
 <body>
 <div class="container">
   <h1>🌍🌕 Tide School 3 
-    <span style="font-size:1rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px;">animated · live constituent graph</span>
-    <span class="realtime-badge">📈 Real‑time decomposition</span>
+    <span style="font-size:1rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px;">each constituent · own plot</span>
   </h1>
-  <div class="subhead">Watch the Sun, Moon, and Earth create each constituent — then see them add up in real time.</div>
+  <div class="subhead">Watch the Sun, Moon, and Earth drive each harmonic — then see them combine into the total tide.</div>
 
   <div class="dashboard">
     <!-- LEFT: ANIMATION -->
     <div class="card">
-      <div style="display: flex; justify-content: space-between;">
-        <h3 style="margin:0 0 8px;">🌞 Sun-Earth-Moon System</h3>
-        <span style="background:#2a9d8f20; padding:2px 12px; border-radius:30px;">equilibrium tide bulge</span>
-      </div>
+      <h3 style="margin:0 0 8px;">🌞 Sun-Earth-Moon System</h3>
       <div class="animation-container">
         <canvas id="orbitCanvas" width="600" height="600"></canvas>
       </div>
       <div class="controls">
         <button class="btn" id="playPauseBtn">⏸️ Pause</button>
-        <button class="btn-outline btn" id="resetViewBtn">⟲ Reset time</button>
+        <button class="btn-outline btn" id="resetViewBtn">⟲ Reset</button>
         <div class="speed-slider">
-          <span>⏩ Speed</span>
-          <input type="range" id="speedSlider" min="0.2" max="3.0" step="0.1" value="1.0" style="width:120px;">
+          <span>⏩</span>
+          <input type="range" id="speedSlider" min="0.2" max="3.0" step="0.1" value="1.0" style="width:100px;">
         </div>
-        <label style="margin-left:auto;"><input type="checkbox" id="showForcesCheck" checked> Show vectors</label>
+        <label><input type="checkbox" id="showForcesCheck" checked> Vectors</label>
       </div>
-      <div class="constituent-legend">
+      <div class="legend">
         <div class="legend-item"><span class="color-dot" style="background:#3a9bdc;"></span> Lunar (M₂,N₂)</div>
         <div class="legend-item"><span class="color-dot" style="background:#f4c542;"></span> Solar (S₂)</div>
         <div class="legend-item"><span class="color-dot" style="background:#7b68c4;"></span> Declination (K₁,O₁,P₁)</div>
       </div>
-      <div class="info-panel" id="animationNote">
-        🌕 The Moon's orbit creates M₂. Sun adds S₂. Declination (tilt) produces diurnal K₁/O₁.
-      </div>
+      <div class="info-panel" id="animationNote">🌕 Moon angle updates with time.</div>
     </div>
 
-    <!-- RIGHT: STATION SELECTOR + LIVE DECOMPOSITION CHART -->
+    <!-- RIGHT: STATION + INDIVIDUAL CONSTITUENT PLOTS -->
     <div class="card">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-        <label style="font-weight:600;">📍 NOAA Station</label>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+        <label style="font-weight:600;">📍 Station</label>
         <select id="stationSelect" style="flex:1;">
           <option value="sf">🌉 San Francisco</option>
           <option value="boston">⚓ Boston</option>
@@ -177,24 +172,22 @@
           <option value="stpete">🌴 St. Petersburg</option>
         </select>
       </div>
-      <p style="margin-bottom:8px;"><strong>📊 Live constituent contributions (meters above MLLW)</strong> · scrolling window</p>
-      <div class="chart-container">
-        <canvas id="liveChart"></canvas>
+      
+      <!-- Individual constituent plots (vertical stack) -->
+      <div class="plots-grid" id="plotsContainer">
+        <!-- Will be populated by JS -->
       </div>
-      <div class="footnote" style="margin-top:8px;" id="chartFootnote">Each line shows a constituent wave. Thick black = total.</div>
-      <div style="margin-top:10px; font-size:0.85rem; display:flex; flex-wrap:wrap; gap:12px;">
-        <span><span style="display:inline-block; width:12px; height:12px; background:#1f77b4; border-radius:3px;"></span> M₂</span>
-        <span><span style="background:#ff7f0e;"></span> S₂</span>
-        <span><span style="background:#2ca02c;"></span> N₂</span>
-        <span><span style="background:#d62728;"></span> K₁</span>
-        <span><span style="background:#9467bd;"></span> O₁</span>
-        <span><span style="background:#8c564b;"></span> P₁</span>
-        <span><span style="background:#000; width:16px;"></span> Total</span>
+      
+      <!-- Total plot -->
+      <div class="total-plot-container">
+        <div class="plot-header"><strong>📈 TOTAL TIDE (sum of all constituents)</strong> <span id="totalRange"></span></div>
+        <div style="height:90px;"><canvas id="totalChartCanvas"></canvas></div>
       </div>
+      <div class="footnote" style="margin-top:8px;" id="chartFootnote">Each graph scrolls with animation time · window: 48h</div>
     </div>
   </div>
   <div class="footnote">
-    ⏱️ Animation time drives the chart. Data accumulates over 48‑hour window. Select any station to see its harmonic constants in action.
+    ⏱️ Animation drives all plots in real time. Select any NOAA station — watch the constituents dance!
   </div>
 </div>
 
@@ -219,17 +212,20 @@
     const CONST_ORDER = ['M2','S2','N2','K1','O1','P1'];
     const COLORS = ['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b'];
     
-    // ---------- GLOBALS ----------
+    // State
     let currentStationKey = 'sf';
-    let liveChart = null;
-    const maxWindowHours = 48;
-    const timeStep = 0.2; // hours per data point
-    let dataBuffer = []; // array of { time, values: [m2,s2,n2,k1,o1,p1], total }
-    let animationTime = 0; // hours
+    let animationTime = 0;
     let isPlaying = true;
     let speed = 1.0;
+    const maxWindowHours = 48;
+    const timeStep = 0.2; // hours per point
+    let dataBuffer = [];
     
-    // DOM elements
+    // Chart instances
+    const constituentCharts = [];
+    let totalChart = null;
+    
+    // DOM
     const orbitCanvas = document.getElementById('orbitCanvas');
     const ctx = orbitCanvas.getContext('2d');
     const playPauseBtn = document.getElementById('playPauseBtn');
@@ -238,96 +234,133 @@
     const showForcesCheck = document.getElementById('showForcesCheck');
     const animationNote = document.getElementById('animationNote');
     const stationSelect = document.getElementById('stationSelect');
+    const plotsContainer = document.getElementById('plotsContainer');
+    const totalChartCanvas = document.getElementById('totalChartCanvas').getContext('2d');
+    const totalRangeSpan = document.getElementById('totalRange');
     const chartFootnote = document.getElementById('chartFootnote');
-    const liveChartCtx = document.getElementById('liveChart').getContext('2d');
     
     function deg2rad(d) { return d * Math.PI/180; }
     
-    // Compute constituent values at given time (hours) for current station
-    function computeConstituents(tHours) {
+    // Compute a single constituent value
+    function computeConstituent(t, idx) {
       const s = STATIONS[currentStationKey];
-      const vals = [];
-      CONST_ORDER.forEach((name, idx) => {
-        const amp = s.consts[idx];
-        const phase = s.phases[idx];
-        const spd = SPEEDS[name];
-        vals.push(amp * Math.cos(deg2rad(spd) * tHours - deg2rad(phase)));
-      });
+      const amp = s.consts[idx];
+      const phase = s.phases[idx];
+      const spd = SPEEDS[CONST_ORDER[idx]];
+      return amp * Math.cos(deg2rad(spd) * t - deg2rad(phase));
+    }
+    
+    function computeAll(t) {
+      const s = STATIONS[currentStationKey];
+      const vals = CONST_ORDER.map((_, i) => computeConstituent(t, i));
       const total = vals.reduce((a,b) => a+b, 0);
       return { vals, total };
     }
     
-    // Add new data point to buffer (maintain window)
-    function addDataPoint(tHours) {
-      const { vals, total } = computeConstituents(tHours);
-      dataBuffer.push({ time: tHours, vals: [...vals], total });
-      // Remove points older than maxWindowHours
-      const cutoff = tHours - maxWindowHours;
+    function addDataPoint(t) {
+      const { vals, total } = computeAll(t);
+      dataBuffer.push({ time: t, vals: [...vals], total });
+      const cutoff = t - maxWindowHours;
       dataBuffer = dataBuffer.filter(d => d.time >= cutoff);
     }
     
-    // Update live chart
-    function updateLiveChart() {
+    // Build individual plot containers and chart instances
+    function buildPlotContainers() {
+      let html = '';
+      CONST_ORDER.forEach((name, i) => {
+        html += `<div class="plot-row">
+          <div class="plot-header"><span><span class="color-dot" style="background:${COLORS[i]};"></span> ${name}</span> <span id="range-${i}"></span></div>
+          <div class="plot-canvas-container"><canvas id="chart-${i}"></canvas></div>
+        </div>`;
+      });
+      plotsContainer.innerHTML = html;
+      
+      // Initialize charts
+      CONST_ORDER.forEach((_, i) => {
+        const canvas = document.getElementById(`chart-${i}`);
+        const chart = new Chart(canvas, {
+          type: 'line',
+          data: { labels: [], datasets: [{ data: [], borderColor: COLORS[i], borderWidth: 1.5, pointRadius: 0, tension: 0.1 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            animation: false,
+            scales: { x: { display: false }, y: { display: true, ticks: { maxTicksLimit: 3 } } },
+            plugins: { legend: { display: false }, tooltip: { enabled: false } }
+          }
+        });
+        constituentCharts.push(chart);
+      });
+    }
+    
+    function updateAllCharts() {
       if (dataBuffer.length === 0) return;
       
       const labels = dataBuffer.map(d => {
         const hrs = d.time % 24;
-        const day = Math.floor(d.time / 24);
-        return `${day}d ${hrs.toFixed(1)}h`;
+        return `${Math.floor(d.time/24)}d ${hrs.toFixed(1)}h`;
       });
       
-      const datasets = CONST_ORDER.map((name, i) => ({
-        label: name,
-        data: dataBuffer.map(d => d.vals[i]),
-        borderColor: COLORS[i],
-        borderWidth: 1.2,
-        pointRadius: 0,
-        tension: 0.1,
-        fill: false
-      }));
-      
-      // Add total line
-      datasets.push({
-        label: 'Total',
-        data: dataBuffer.map(d => d.total),
-        borderColor: '#000000',
-        borderWidth: 2.5,
-        pointRadius: 0,
-        tension: 0.1
+      // Update individual charts
+      CONST_ORDER.forEach((_, i) => {
+        const chart = constituentCharts[i];
+        const data = dataBuffer.map(d => d.vals[i]);
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = data;
+        chart.update();
+        
+        // Update range display
+        const min = Math.min(...data).toFixed(2);
+        const max = Math.max(...data).toFixed(2);
+        document.getElementById(`range-${i}`).textContent = `${min} to ${max} m`;
       });
       
-      if (liveChart) {
-        liveChart.data.labels = labels;
-        liveChart.data.datasets = datasets;
-        liveChart.update();
-      } else {
-        liveChart = new Chart(liveChartCtx, {
+      // Update total chart
+      const totalData = dataBuffer.map(d => d.total);
+      if (!totalChart) {
+        totalChart = new Chart(totalChartCanvas, {
           type: 'line',
-          data: { labels, datasets },
+          data: { labels, datasets: [{ data: totalData, borderColor: '#000', borderWidth: 2.5, pointRadius: 0, tension: 0.1 }] },
           options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false, // smoother real-time
-            scales: {
-              x: { 
-                ticks: { maxTicksLimit: 10, callback: (val, idx) => labels[idx] },
-                grid: { color: '#cde3ec40' }
-              },
-              y: { title: { display: true, text: 'meters (MLLW)' } }
-            },
-            plugins: {
-              tooltip: { mode: 'index' },
-              legend: { display: false }
-            }
+            responsive: true, maintainAspectRatio: false,
+            animation: false,
+            scales: { x: { ticks: { maxTicksLimit: 8 } }, y: { title: { display: true, text: 'm (MLLW)' } } },
+            plugins: { legend: { display: false } }
           }
         });
+      } else {
+        totalChart.data.labels = labels;
+        totalChart.data.datasets[0].data = totalData;
+        totalChart.update();
       }
-      chartFootnote.textContent = `${STATIONS[currentStationKey].name} · real‑time window: ${dataBuffer.length} points · total range: ${Math.min(...dataBuffer.map(d=>d.total)).toFixed(2)} to ${Math.max(...dataBuffer.map(d=>d.total)).toFixed(2)} m`;
+      
+      const totalMin = Math.min(...totalData).toFixed(2);
+      const totalMax = Math.max(...totalData).toFixed(2);
+      totalRangeSpan.textContent = `${totalMin} to ${totalMax} m`;
+      chartFootnote.textContent = `${STATIONS[currentStationKey].name} · ${dataBuffer.length} points · window ${maxWindowHours}h`;
+    }
+    
+    // Reset simulation
+    function resetSimulation() {
+      animationTime = 0;
+      dataBuffer = [];
+      addDataPoint(0);
+      updateAllCharts();
+      drawScene();
+    }
+    
+    // Station change
+    function changeStation(key) {
+      currentStationKey = key;
+      const times = dataBuffer.map(d => d.time);
+      dataBuffer = [];
+      times.forEach(t => addDataPoint(t));
+      if (dataBuffer.length === 0) addDataPoint(animationTime);
+      updateAllCharts();
+      drawScene();
     }
     
     // ---------- ANIMATION (Celestial) ----------
-    const earthRadius = 20, moonOrbitRadius = 80, moonRadius = 6, sunDistance = 200, sunRadius = 30;
-    let moonAngle = 0, earthAngle = 0;
+    const earthRadius = 20, moonOrbitRadius = 80, moonRadius = 6, sunRadius = 30;
     const moonPeriod = 24.84, earthPeriod = 8766, declinationAngle = 0.41;
     
     function drawScene() {
@@ -335,9 +368,8 @@
       ctx.clearRect(0, 0, w, h);
       const cx = w/2, cy = h/2;
       
-      // Update angles based on animationTime
-      moonAngle = (animationTime * 2 * Math.PI / moonPeriod) % (2*Math.PI);
-      earthAngle = (animationTime * 2 * Math.PI / earthPeriod) % (2*Math.PI);
+      const moonAngle = (animationTime * 2 * Math.PI / moonPeriod) % (2*Math.PI);
+      const earthAngle = (animationTime * 2 * Math.PI / earthPeriod) % (2*Math.PI);
       
       const earthOrbitRad = 120;
       const earthX = cx + Math.cos(earthAngle) * earthOrbitRad;
@@ -349,7 +381,7 @@
       // Orbits
       ctx.beginPath();
       ctx.ellipse(cx, cy, earthOrbitRad, earthOrbitRad*0.5, 0, 0, 2*Math.PI);
-      ctx.strokeStyle = '#ffffff30'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.strokeStyle = '#ffffff30'; ctx.stroke();
       ctx.beginPath();
       ctx.ellipse(earthX, earthY, moonOrbitRadius, moonOrbitRadius*0.7, 0, 0, 2*Math.PI);
       ctx.strokeStyle = '#ffffff20'; ctx.stroke();
@@ -366,7 +398,7 @@
       ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius, 0, 2*Math.PI);
       ctx.fillStyle = '#d4d9e0'; ctx.fill();
       
-      // Tidal bulges
+      // Bulges
       const lunarDir = Math.atan2(moonY - earthY, moonX - earthX);
       const solarDir = Math.atan2(sunY - earthY, sunX - earthX);
       ctx.beginPath();
@@ -387,52 +419,24 @@
       ctx.beginPath(); ctx.moveTo(0, -earthRadius-5); ctx.lineTo(0, -earthRadius-15);
       ctx.strokeStyle = '#7b68c4'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
       
-      animationNote.innerHTML = `🌕 Moon angle: ${(moonAngle*180/Math.PI).toFixed(0)}° · Time: ${animationTime.toFixed(1)}h · Speed ${speed}x`;
+      animationNote.innerHTML = `🌕 Moon ${(moonAngle*180/Math.PI).toFixed(0)}° · Time ${animationTime.toFixed(1)}h`;
     }
     
     // Animation loop
-    let lastTimestamp = 0;
-    function animationFrame(now) {
+    function animationFrame() {
       if (isPlaying) {
-        // Advance time
-        const delta = 0.016 * speed; // approx 60fps
-        animationTime += delta;
-        
-        // Add data points at appropriate intervals
-        const lastPoint = dataBuffer.length ? dataBuffer[dataBuffer.length-1].time : -999;
-        if (animationTime - lastPoint >= timeStep) {
+        animationTime += 0.016 * speed; // ~60fps
+        const lastTime = dataBuffer.length ? dataBuffer[dataBuffer.length-1].time : -999;
+        if (animationTime - lastTime >= timeStep) {
           addDataPoint(animationTime);
-          updateLiveChart();
+          updateAllCharts();
         }
-        
         drawScene();
       }
       requestAnimationFrame(animationFrame);
     }
     
-    // Reset time and buffer
-    function resetSimulation() {
-      animationTime = 0;
-      dataBuffer = [];
-      // Seed with initial point
-      addDataPoint(0);
-      updateLiveChart();
-      drawScene();
-    }
-    
-    // Station change
-    function changeStation(key) {
-      currentStationKey = key;
-      // Recompute buffer for existing times
-      const times = dataBuffer.map(d => d.time);
-      dataBuffer = [];
-      times.forEach(t => addDataPoint(t));
-      if (dataBuffer.length === 0) addDataPoint(animationTime);
-      updateLiveChart();
-      drawScene();
-    }
-    
-    // ---------- INITIALIZATION ----------
+    // Resize canvas
     function resizeCanvas() {
       const container = orbitCanvas.parentElement;
       orbitCanvas.width = container.clientWidth;
@@ -445,16 +449,14 @@
       isPlaying = !isPlaying;
       playPauseBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
     });
-    
     resetViewBtn.addEventListener('click', resetSimulation);
-    
-    speedSlider.addEventListener('input', (e) => { speed = parseFloat(e.target.value); });
-    
-    stationSelect.addEventListener('change', (e) => { changeStation(e.target.value); });
-    
+    speedSlider.addEventListener('input', e => speed = parseFloat(e.target.value));
+    stationSelect.addEventListener('change', e => changeStation(e.target.value));
     window.addEventListener('resize', resizeCanvas);
     
+    // Initialize
     window.addEventListener('DOMContentLoaded', () => {
+      buildPlotContainers();
       resizeCanvas();
       resetSimulation();
       requestAnimationFrame(animationFrame);
