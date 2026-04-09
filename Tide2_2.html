@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+  <title>🌊 Tide School 2 · Build Your Own Prediction</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f4f9fe;
+      color: #0b2b3c;
+      padding: 1.5rem 1.5rem 2.5rem;
+      line-height: 1.5;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #0a3a4b;
+      margin-bottom: 0.25rem;
+    }
+    .subhead {
+      color: #2c5a6e;
+      margin-bottom: 2rem;
+      border-left: 5px solid #2a9d8f;
+      padding-left: 1.2rem;
+      font-size: 1.1rem;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 1.8rem 2rem;
+      box-shadow: 0 8px 20px rgba(0,30,40,0.04);
+      border: 1px solid #cde3ec;
+      margin-bottom: 2rem;
+    }
+    .step-badge {
+      background: #1a7a8c;
+      color: white;
+      border-radius: 40px;
+      padding: 4px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+      margin: 15px 0;
+    }
+    .btn {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 40px;
+      font-weight: 500;
+      font-size: 1rem;
+      cursor: pointer;
+      border: 1px solid #1a7a8c;
+      transition: 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-outline {
+      background: transparent;
+      color: #1a7a8c;
+      border: 1.5px solid #1a7a8c;
+    }
+    .btn-outline:hover { background: #e2f3f8; }
+    .btn:hover { background: #0f5e6f; }
+    select, input {
+      padding: 10px 18px;
+      border-radius: 40px;
+      border: 1.5px solid #aacfdf;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      background: white;
+    }
+    .constituent-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .const-field {
+      background: #f0f8fc;
+      border-radius: 20px;
+      padding: 12px 14px;
+    }
+    .const-field label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 8px;
+      color: #0a4b5c;
+    }
+    .const-field input {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 30px;
+      border: 1px solid #b8d6e3;
+      margin-bottom: 6px;
+    }
+    .helper {
+      font-size: 0.8rem;
+      color: #3f7a8c;
+    }
+    .chart-container {
+      height: 300px;
+      margin-top: 30px;
+    }
+    .footnote {
+      margin-top: 15px;
+      color: #406e7e;
+      font-size: 0.9rem;
+    }
+    .info-box {
+      background: #e5f3f9;
+      border-radius: 18px;
+      padding: 16px 22px;
+      margin: 18px 0;
+    }
+    .const-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .const-table th {
+      background: #c3e2ed;
+      padding: 8px;
+    }
+    .const-table td { padding: 6px; border-bottom: 1px solid #cde3ec; }
+    .warning { color: #b45f06; background: #fff3e0; border-radius: 30px; padding: 2px 12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🌊🧪 Tide School 2 <span style="font-size:1rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px;">build your own prediction</span></h1>
+  <div class="subhead">Learn where harmonic constants come from · enter data from any NOAA station</div>
+
+  <!-- STEP 1: Choose example or start custom -->
+  <div class="card">
+    <span class="step-badge">STEP 1 — Pick a starting point</span>
+    <p style="margin-bottom: 12px;">Choose an example station to see how the data looks, or jump straight to entering your own.</p>
+    <div class="flex-row">
+      <select id="exampleStationSelect" style="min-width:240px;">
+        <option value="sf">🌉 San Francisco (example)</option>
+        <option value="anchorage">❄️ Anchorage (example)</option>
+        <option value="boston">⚓ Boston (example)</option>
+        <option value="custom">📝 Start from scratch (custom)</option>
+      </select>
+      <button class="btn" id="loadExampleBtn">📋 Load example into form</button>
+      <span style="margin-left:auto; font-size:0.9rem;">or</span>
+      <button class="btn-outline btn" id="clearFormBtn">🧹 Clear all fields</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Find NOAA data (guided) -->
+  <div class="card">
+    <span class="step-badge">STEP 2 — Find NOAA harmonic constants</span>
+    <p><strong>You need the 7‑digit NOAA station ID.</strong> Find it on the <a href="https://tidesandcurrents.noaa.gov/map/" target="_blank" rel="noopener">NOAA map</a>.</p>
+    <div class="flex-row">
+      <label style="font-weight:600;">Station ID:</label>
+      <input type="text" id="stationIdInput" placeholder="e.g., 9414290 (SF)" value="" style="width:140px;">
+      <button class="btn-outline btn" id="openHarconBtn">🔗 Open NOAA Harmonic Page</button>
+      <span class="helper">(opens harcon.html?id=...)</span>
+    </div>
+    <div class="info-box">
+      <strong>📖 How to read the NOAA table:</strong> Look for rows <strong>M2, S2, N2, K1, O1, P1</strong>.<br>
+      • <strong>Amplitude</strong> – enter in FEET (we convert to meters). <br>
+      • <strong>Phase</strong> – use the value under "Phase (GMT)" in degrees.<br>
+      ⚠️ If P1 is missing, estimate it as <code>K1 amplitude × 0.33</code> with similar phase.
+    </div>
+  </div>
+
+  <!-- STEP 3: Enter constituent data -->
+  <div class="card">
+    <span class="step-badge">STEP 3 — Enter the six primary constituents</span>
+    <div id="constituentFields" class="constituent-grid">
+      <!-- dynamically generated or static? easier static with JS update -->
+    </div>
+    <div class="flex-row" style="justify-content: space-between;">
+      <div><input type="checkbox" id="includeAllCheck" checked> <label for="includeAllCheck">Include all in prediction</label></div>
+      <button class="btn" id="updatePredictionBtn">✨ Update tide prediction</button>
+    </div>
+    <div style="margin-top:12px;">
+      <span id="meterNote" style="background:#d9eef5; padding:5px 15px; border-radius:30px;"></span>
+    </div>
+  </div>
+
+  <!-- CHART & SUMMARY -->
+  <div class="card">
+    <span class="step-badge">📈 LIVE PREDICTION (next 48 hours)</span>
+    <div class="chart-container">
+      <canvas id="tideChart"></canvas>
+    </div>
+    <div class="footnote" id="chartFootnote">Using entered constants. Toggle constituents above to see individual effects.</div>
+    <div style="margin-top:20px;">
+      <p><strong>🧪 Experiment:</strong> Change one amplitude or phase and click "Update prediction" to see the effect. Try zeroing out M2 to reveal the diurnal signal!</p>
+    </div>
+  </div>
+
+  <!-- Reference table of constituent speeds -->
+  <div style="display: flex; justify-content: space-between; color:#3a6e80;">
+    <span>⚡ Constituent speeds (fixed): M2=28.984°/h, S2=30.0, N2=28.440, K1=15.041, O1=13.943, P1=14.959</span>
+    <span>🌎 NOAA data source · educational use</span>
+  </div>
+</div>
+
+<script>
+  (function(){
+    // ---------- fixed speeds ----------
+    const SPEEDS = {
+      M2: 28.984104, S2: 30.0, N2: 28.43973,
+      K1: 15.041069, O1: 13.943035, P1: 14.958931
+    };
+    const CONST_NAMES = ['M2','S2','N2','K1','O1','P1'];
+    const FULL_NAMES = {
+      M2:'Principal lunar semidiurnal', S2:'Principal solar semidiurnal',
+      N2:'Larger lunar elliptic', K1:'Luni-solar diurnal',
+      O1:'Principal lunar diurnal', P1:'Principal solar diurnal'
+    };
+
+    // Example stations (pre-filled data in feet & degrees)
+    const EXAMPLES = {
+      sf: { name:'San Francisco', amps_ft:[1.778,0.466,0.367,1.207,0.764,0.400], phases:[330.5,358.9,306.7,342.3,315.8,340.1] },
+      anchorage: { name:'Anchorage', amps_ft:[12.93,3.64,2.03,6.20,4.30,1.97], phases:[282.8,322.0,248.0,195.4,164.7,194.0] },
+      boston: { name:'Boston', amps_ft:[9.32,1.77,1.77,0.62,0.46,0.20], phases:[135.2,172.8,108.0,195.5,184.2,195.0] }
+    };
+
+    // DOM elements
+    const fieldsContainer = document.getElementById('constituentFields');
+    const exampleSelect = document.getElementById('exampleStationSelect');
+    const loadExampleBtn = document.getElementById('loadExampleBtn');
+    const clearFormBtn = document.getElementById('clearFormBtn');
+    const openHarconBtn = document.getElementById('openHarconBtn');
+    const stationIdInput = document.getElementById('stationIdInput');
+    const includeAllCheck = document.getElementById('includeAllCheck');
+    const updateBtn = document.getElementById('updatePredictionBtn');
+    const meterNote = document.getElementById('meterNote');
+    const chartFootnote = document.getElementById('chartFootnote');
+    const canvas = document.getElementById('tideChart');
+    const ctx = canvas.getContext('2d');
+    let tideChart = null;
+
+    // Helper: deg to rad
+    const deg2rad = deg => deg * Math.PI / 180.0;
+
+    // Build constituent input fields (static once)
+    function buildFields() {
+      let html = '';
+      CONST_NAMES.forEach(name => {
+        html += `<div class="const-field" id="field-${name}">
+          <label><input type="checkbox" class="include-const" data-name="${name}" checked> ${name} – ${FULL_NAMES[name]}</label>
+          <input type="number" step="0.001" id="amp_ft_${name}" placeholder="Amplitude (ft)" value="0.000" style="width:100%;">
+          <input type="number" step="0.1" id="phase_${name}" placeholder="Phase (°)" value="0.0">
+          <div class="helper">→ <span id="amp_m_${name}">0.000</span> m</div>
+        </div>`;
+      });
+      fieldsContainer.innerHTML = html;
+
+      // Attach conversion listeners
+      CONST_NAMES.forEach(name => {
+        const ampFtInput = document.getElementById(`amp_ft_${name}`);
+        const ampMSpan = document.getElementById(`amp_m_${name}`);
+        const updateMeter = () => {
+          const ft = parseFloat(ampFtInput.value) || 0;
+          ampMSpan.textContent = (ft * 0.3048).toFixed(3);
+        };
+        ampFtInput.addEventListener('input', updateMeter);
+        updateMeter(); // initial
+      });
+
+      // Include all toggle
+      includeAllCheck.addEventListener('change', () => {
+        const checked = includeAllCheck.checked;
+        document.querySelectorAll('.include-const').forEach(cb => cb.checked = checked);
+      });
+    }
+    buildFields();
+
+    // Load example data into form (amplitudes in feet)
+    function loadExample(stationKey) {
+      const ex = EXAMPLES[stationKey];
+      if (!ex) return;
+      stationIdInput.value = stationKey === 'sf' ? '9414290' : (stationKey==='anchorage'?'9455920':'8443970');
+      CONST_NAMES.forEach((name, idx) => {
+        const ampFt = ex.amps_ft[idx];
+        const phase = ex.phases[idx];
+        document.getElementById(`amp_ft_${name}`).value = ampFt.toFixed(3);
+        document.getElementById(`phase_${name}`).value = phase.toFixed(1);
+        // trigger meter update
+        document.getElementById(`amp_ft_${name}`).dispatchEvent(new Event('input'));
+        // check include checkbox
+        document.querySelector(`.include-const[data-name="${name}"]`).checked = true;
+      });
+      includeAllCheck.checked = true;
+      meterNote.textContent = `✅ Loaded ${ex.name} example. Amplitudes in feet → meters shown.`;
+      updatePrediction();
+    }
+
+    // Clear all fields
+    function clearForm() {
+      CONST_NAMES.forEach(name => {
+        document.getElementById(`amp_ft_${name}`).value = '0.000';
+        document.getElementById(`phase_${name}`).value = '0.0';
+        document.getElementById(`amp_ft_${name}`).dispatchEvent(new Event('input'));
+        document.querySelector(`.include-const[data-name="${name}"]`).checked = false;
+      });
+      includeAllCheck.checked = false;
+      stationIdInput.value = '';
+      meterNote.textContent = '🧹 Fields cleared. Enter your own data.';
+      updatePrediction();
+    }
+
+    // Get current entered constituents (amp in meters, phase deg, include flag)
+    function getEnteredConstituents() {
+      const consts = [];
+      CONST_NAMES.forEach(name => {
+        const include = document.querySelector(`.include-const[data-name="${name}"]`).checked;
+        const ampFt = parseFloat(document.getElementById(`amp_ft_${name}`).value) || 0;
+        const ampM = ampFt * 0.3048;
+        const phase = parseFloat(document.getElementById(`phase_${name}`).value) || 0;
+        const speed = SPEEDS[name];
+        consts.push({ name, include, amp: ampM, phase, speed });
+      });
+      return consts;
+    }
+
+    // Prediction using entered data
+    function predictHeight(tHours, consts) {
+      let total = 0;
+      consts.forEach(c => {
+        if (!c.include) return;
+        const arg = deg2rad(c.speed) * tHours - deg2rad(c.phase);
+        total += c.amp * Math.cos(arg);
+      });
+      return total;
+    }
+
+    function generateLabelsAndData(consts) {
+      const now = new Date();
+      const hours = 48, step = 0.5;
+      const labels = [], points = [];
+      for (let h = 0; h <= hours; h += step) {
+        const height = predictHeight(h, consts);
+        const forecastTime = new Date(now.getTime() + h * 3600 * 1000);
+        labels.push(forecastTime.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', weekday:'short' }));
+        points.push(height);
+      }
+      return { labels, points };
+    }
+
+    function updatePrediction() {
+      const consts = getEnteredConstituents();
+      const { labels, points } = generateLabelsAndData(consts);
+      
+      if (tideChart) tideChart.destroy();
+      tideChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Water level (m)',
+            data: points,
+            borderColor: '#1b7b8a',
+            backgroundColor: 'rgba(27,123,138,0.03)',
+            borderWidth: 2.8,
+            pointRadius: 0,
+            tension: 0.25,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            tooltip: { callbacks: { label: (ctx) => `Height: ${ctx.raw.toFixed(3)} m` } },
+            legend: { display: false }
+          },
+          scales: {
+            x: { ticks: { maxRotation: 30, maxTicksLimit: 12 }, grid: { color: '#cde3ec40' } },
+            y: { title: { display: true, text: 'meters' }, grid: { color: '#c0dae6' } }
+          }
+        }
+      });
+
+      // update footnote with sum of active amplitudes
+      const activeConsts = consts.filter(c => c.include);
+      const sumAmp = activeConsts.reduce((s,c) => s + c.amp, 0);
+      chartFootnote.innerHTML = `Active constituents: ${activeConsts.length} · Sum of amplitudes: ${sumAmp.toFixed(3)} m. Prediction uses formula Σ H·cos(σt - g).`;
+    }
+
+    // Event listeners
+    loadExampleBtn.addEventListener('click', () => {
+      const val = exampleSelect.value;
+      if (val === 'custom') {
+        clearForm();
+      } else {
+        loadExample(val);
+      }
+    });
+
+    clearFormBtn.addEventListener('click', clearForm);
+
+    openHarconBtn.addEventListener('click', () => {
+      let id = stationIdInput.value.trim();
+      if (!id) {
+        alert('Please enter a 7-digit NOAA station ID first.');
+        return;
+      }
+      // open harcon page
+      const url = `https://tidesandcurrents.noaa.gov/harcon.html?id=${id}`;
+      window.open(url, '_blank', 'noopener');
+      meterNote.textContent = `📂 Opened NOAA harcon for station ${id}. Copy amplitudes (ft) and phases.`;
+    });
+
+    updateBtn.addEventListener('click', updatePrediction);
+
+    // Re-update when any include checkbox changes (delegation)
+    fieldsContainer.addEventListener('change', (e) => {
+      if (e.target.classList.contains('include-const')) {
+        // sync "include all" if all checked/unchecked
+        const allCbs = document.querySelectorAll('.include-const');
+        const allChecked = Array.from(allCbs).every(cb => cb.checked);
+        includeAllCheck.checked = allChecked;
+        // optional: update chart immediately? user can click update.
+      }
+    });
+
+    // Also attach update to individual fields? we rely on "Update prediction" button.
+    // But we can add a quick update on amp/phase change if desired, but keep it manual for clarity.
+
+    // Initialize with San Francisco example on load
+    window.addEventListener('DOMContentLoaded', () => {
+      exampleSelect.value = 'sf';
+      loadExample('sf');
+    });
+
+    // make sure "include all" works
+    includeAllCheck.addEventListener('change', () => {
+      const checked = includeAllCheck.checked;
+      document.querySelectorAll('.include-const').forEach(cb => cb.checked = checked);
+    });
+
+  })();
+</script>
+</body>
+</html>
