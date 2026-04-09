@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+  <title>🌍 Tide School 4 · Declination, Inclination & Earth's Wobble</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f4f9fe;
+      color: #0b2b3c;
+      padding: 1.5rem 1.5rem 2.5rem;
+      line-height: 1.5;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 2.2rem;
+      color: #0a3a4b;
+      margin-bottom: 0.5rem;
+    }
+    .subhead {
+      color: #2c5a6e;
+      margin-bottom: 1.5rem;
+      border-left: 5px solid #2a9d8f;
+      padding-left: 1.2rem;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1.8fr 1fr;
+      gap: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 1.5rem;
+      box-shadow: 0 8px 20px rgba(0,30,40,0.04);
+      border: 1px solid #cde3ec;
+    }
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1/1;
+      background: radial-gradient(circle at 20% 30%, #1a2a3a, #0b1a24);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    canvas { display: block; width: 100%; height: 100%; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 15px 0;
+    }
+    .btn {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-outline { background: transparent; color: #1a7a8c; border: 1.5px solid #1a7a8c; }
+    select, input { padding: 6px 12px; border-radius: 30px; border: 1.5px solid #aacfdf; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 10px 0;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .color-dot { width: 12px; height: 12px; border-radius: 4px; }
+    .info-box {
+      background: #e9f3f8;
+      border-radius: 18px;
+      padding: 15px;
+      margin: 12px 0;
+    }
+    .constituent-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+    .slider-container { margin: 15px 0; }
+    .kpi { font-size: 1.3rem; font-weight: 600; color: #0a4b5c; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+  <h1>🌍🌙☀️ Tide School 4 · The Full Astronomical Picture</h1>
+  <div class="subhead">Declination · Lunar inclination · Earth's axial tilt & wobble — and the tidal constituents they create.</div>
+
+  <div class="dashboard">
+    <!-- LEFT: 3D-like Canvas -->
+    <div class="card">
+      <div class="canvas-container">
+        <canvas id="spaceCanvas" width="700" height="700"></canvas>
+      </div>
+      <div class="controls">
+        <button class="btn" id="playPauseBtn">⏸️ Pause</button>
+        <button class="btn-outline" id="resetViewBtn">⟲ Reset</button>
+        <div style="display:flex; align-items:center; gap:5px;">
+          <span>⏩</span><input type="range" id="speedSlider" min="0.2" max="3.0" step="0.1" value="1.0" style="width:100px;">
+        </div>
+        <label><input type="checkbox" id="showPlanesCheck" checked> Show planes</label>
+        <label><input type="checkbox" id="showVectorsCheck" checked> Show forces</label>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><span class="color-dot" style="background:#f9d71c;"></span> Sun</div>
+        <div class="legend-item"><span class="color-dot" style="background:#d4d9e0;"></span> Moon</div>
+        <div class="legend-item"><span class="color-dot" style="background:#3a9bdc;"></span> Lunar bulge</div>
+        <div class="legend-item"><span class="color-dot" style="background:#f4c542;"></span> Solar bulge</div>
+        <div class="legend-item"><span class="color-dot" style="background:#7b68c4;"></span> Equator / Ecliptic</div>
+      </div>
+      <div class="info-box" id="statusText">🌕 Moon declination: +15° · Sun declination: +10°</div>
+    </div>
+
+    <!-- RIGHT: Explanation & Controls -->
+    <div class="card">
+      <h3 style="margin-top:0;">📐 Astronomical Forcing Factors</h3>
+      <div class="slider-container">
+        <div class="slider-label"><span>🌙 Moon's orbit inclination (relative to ecliptic)</span> <span id="moonIncValue">5.1°</span></div>
+        <input type="range" id="moonIncSlider" min="0" max="10" step="0.1" value="5.1">
+        <div class="slider-label"><span>🌍 Earth's axial tilt (obliquity)</span> <span id="obliquityValue">23.5°</span></div>
+        <input type="range" id="obliquitySlider" min="0" max="30" step="0.5" value="23.5">
+        <div class="slider-label"><span>🔄 Nodal precession phase (18.6 yr)</span> <span id="nodeValue">0°</span></div>
+        <input type="range" id="nodeSlider" min="0" max="360" step="1" value="0">
+      </div>
+      <div class="info-box">
+        <strong>🧬 Constituents from these geometries:</strong>
+        <div class="constituent-list">
+          <div><strong>M₂, S₂</strong> – semidiurnal (no declination)</div>
+          <div><strong>K₁, O₁, P₁</strong> – declinational diurnal</div>
+          <div><strong>N₂</strong> – lunar elliptic (orbit shape)</div>
+          <div><strong>Mm, Mf</strong> – monthly (node/declination)</div>
+          <div><strong>SA, Ssa</strong> – solar annual/semi-annual</div>
+        </div>
+      </div>
+      <div class="info-box">
+        <span class="kpi" id="diurnalRatioDisplay">0.42</span> <span id="diurnalDesc">(K₁+O₁)/(M₂+S₂) ratio</span>
+        <p style="margin-top:8px;">⬤ Higher ratio → more diurnal tide.</p>
+      </div>
+      <p><strong>🔭 What you're seeing:</strong> Earth (tilted), Moon (inclined orbit), Sun (ecliptic plane). The tidal bulges shift off the equator, creating diurnal inequality. The 18.6‑year nodal cycle modulates the Moon's maximum declination.</p>
+      <button class="btn-outline" id="explainMoreBtn" style="margin-top:10px;">📖 Show detailed explanation</button>
+      <div id="detailPanel" style="display:none; margin-top:15px; padding:12px; background:#eef5f9; border-radius:16px;">
+        <h4>🌊 How each factor creates constituents</h4>
+        <ul style="padding-left:20px;">
+          <li><strong>Lunar orbit inclination (5.1°)</strong> → causes Moon's declination to vary ±28.6° over 18.6 years → modulates diurnal tides (O₁, K₁).</li>
+          <li><strong>Earth's axial tilt (23.5°)</strong> → gives seasons and solar declination (±23.5°) → produces P₁, Ssa, Sa.</li>
+          <li><strong>Nodal precession (18.6 yr)</strong> → changes the intersection of Moon's orbit with ecliptic → 18.6‑year modulation of all lunar tides (node factor).</li>
+          <li><strong>Elliptic orbits</strong> → variation in distance → N₂, etc.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footnote" style="margin-top:20px; text-align:center; color:#406e7e;">
+    ⏱️ Animation shows Moon orbiting Earth, Earth orbiting Sun. Tidal bulges reflect combined force vectors. Adjust sliders to explore geometries.
+  </div>
+</div>
+
+<script>
+  (function(){
+    // Canvas
+    const canvas = document.getElementById('spaceCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // State
+    let time = 0; // hours
+    let isPlaying = true;
+    let speed = 1.0;
+    let moonInc = 5.1; // degrees
+    let obliquity = 23.5;
+    let nodePhase = 0; // degrees
+    
+    // DOM elements
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const resetViewBtn = document.getElementById('resetViewBtn');
+    const speedSlider = document.getElementById('speedSlider');
+    const showPlanesCheck = document.getElementById('showPlanesCheck');
+    const showVectorsCheck = document.getElementById('showVectorsCheck');
+    const moonIncSlider = document.getElementById('moonIncSlider');
+    const obliquitySlider = document.getElementById('obliquitySlider');
+    const nodeSlider = document.getElementById('nodeSlider');
+    const moonIncValue = document.getElementById('moonIncValue');
+    const obliquityValue = document.getElementById('obliquityValue');
+    const nodeValue = document.getElementById('nodeValue');
+    const statusText = document.getElementById('statusText');
+    const diurnalRatioDisplay = document.getElementById('diurnalRatioDisplay');
+    const diurnalDesc = document.getElementById('diurnalDesc');
+    const explainMoreBtn = document.getElementById('explainMoreBtn');
+    const detailPanel = document.getElementById('detailPanel');
+    
+    // Constants
+    const moonPeriod = 24.84; // hours
+    const earthPeriod = 8766;  // hours
+    const nodePeriod = 18.6 * 365.25 * 24; // hours
+    
+    // Sizes
+    const earthR = 25;
+    const moonOrbitR = 90;
+    const sunDistance = 250;
+    const sunR = 40;
+    
+    function updateSliders() {
+      moonInc = parseFloat(moonIncSlider.value);
+      obliquity = parseFloat(obliquitySlider.value);
+      nodePhase = parseFloat(nodeSlider.value);
+      moonIncValue.textContent = moonInc.toFixed(1) + '°';
+      obliquityValue.textContent = obliquity.toFixed(1) + '°';
+      nodeValue.textContent = nodePhase.toFixed(0) + '°';
+      updateDiurnalRatio();
+      drawScene();
+    }
+    
+    function updateDiurnalRatio() {
+      // Rough estimate: diurnal amplitude ~ sin(2*decl) * sin(lat)
+      const moonDecl = obliquity + moonInc * Math.sin(time * 2*Math.PI / (nodePeriod/24) + nodePhase*Math.PI/180);
+      const sunDecl = obliquity * Math.sin(time * 2*Math.PI / (earthPeriod/24));
+      const lat = 40 * Math.PI/180;
+      const lunarDiurnal = Math.abs(Math.sin(2 * moonDecl * Math.PI/180)) * Math.sin(lat);
+      const solarDiurnal = Math.abs(Math.sin(2 * sunDecl * Math.PI/180)) * Math.sin(lat);
+      const semi = Math.pow(Math.cos(moonDecl*Math.PI/180),2) + 0.46 * Math.pow(Math.cos(sunDecl*Math.PI/180),2);
+      const ratio = (lunarDiurnal*0.8 + solarDiurnal*0.4) / (semi + 0.001);
+      diurnalRatioDisplay.textContent = ratio.toFixed(3);
+      diurnalDesc.textContent = ratio < 0.5 ? 'semidiurnal' : (ratio < 1.5 ? 'mixed' : 'diurnal');
+    }
+    
+    function drawScene() {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      const cx = w/2, cy = h/2;
+      
+      // Angles
+      const moonAngle = (time * 2*Math.PI / moonPeriod) % (2*Math.PI);
+      const earthAngle = (time * 2*Math.PI / earthPeriod) % (2*Math.PI);
+      
+      // Earth position (around Sun)
+      const earthX = cx + Math.cos(earthAngle) * sunDistance;
+      const earthY = cy + Math.sin(earthAngle) * sunDistance * 0.4; // elliptical
+      
+      // Moon position relative to Earth, with inclination
+      const moonOrbitPlaneAngle = nodePhase * Math.PI/180 + (time * 2*Math.PI / (nodePeriod/24)) * 0.1; // slow regression
+      const moonOffsetX = Math.cos(moonAngle) * moonOrbitR;
+      const moonOffsetY = Math.sin(moonAngle) * moonOrbitR * Math.cos(moonInc * Math.PI/180);
+      const moonOffsetZ = Math.sin(moonAngle) * moonOrbitR * Math.sin(moonInc * Math.PI/180);
+      // Project to 2D (ignore Z for simplicity, but we'll use a pseudo-3D effect)
+      const moonX = earthX + moonOffsetX;
+      const moonY = earthY + moonOffsetY * 0.8 - moonOffsetZ * 0.5;
+      
+      const sunX = cx, sunY = cy;
+      
+      // Draw orbits
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, sunDistance, sunDistance*0.4, 0, 0, 2*Math.PI);
+      ctx.strokeStyle = '#ffffff30'; ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(earthX, earthY, moonOrbitR, moonOrbitR*0.7, 0, 0, 2*Math.PI);
+      ctx.strokeStyle = '#ffffff20'; ctx.stroke();
+      
+      // Planes
+      if (showPlanesCheck.checked) {
+        // Ecliptic plane (line)
+        ctx.beginPath();
+        ctx.moveTo(cx - sunDistance*1.3, cy);
+        ctx.lineTo(cx + sunDistance*1.3, cy);
+        ctx.strokeStyle = '#f4c54260'; ctx.lineWidth = 1; ctx.stroke();
+        // Equatorial plane (tilted)
+        ctx.save();
+        ctx.translate(earthX, earthY);
+        ctx.rotate(obliquity * Math.PI/180);
+        ctx.beginPath();
+        ctx.moveTo(-earthR-40, 0); ctx.lineTo(earthR+40, 0);
+        ctx.strokeStyle = '#7b68c4'; ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+      
+      // Sun
+      ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, 2*Math.PI);
+      ctx.fillStyle = '#f9d71c'; ctx.shadowColor = '#f9a81c'; ctx.shadowBlur = 30; ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // Earth
+      ctx.beginPath(); ctx.arc(earthX, earthY, earthR, 0, 2*Math.PI);
+      ctx.fillStyle = '#2b7a9c'; ctx.fill();
+      ctx.strokeStyle = '#1a4b5c'; ctx.lineWidth = 2; ctx.stroke();
+      
+      // Moon
+      ctx.beginPath(); ctx.arc(moonX, moonY, 7, 0, 2*Math.PI);
+      ctx.fillStyle = '#d4d9e0'; ctx.fill();
+      
+      // Tidal bulges
+      const toMoonDir = Math.atan2(moonY - earthY, moonX - earthX);
+      const toSunDir = Math.atan2(sunY - earthY, sunX - earthX);
+      const bulgeSize = 18;
+      // Combined bulge direction (vector sum)
+      const totalX = Math.cos(toMoonDir) + 0.46*Math.cos(toSunDir);
+      const totalY = Math.sin(toMoonDir) + 0.46*Math.sin(toSunDir);
+      const bulgeDir = Math.atan2(totalY, totalX);
+      
+      ctx.beginPath();
+      ctx.ellipse(earthX, earthY, earthR + bulgeSize, earthR + bulgeSize*0.5, bulgeDir, 0, 2*Math.PI);
+      ctx.fillStyle = '#3a9bdc80'; ctx.fill();
+      
+      if (showVectorsCheck.checked) {
+        ctx.beginPath(); ctx.moveTo(earthX, earthY); ctx.lineTo(earthX+Math.cos(toMoonDir)*45, earthY+Math.sin(toMoonDir)*45);
+        ctx.strokeStyle = '#3a9bdc'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(earthX, earthY); ctx.lineTo(earthX+Math.cos(toSunDir)*35, earthY+Math.sin(toSunDir)*35);
+        ctx.strokeStyle = '#f4c542'; ctx.stroke();
+        // Total vector
+        const totLen = 40;
+        ctx.beginPath(); ctx.moveTo(earthX, earthY); 
+        ctx.lineTo(earthX + (totalX/Math.hypot(totalX,totalY))*totLen, earthY + (totalY/Math.hypot(totalX,totalY))*totLen);
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.stroke();
+      }
+      
+      // Status text
+      const moonDecl = obliquity + moonInc * Math.sin(time * 0.01);
+      const sunDecl = obliquity * Math.sin(earthAngle);
+      statusText.innerHTML = `🌕 Moon decl: ${moonDecl.toFixed(1)}° · ☀️ Sun decl: ${sunDecl.toFixed(1)}° · Node: ${nodePhase.toFixed(0)}°`;
+    }
+    
+    function animate() {
+      if (isPlaying) {
+        time += 0.05 * speed;
+        drawScene();
+        updateDiurnalRatio();
+      }
+      requestAnimationFrame(animate);
+    }
+    
+    function resetSimulation() {
+      time = 0;
+      drawScene();
+    }
+    
+    // Event listeners
+    playPauseBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      playPauseBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+    });
+    resetViewBtn.addEventListener('click', resetSimulation);
+    speedSlider.addEventListener('input', e => speed = parseFloat(e.target.value));
+    moonIncSlider.addEventListener('input', updateSliders);
+    obliquitySlider.addEventListener('input', updateSliders);
+    nodeSlider.addEventListener('input', updateSliders);
+    explainMoreBtn.addEventListener('click', () => {
+      detailPanel.style.display = detailPanel.style.display === 'none' ? 'block' : 'none';
+    });
+    window.addEventListener('resize', () => {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientWidth;
+      drawScene();
+    });
+    
+    // Init
+    canvas.width = 700; canvas.height = 700;
+    updateSliders();
+    drawScene();
+    animate();
+  })();
+</script>
+</body>
+</html>
