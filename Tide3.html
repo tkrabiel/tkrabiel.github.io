@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
-  <title>🌍 Tide School 3 · Individual Constituent Plots</title>
+  <title>🌍 Tide School 3 · Spring/Neap Bulge + Vector</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -127,14 +127,14 @@
 <body>
 <div class="container">
   <h1>🌍🌕 Tide School 3 
-    <span style="font-size:1rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px;">each constituent · own plot</span>
+    <span style="font-size:1rem; background:#1a7a8c20; padding:2px 18px; border-radius:40px;">spring/neap · total vector</span>
   </h1>
-  <div class="subhead">Watch the Sun, Moon, and Earth drive each harmonic — then see them combine into the total tide.</div>
+  <div class="subhead">Watch the Sun and Moon align → larger bulge (spring tide). Quadrature → smaller bulge (neap tide). Vector shows net force.</div>
 
   <div class="dashboard">
     <!-- LEFT: ANIMATION -->
     <div class="card">
-      <h3 style="margin:0 0 8px;">🌞 Sun-Earth-Moon System</h3>
+      <h3 style="margin:0 0 8px;">🌞 Sun–Earth–Moon System</h3>
       <div class="animation-container">
         <canvas id="orbitCanvas" width="600" height="600"></canvas>
       </div>
@@ -148,9 +148,9 @@
         <label><input type="checkbox" id="showForcesCheck" checked> Vectors</label>
       </div>
       <div class="legend">
-        <div class="legend-item"><span class="color-dot" style="background:#3a9bdc;"></span> Lunar (M₂,N₂)</div>
-        <div class="legend-item"><span class="color-dot" style="background:#f4c542;"></span> Solar (S₂)</div>
-        <div class="legend-item"><span class="color-dot" style="background:#7b68c4;"></span> Declination (K₁,O₁,P₁)</div>
+        <div class="legend-item"><span class="color-dot" style="background:#3a9bdc;"></span> Lunar bulge</div>
+        <div class="legend-item"><span class="color-dot" style="background:#f4c542;"></span> Solar bulge</div>
+        <div class="legend-item"><span class="color-dot" style="background:#ffffff; border:1px solid #aaa;"></span> Total vector</div>
       </div>
       <div class="info-panel" id="animationNote">🌕 Moon angle updates with time.</div>
     </div>
@@ -173,12 +173,8 @@
         </select>
       </div>
       
-      <!-- Individual constituent plots (vertical stack) -->
-      <div class="plots-grid" id="plotsContainer">
-        <!-- Will be populated by JS -->
-      </div>
+      <div class="plots-grid" id="plotsContainer"></div>
       
-      <!-- Total plot -->
       <div class="total-plot-container">
         <div class="plot-header"><strong>📈 TOTAL TIDE (sum of all constituents)</strong> <span id="totalRange"></span></div>
         <div style="height:90px;"><canvas id="totalChartCanvas"></canvas></div>
@@ -187,7 +183,7 @@
     </div>
   </div>
   <div class="footnote">
-    ⏱️ Animation drives all plots in real time. Select any NOAA station — watch the constituents dance!
+    ⏱️ Animation drives all plots in real time. Bulge size reflects Sun‑Moon alignment. White vector = net tidal force direction.
   </div>
 </div>
 
@@ -218,10 +214,9 @@
     let isPlaying = true;
     let speed = 1.0;
     const maxWindowHours = 48;
-    const timeStep = 0.2; // hours per point
+    const timeStep = 0.2;
     let dataBuffer = [];
     
-    // Chart instances
     const constituentCharts = [];
     let totalChart = null;
     
@@ -241,7 +236,6 @@
     
     function deg2rad(d) { return d * Math.PI/180; }
     
-    // Compute a single constituent value
     function computeConstituent(t, idx) {
       const s = STATIONS[currentStationKey];
       const amp = s.consts[idx];
@@ -264,7 +258,6 @@
       dataBuffer = dataBuffer.filter(d => d.time >= cutoff);
     }
     
-    // Build individual plot containers and chart instances
     function buildPlotContainers() {
       let html = '';
       CONST_ORDER.forEach((name, i) => {
@@ -275,7 +268,6 @@
       });
       plotsContainer.innerHTML = html;
       
-      // Initialize charts
       CONST_ORDER.forEach((_, i) => {
         const canvas = document.getElementById(`chart-${i}`);
         const chart = new Chart(canvas, {
@@ -294,27 +286,19 @@
     
     function updateAllCharts() {
       if (dataBuffer.length === 0) return;
+      const labels = dataBuffer.map(d => `${Math.floor(d.time/24)}d ${(d.time%24).toFixed(1)}h`);
       
-      const labels = dataBuffer.map(d => {
-        const hrs = d.time % 24;
-        return `${Math.floor(d.time/24)}d ${hrs.toFixed(1)}h`;
-      });
-      
-      // Update individual charts
       CONST_ORDER.forEach((_, i) => {
         const chart = constituentCharts[i];
         const data = dataBuffer.map(d => d.vals[i]);
         chart.data.labels = labels;
         chart.data.datasets[0].data = data;
         chart.update();
-        
-        // Update range display
         const min = Math.min(...data).toFixed(2);
         const max = Math.max(...data).toFixed(2);
         document.getElementById(`range-${i}`).textContent = `${min} to ${max} m`;
       });
       
-      // Update total chart
       const totalData = dataBuffer.map(d => d.total);
       if (!totalChart) {
         totalChart = new Chart(totalChartCanvas, {
@@ -339,7 +323,6 @@
       chartFootnote.textContent = `${STATIONS[currentStationKey].name} · ${dataBuffer.length} points · window ${maxWindowHours}h`;
     }
     
-    // Reset simulation
     function resetSimulation() {
       animationTime = 0;
       dataBuffer = [];
@@ -348,7 +331,6 @@
       drawScene();
     }
     
-    // Station change
     function changeStation(key) {
       currentStationKey = key;
       const times = dataBuffer.map(d => d.time);
@@ -359,9 +341,14 @@
       drawScene();
     }
     
-    // ---------- ANIMATION (Celestial) ----------
-    const earthRadius = 20, moonOrbitRadius = 80, moonRadius = 6, sunRadius = 30;
-    const moonPeriod = 24.84, earthPeriod = 8766, declinationAngle = 0.41;
+    // ---------- ANIMATION (with spring/neap and total vector) ----------
+    const earthRadius = 20;
+    const moonOrbitRadius = 80;
+    const moonRadius = 6;
+    const sunRadius = 30;
+    const moonPeriod = 24.84;
+    const earthPeriod = 8766;
+    const declinationAngle = 0.41;
     
     function drawScene() {
       const w = orbitCanvas.width, h = orbitCanvas.height;
@@ -371,7 +358,8 @@
       const moonAngle = (animationTime * 2 * Math.PI / moonPeriod) % (2*Math.PI);
       const earthAngle = (animationTime * 2 * Math.PI / earthPeriod) % (2*Math.PI);
       
-      const earthOrbitRad = 120;
+      // Increased Earth orbit radius to move Sun farther away
+      const earthOrbitRad = 200; // was 120
       const earthX = cx + Math.cos(earthAngle) * earthOrbitRad;
       const earthY = cy + Math.sin(earthAngle) * earthOrbitRad * 0.5;
       const moonX = earthX + Math.cos(moonAngle) * moonOrbitRadius;
@@ -398,34 +386,76 @@
       ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius, 0, 2*Math.PI);
       ctx.fillStyle = '#d4d9e0'; ctx.fill();
       
-      // Bulges
-      const lunarDir = Math.atan2(moonY - earthY, moonX - earthX);
-      const solarDir = Math.atan2(sunY - earthY, sunX - earthX);
-      ctx.beginPath();
-      ctx.ellipse(earthX, earthY, earthRadius+12, earthRadius+6, lunarDir, 0, 2*Math.PI);
-      ctx.fillStyle = '#3a9bdc60'; ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(earthX, earthY, earthRadius+8, earthRadius+4, solarDir, 0, 2*Math.PI);
-      ctx.fillStyle = '#f4c54260'; ctx.fill();
+      // Directions
+      const sunDir = earthAngle; // from Earth to Sun is opposite? Actually vector from Sun to Earth matters, but for tide we consider direction of tide-raising force.
+      // Tide-raising force points toward (and away from) the body. We'll use the direction from Earth to Moon and Earth to Sun.
+      const toMoonDir = Math.atan2(moonY - earthY, moonX - earthX);
+      const toSunDir = Math.atan2(sunY - earthY, sunX - earthX);
       
+      // Compute combined bulge factor (spring/neap)
+      const angleDiff = toMoonDir - toSunDir;
+      const lunarStrength = 1.0;
+      const solarStrength = 0.46;
+      const combinedFactor = Math.sqrt(lunarStrength*lunarStrength + solarStrength*solarStrength + 2*lunarStrength*solarStrength*Math.cos(angleDiff));
+      const baseBulgeSize = 12;
+      const bulgeSize = baseBulgeSize * combinedFactor;
+      
+      // Combined bulge direction (weighted average of force vectors)
+      const totalX = lunarStrength * Math.cos(toMoonDir) + solarStrength * Math.cos(toSunDir);
+      const totalY = lunarStrength * Math.sin(toMoonDir) + solarStrength * Math.sin(toSunDir);
+      const bulgeDir = Math.atan2(totalY, totalX);
+      
+      // Draw combined equilibrium tide bulge
+      ctx.beginPath();
+      ctx.ellipse(earthX, earthY, earthRadius + bulgeSize, earthRadius + bulgeSize*0.5, bulgeDir, 0, 2*Math.PI);
+      ctx.fillStyle = '#3a9bdc80';
+      ctx.fill();
+      
+      // Optional: faint individual components
+      ctx.beginPath();
+      ctx.ellipse(earthX, earthY, earthRadius+12, earthRadius+6, toMoonDir, 0, 2*Math.PI);
+      ctx.fillStyle = '#3a9bdc30'; ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(earthX, earthY, earthRadius+5.5, earthRadius+2.8, toSunDir, 0, 2*Math.PI);
+      ctx.fillStyle = '#f4c54230'; ctx.fill();
+      
+      // Draw total tide vector (white arrow) from Earth center showing net direction and magnitude
       if (showForcesCheck.checked) {
-        ctx.beginPath(); ctx.moveTo(earthX, earthY); ctx.lineTo(earthX+Math.cos(lunarDir)*50, earthY+Math.sin(lunarDir)*50);
+        // Lunar vector
+        ctx.beginPath(); ctx.moveTo(earthX, earthY); ctx.lineTo(earthX + Math.cos(toMoonDir)*50, earthY + Math.sin(toMoonDir)*50);
         ctx.strokeStyle = '#3a9bdc'; ctx.lineWidth = 2; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(earthX, earthY); ctx.lineTo(earthX+Math.cos(solarDir)*40, earthY+Math.sin(solarDir)*40);
+        // Solar vector
+        ctx.beginPath(); ctx.moveTo(earthX, earthY); ctx.lineTo(earthX + Math.cos(toSunDir)*40, earthY + Math.sin(toSunDir)*40);
         ctx.strokeStyle = '#f4c542'; ctx.stroke();
+        
+        // Total vector (thick white)
+        const totalMagnitude = Math.sqrt(totalX*totalX + totalY*totalY);
+        const totalLength = 30 + 40 * (combinedFactor / 1.46); // scale with strength
+        ctx.beginPath(); ctx.moveTo(earthX, earthY); 
+        ctx.lineTo(earthX + (totalX/totalMagnitude)*totalLength, earthY + (totalY/totalMagnitude)*totalLength);
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3.5; ctx.stroke();
+        ctx.beginPath(); ctx.arc(earthX + (totalX/totalMagnitude)*totalLength, earthY + (totalY/totalMagnitude)*totalLength, 4, 0, 2*Math.PI);
+        ctx.fillStyle = '#ffffff'; ctx.fill();
       }
       
+      // Declination indicator
       ctx.save(); ctx.translate(earthX, earthY); ctx.rotate(declinationAngle * Math.sin(animationTime/12));
       ctx.beginPath(); ctx.moveTo(0, -earthRadius-5); ctx.lineTo(0, -earthRadius-15);
       ctx.strokeStyle = '#7b68c4'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
       
-      animationNote.innerHTML = `🌕 Moon ${(moonAngle*180/Math.PI).toFixed(0)}° · Time ${animationTime.toFixed(1)}h`;
+      // Spring/neap status
+      const cosDiff = Math.cos(angleDiff);
+      let tideType = '';
+      if (cosDiff > 0.8) tideType = '🌕🌑 Spring tide (aligned)';
+      else if (cosDiff < -0.8) tideType = '🌓 Neap tide (quadrature)';
+      else tideType = '↗️ Mixed';
+      
+      animationNote.innerHTML = `🌕 Moon ${(moonAngle*180/Math.PI).toFixed(0)}° · Sun-Moon angle ${Math.abs(angleDiff*180/Math.PI).toFixed(0)}° · ${tideType} · Bulge ${bulgeSize.toFixed(1)}`;
     }
     
-    // Animation loop
     function animationFrame() {
       if (isPlaying) {
-        animationTime += 0.016 * speed; // ~60fps
+        animationTime += 0.016 * speed;
         const lastTime = dataBuffer.length ? dataBuffer[dataBuffer.length-1].time : -999;
         if (animationTime - lastTime >= timeStep) {
           addDataPoint(animationTime);
@@ -436,7 +466,6 @@
       requestAnimationFrame(animationFrame);
     }
     
-    // Resize canvas
     function resizeCanvas() {
       const container = orbitCanvas.parentElement;
       orbitCanvas.width = container.clientWidth;
@@ -454,7 +483,6 @@
     stationSelect.addEventListener('change', e => changeStation(e.target.value));
     window.addEventListener('resize', resizeCanvas);
     
-    // Initialize
     window.addEventListener('DOMContentLoaded', () => {
       buildPlotContainers();
       resizeCanvas();
