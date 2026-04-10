@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌊 NOAA Tide API · Step‑by‑Step Tutorial</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f4f9fe;
+      color: #0b2b3c;
+      padding: 1.5rem 1.5rem 2.5rem;
+      line-height: 1.6;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 500;
+      font-size: 2.2rem;
+      color: #0a3a4b;
+      margin-bottom: 0.5rem;
+    }
+    .subhead {
+      color: #2c5a6e;
+      margin-bottom: 2rem;
+      border-left: 5px solid #2a9d8f;
+      padding-left: 1.2rem;
+    }
+    .step {
+      background: white;
+      border-radius: 20px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 25px;
+      box-shadow: 0 6px 14px rgba(0,30,40,0.04);
+      border: 1px solid #cde3ec;
+    }
+    .step h2 {
+      margin-top: 0;
+      color: #1d5a6d;
+      font-weight: 500;
+      border-bottom: 2px solid #b3d9e6;
+      padding-bottom: 6px;
+    }
+    code {
+      background: #e2f0f5;
+      padding: 2px 8px;
+      border-radius: 30px;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+      font-size: 0.9em;
+      color: #0a4859;
+    }
+    pre {
+      background: #0e1e2b;
+      color: #d4ecf9;
+      padding: 15px;
+      border-radius: 16px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+    }
+    .demo-box {
+      background: #e9f3f8;
+      border-radius: 18px;
+      padding: 18px 20px;
+      margin: 20px 0;
+    }
+    button {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-right: 10px;
+      margin-bottom: 8px;
+      border: 1px solid #1a7a8c;
+    }
+    button.outline {
+      background: transparent;
+      color: #1a7a8c;
+      border: 1.5px solid #1a7a8c;
+    }
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .result-table th {
+      background: #c3e2ed;
+      color: #083b48;
+      padding: 8px;
+    }
+    .result-table td {
+      padding: 8px;
+      border-bottom: 1px solid #cde3ec;
+    }
+    .footnote {
+      margin-top: 30px;
+      text-align: center;
+      color: #406e7e;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+  <h1>🌊 How to fetch NOAA tide predictions (step by step)</h1>
+  <div class="subhead">Learn to use the CO‑OPS API with live examples · San Francisco & Anchorage</div>
+
+  <!-- STEP 1 -->
+  <div class="step">
+    <h2>📌 Step 1 – Find the station ID</h2>
+    <p>Every NOAA tide station has a 7‑digit ID. You can find it on the <a href="https://tidesandcurrents.noaa.gov/map/" target="_blank">NOAA Tides & Currents map</a>.</p>
+    <p><strong>Example:</strong><br>
+    🌉 San Francisco = <code>9414290</code><br>
+    ❄️ Anchorage = <code>9455920</code></p>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step">
+    <h2>🔗 Step 2 – Build the API URL</h2>
+    <p>The base endpoint is <code>https://api.tidesandcurrents.noaa.gov/api/prod/datagetter</code>. You add parameters to specify what you want.</p>
+    <p><strong>Essential parameters:</strong></p>
+    <ul style="margin:10px 0 15px 20px;">
+      <li><code>product=predictions</code> – get tide predictions</li>
+      <li><code>station=9414290</code> – station ID</li>
+      <li><code>begin_date=20250101</code> & <code>end_date=20250102</code> – date range (YYYYMMDD)</li>
+      <li><code>datum=MLLW</code> – reference level (Mean Lower Low Water)</li>
+      <li><code>units=english</code> or <code>metric</code></li>
+      <li><code>interval=hilo</code> – high/low events only, or <code>6</code> for 6‑minute data</li>
+      <li><code>time_zone=gmt</code> – consistent time reference</li>
+      <li><code>format=json</code> – machine‑readable output</li>
+    </ul>
+    <div class="demo-box">
+      <strong>🔍 Example URL (San Francisco, Jan 1–2 2025, high/low):</strong>
+      <pre style="margin-top:8px;">https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&station=9414290&begin_date=20250101&end_date=20250102&datum=MLLW&units=english&interval=hilo&time_zone=gmt&format=json</pre>
+      <button id="copySfUrlBtn">📋 Copy SF URL</button>
+      <button id="openSfUrlBtn" class="outline">🔗 Open in new tab</button>
+    </div>
+    <p>You can use NOAA's <a href="https://tidesandcurrents.noaa.gov/api-helper/url-generator.html" target="_blank">URL Builder</a> to experiment.</p>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step">
+    <h2>📡 Step 3 – Fetch the data with JavaScript</h2>
+    <p>Use the <code>fetch()</code> function. Because of browser CORS restrictions, we need a proxy. A simple one is <code>https://corsproxy.io/?</code> + your encoded URL.</p>
+    <pre>const url = 'https://api.tidesandcurrents.noaa.gov/...';
+const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+
+fetch(proxyUrl)
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+    // data.predictions is an array of {t: "2025-01-01 01:23", v: "4.56", type: "H"}
+  });</pre>
+    <p><strong>Try it live:</strong></p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button id="fetchSfBtn">🌉 Fetch San Francisco (high/low)</button>
+      <button id="fetchAnchBtn">❄️ Fetch Anchorage (high/low)</button>
+    </div>
+    <div id="fetchResult" style="margin-top:15px; background:#fff; border-radius:16px; padding:10px;">
+      <em>Click a button to see raw JSON response.</em>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step">
+    <h2>📊 Step 4 – Display predictions</h2>
+    <p>Once you have the JSON, you can loop through <code>data.predictions</code> and render a table or a chart. Below are the first few rows from the fetched data.</p>
+    <div id="tableContainer">
+      <table class="result-table" id="previewTable">
+        <thead><tr><th>Time (GMT)</th><th>Type</th><th>Height (ft)</th></tr></thead>
+        <tbody><tr><td colspan="3">No data yet. Click a fetch button above.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step">
+    <h2>🧪 Step 5 – Real‑world notes</h2>
+    <ul>
+      <li><strong>CORS Proxy:</strong> For production, use a dedicated proxy or server‑side request. The demo uses <code>corsproxy.io</code> (public service).</li>
+      <li><strong>Rate limits:</strong> NOAA API has usage limits; don't make excessive calls.</li>
+      <li><strong>Data structure:</strong> The <code>predictions</code> array contains objects with <code>t</code> (time), <code>v</code> (value), and <code>type</code> ('H' or 'L') when using <code>interval=hilo</code>.</li>
+    </ul>
+  </div>
+
+  <div class="footnote">
+    🌐 Built for education · NOAA CO‑OPS API documentation: <a href="https://tidesandcurrents.noaa.gov/api/">https://tidesandcurrents.noaa.gov/api/</a>
+  </div>
+</div>
+
+<script>
+  (function(){
+    // Base API URL builder helper
+    function buildApiUrl(stationId, beginDate, endDate, units = 'english') {
+      const params = new URLSearchParams({
+        product: 'predictions',
+        station: stationId,
+        begin_date: beginDate,
+        end_date: endDate,
+        datum: 'MLLW',
+        units: units,
+        interval: 'hilo',
+        time_zone: 'gmt',
+        format: 'json'
+      });
+      return 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?' + params.toString();
+    }
+
+    // CORS proxy wrapper
+    function fetchWithProxy(url) {
+      const proxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
+      return fetch(proxy).then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      });
+    }
+
+    // Display predictions in table
+    function displayPredictions(data, stationName) {
+      const tbody = document.querySelector('#previewTable tbody');
+      if (data.error) {
+        tbody.innerHTML = `<tr><td colspan="3">Error: ${data.error.message}</td></tr>`;
+        return;
+      }
+      const preds = data.predictions || [];
+      if (preds.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3">No predictions returned.</td></tr>`;
+        return;
+      }
+      let html = '';
+      preds.slice(0, 8).forEach(p => {
+        html += `<tr><td>${p.t}</td><td>${p.type === 'H' ? '🔴 High' : '🔵 Low'}</td><td>${p.v} ft</td></tr>`;
+      });
+      tbody.innerHTML = html;
+      document.getElementById('fetchResult').innerHTML = `<strong>✅ ${stationName} – ${preds.length} high/low events fetched.</strong>`;
+    }
+
+    // San Francisco URL (Jan 1-2, 2025)
+    const sfUrl = buildApiUrl('9414290', '20250101', '20250102', 'english');
+    const anchUrl = buildApiUrl('9455920', '20250101', '20250102', 'english');
+
+    // Copy SF URL
+    document.getElementById('copySfUrlBtn').addEventListener('click', () => {
+      navigator.clipboard?.writeText(sfUrl).then(() => alert('URL copied!'));
+    });
+    document.getElementById('openSfUrlBtn').addEventListener('click', () => {
+      window.open(sfUrl, '_blank');
+    });
+
+    // Fetch SF
+    document.getElementById('fetchSfBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('fetchSfBtn');
+      btn.textContent = '⏳ Fetching...';
+      try {
+        const data = await fetchWithProxy(sfUrl);
+        displayPredictions(data, 'San Francisco');
+      } catch (err) {
+        document.getElementById('fetchResult').innerHTML = `❌ Error: ${err.message}`;
+        document.querySelector('#previewTable tbody').innerHTML = `<tr><td colspan="3">Fetch failed. Try again.</td></tr>`;
+      } finally {
+        btn.textContent = '🌉 Fetch San Francisco (high/low)';
+      }
+    });
+
+    // Fetch Anchorage
+    document.getElementById('fetchAnchBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('fetchAnchBtn');
+      btn.textContent = '⏳ Fetching...';
+      try {
+        const data = await fetchWithProxy(anchUrl);
+        displayPredictions(data, 'Anchorage');
+      } catch (err) {
+        document.getElementById('fetchResult').innerHTML = `❌ Error: ${err.message}`;
+        document.querySelector('#previewTable tbody').innerHTML = `<tr><td colspan="3">Fetch failed. Try again.</td></tr>`;
+      } finally {
+        btn.textContent = '❄️ Fetch Anchorage (high/low)';
+      }
+    });
+
+    // Pre-populate the SF URL in a note? Already shown.
+  })();
+</script>
+</body>
+</html>
