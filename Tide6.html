@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🌍 Tide 6 · 3D Tidal Orrery (Earth‑Moon‑Sun)</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #050a0f;
+    }
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      background: rgba(10, 30, 40, 0.7);
+      padding: 12px 20px;
+      border-radius: 40px;
+      backdrop-filter: blur(8px);
+      border-left: 4px solid #2a9d8f;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #controls {
+      position: absolute;
+      bottom: 30px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      background: rgba(10, 30, 40, 0.6);
+      padding: 15px 25px;
+      border-radius: 50px;
+      backdrop-filter: blur(8px);
+      color: white;
+      z-index: 20;
+      pointer-events: auto;
+      border: 1px solid #2a9d8f40;
+    }
+    button {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: 0.2s;
+      border: 1px solid #3a9bdc;
+    }
+    button:hover { background: #0f5e6f; }
+    button.outline {
+      background: transparent;
+      border: 1.5px solid #2a9d8f;
+    }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    input[type="range"] { width: 120px; }
+    label { display: flex; align-items: center; gap: 6px; }
+    #stats {
+      position: absolute;
+      bottom: 100px;
+      right: 20px;
+      color: #ccc;
+      background: rgba(0,0,0,0.4);
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+    }
+    #note {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: #aaccdd;
+      background: rgba(0,20,30,0.5);
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      backdrop-filter: blur(4px);
+    }
+    @media (max-width: 700px) {
+      #controls { flex-direction: column; align-items: center; }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="info">
+    <h1 style="margin:0 0 5px; font-weight:500;">🌍🌙☀️ 3D Tidal Orrery</h1>
+    <div id="dynamicInfo">Spring tide · Moon & Sun aligned</div>
+  </div>
+  <div id="note">🖱️ Drag to rotate · Scroll to zoom</div>
+  <div id="stats">⏱️ Time: <span id="timeDisplay">0.0 h</span> · Bulge factor: <span id="bulgeFactor">1.0</span></div>
+
+  <div id="controls">
+    <button id="playPauseBtn">⏸️ Pause</button>
+    <button id="resetBtn" class="outline">⟲ Reset</button>
+    <div class="slider-container">
+      <span>⏩ Speed</span>
+      <input type="range" id="speedSlider" min="0.0" max="3.0" step="0.1" value="1.0">
+    </div>
+    <label><input type="checkbox" id="showVectorsCheck" checked> Show force vectors</label>
+    <label><input type="checkbox" id="showOrbitsCheck" checked> Show orbits</label>
+    <label><input type="checkbox" id="showBulgeCheck" checked> Show tidal bulge</label>
+    <label><input type="checkbox" id="showDeclinationCheck"> Show declination axis</label>
+  </div>
+
+  <!-- Three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    // --- Setup Scene ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050a0f);
+    
+    // Camera
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(20, 15, 30);
+    camera.lookAt(0, 0, 0);
+    
+    // Renderers
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = false; // not needed
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
+    
+    // CSS2 Renderer for labels
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.left = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';  // allow clicking through to canvas
+    document.body.appendChild(labelRenderer.domElement);
+    
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = false;
+    controls.enableZoom = true;
+    controls.enablePan = true;
+    controls.maxPolarAngle = Math.PI / 1.8;
+    controls.target.set(0, 0, 0);
+    
+    // --- Lighting ---
+    const ambientLight = new THREE.AmbientLight(0x404060);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
+    const fillLight = new THREE.PointLight(0x446688, 0.5);
+    fillLight.position.set(-10, 0, 5);
+    scene.add(fillLight);
+    
+    // Add stars
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsCount = 3000;
+    const starPositions = new Float32Array(starsCount * 3);
+    for (let i = 0; i < starsCount * 3; i += 3) {
+      const r = 200 + Math.random() * 300;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos((Math.random() * 2) - 1);
+      starPositions[i] = Math.sin(phi) * Math.cos(theta) * r;
+      starPositions[i+1] = Math.sin(phi) * Math.sin(theta) * r;
+      starPositions[i+2] = Math.cos(phi) * r;
+    }
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starsMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.15});
+    const stars = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(stars);
+    
+    // --- Helper grid (ecliptic plane) ---
+    const gridHelper = new THREE.GridHelper(60, 20, 0x3a6ea5, 0x1a3a5a);
+    gridHelper.rotation.x = 0; // horizontal
+    scene.add(gridHelper);
+    
+    // --- Create objects ---
+    
+    // Sun (center)
+    const sunGeo = new THREE.SphereGeometry(2.8, 64, 32);
+    const sunMat = new THREE.MeshStandardMaterial({ 
+      color: 0xffaa33, 
+      emissive: new THREE.Color(0xff5500), 
+      emissiveIntensity: 1.5,
+      roughness: 0.4
+    });
+    const sun = new THREE.Mesh(sunGeo, sunMat);
+    scene.add(sun);
+    // Sun glow
+    const sunGlowGeo = new THREE.SphereGeometry(2.9, 32, 16);
+    const sunGlowMat = new THREE.MeshBasicMaterial({ color: 0xff8822, transparent: true, opacity: 0.2 });
+    const sunGlow = new THREE.Mesh(sunGlowGeo, sunGlowMat);
+    sun.add(sunGlow);
+    
+    // Sun label
+    const sunLabelDiv = document.createElement('div');
+    sunLabelDiv.textContent = '☀️ SUN';
+    sunLabelDiv.style.color = '#ffaa00';
+    sunLabelDiv.style.fontWeight = 'bold';
+    sunLabelDiv.style.textShadow = '0 0 10px #ff6600';
+    const sunLabel = new CSS2DObject(sunLabelDiv);
+    sunLabel.position.set(0, 3.5, 0);
+    sun.add(sunLabel);
+    
+    // Earth (will be positioned in animation)
+    const earthGeo = new THREE.SphereGeometry(1.2, 48, 24);
+    // Earth texture
+    const textureLoader = new THREE.TextureLoader();
+    const earthMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+    const earthSpecularMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
+    const earthNormalMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+    const cloudMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png');
+    
+    const earthMat = new THREE.MeshPhongMaterial({
+      map: earthMap,
+      specularMap: earthSpecularMap,
+      specular: new THREE.Color('grey'),
+      shininess: 5,
+      normalMap: earthNormalMap,
+      normalScale: new THREE.Vector2(0.8, 0.8)
+    });
+    const earth = new THREE.Mesh(earthGeo, earthMat);
+    scene.add(earth);
+    
+    // Clouds
+    const cloudGeo = new THREE.SphereGeometry(1.21, 48, 24);
+    const cloudMat = new THREE.MeshPhongMaterial({
+      map: cloudMap,
+      transparent: true,
+      opacity: 0.4,
+      blending: THREE.AdditiveBlending
+    });
+    const clouds = new THREE.Mesh(cloudGeo, cloudMat);
+    earth.add(clouds);
+    
+    // Earth axis (tilt ~23.5°)
+    earth.rotation.x = -0.15; // fixed tilt, but we'll also rotate around Y for time
+    
+    // Earth label
+    const earthLabelDiv = document.createElement('div');
+    earthLabelDiv.textContent = '🌍 Earth';
+    earthLabelDiv.style.color = '#88ccff';
+    earthLabelDiv.style.fontWeight = 'bold';
+    const earthLabel = new CSS2DObject(earthLabelDiv);
+    earthLabel.position.set(0, 2.0, 0);
+    earth.add(earthLabel);
+    
+    // Moon
+    const moonGeo = new THREE.SphereGeometry(0.5, 24, 12);
+    const moonMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.8, emissive: new THREE.Color(0x222222) });
+    const moon = new THREE.Mesh(moonGeo, moonMat);
+    scene.add(moon);
+    const moonLabelDiv = document.createElement('div');
+    moonLabelDiv.textContent = '🌙 Moon';
+    moonLabelDiv.style.color = '#dddddd';
+    const moonLabel = new CSS2DObject(moonLabelDiv);
+    moonLabel.position.set(0, 1.0, 0);
+    moon.add(moonLabel);
+    
+    // --- Tidal bulge representation (ellipsoid around Earth) ---
+    const bulgeGeo = new THREE.SphereGeometry(1.5, 32, 16);
+    const bulgeMat = new THREE.MeshPhongMaterial({
+      color: 0x3a9bdc,
+      transparent: true,
+      opacity: 0.35,
+      wireframe: false,
+      side: THREE.DoubleSide
+    });
+    const bulge = new THREE.Mesh(bulgeGeo, bulgeMat);
+    earth.add(bulge); // relative to Earth
+    
+    // Second lobe (just a visual cue, we'll scale the main bulge non-uniformly)
+    
+    // --- Force vectors (Arrows) ---
+    function createArrow(color, length = 2.5, headLength = 0.8, headWidth = 0.4) {
+      const arrowHelper = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), length, color, headLength, headWidth);
+      return arrowHelper;
+    }
+    
+    const lunarVector = createArrow(0x3a9bdc, 3.0);
+    const solarVector = createArrow(0xf4c542, 2.5);
+    const totalVector = createArrow(0xffffff, 3.5, 1.0, 0.5);
+    earth.add(lunarVector);
+    earth.add(solarVector);
+    earth.add(totalVector);
+    
+    // Declination axis indicator (line)
+    const axisLineMat = new THREE.LineBasicMaterial({ color: 0x7b68c4 });
+    const axisLinePoints = [new THREE.Vector3(0, -2.2, 0), new THREE.Vector3(0, 2.2, 0)];
+    const axisLineGeo = new THREE.BufferGeometry().setFromPoints(axisLinePoints);
+    const axisLine = new THREE.Line(axisLineGeo, axisLineMat);
+    earth.add(axisLine);
+    
+    // Orbits
+    const moonOrbitPoints = [];
+    const earthOrbitPoints = [];
+    const segments = 128;
+    const moonOrbitRadius = 6.5;
+    const earthOrbitRadius = 16.0;
+    for (let i = 0; i <= segments; i++) {
+      const angle = (i / segments) * Math.PI * 2;
+      moonOrbitPoints.push(new THREE.Vector3(Math.cos(angle) * moonOrbitRadius, 0, Math.sin(angle) * moonOrbitRadius));
+      earthOrbitPoints.push(new THREE.Vector3(Math.cos(angle) * earthOrbitRadius, 0, Math.sin(angle) * earthOrbitRadius));
+    }
+    const moonOrbitGeo = new THREE.BufferGeometry().setFromPoints(moonOrbitPoints);
+    const earthOrbitGeo = new THREE.BufferGeometry().setFromPoints(earthOrbitPoints);
+    const moonOrbitLine = new THREE.Line(moonOrbitGeo, new THREE.LineBasicMaterial({ color: 0x88aacc }));
+    const earthOrbitLine = new THREE.Line(earthOrbitGeo, new THREE.LineBasicMaterial({ color: 0xccaa88 }));
+    scene.add(moonOrbitLine);
+    scene.add(earthOrbitLine);
+    
+    // --- State & animation variables ---
+    let time = 0; // hours
+    let isPlaying = true;
+    let speed = 1.0;
+    const moonPeriod = 24.84; // hours
+    const earthPeriod = 8766; // hours (1 year)
+    const obliquity = 23.5 * Math.PI/180;
+    const moonInclination = 5.1 * Math.PI/180;
+    
+    // DOM elements
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const speedSlider = document.getElementById('speedSlider');
+    const showVectorsCheck = document.getElementById('showVectorsCheck');
+    const showOrbitsCheck = document.getElementById('showOrbitsCheck');
+    const showBulgeCheck = document.getElementById('showBulgeCheck');
+    const showDeclinationCheck = document.getElementById('showDeclinationCheck');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const bulgeFactorSpan = document.getElementById('bulgeFactor');
+    const dynamicInfo = document.getElementById('dynamicInfo');
+    
+    // Update UI
+    function updateUI() {
+      timeDisplay.textContent = time.toFixed(1);
+      const moonAngle = (time * 2 * Math.PI / moonPeriod) % (2*Math.PI);
+      const earthAngle = (time * 2 * Math.PI / earthPeriod) % (2*Math.PI);
+      
+      // Positions
+      const earthX = Math.cos(earthAngle) * 16.0;
+      const earthZ = Math.sin(earthAngle) * 16.0;
+      earth.position.set(earthX, 0, earthZ);
+      
+      // Moon position relative to Earth (with inclination)
+      const moonOrbitRadius = 6.5;
+      const moonOffsetX = Math.cos(moonAngle) * moonOrbitRadius;
+      const moonOffsetZ = Math.sin(moonAngle) * moonOrbitRadius * Math.cos(moonInclination);
+      const moonOffsetY = Math.sin(moonAngle) * moonOrbitRadius * Math.sin(moonInclination);
+      moon.position.set(
+        earthX + moonOffsetX,
+        moonOffsetY,
+        earthZ + moonOffsetZ
+      );
+      
+      // Earth rotation (for clouds and texture)
+      earth.rotation.y += 0.002;
+      clouds.rotation.y += 0.001;
+      
+      // Tidal bulge direction & strength
+      const toMoonDir = new THREE.Vector3().subVectors(moon.position, earth.position).normalize();
+      const toSunDir = new THREE.Vector3().subVectors(sun.position, earth.position).normalize();
+      
+      const lunarStrength = 1.0;
+      const solarStrength = 0.46;
+      const totalDir = new THREE.Vector3()
+        .copy(toMoonDir).multiplyScalar(lunarStrength)
+        .add(toSunDir.clone().multiplyScalar(solarStrength))
+        .normalize();
+      
+      const angleDiff = toMoonDir.angleTo(toSunDir);
+      const combinedFactor = Math.sqrt(lunarStrength*lunarStrength + solarStrength*solarStrength + 2*lunarStrength*solarStrength*Math.cos(angleDiff));
+      
+      // Bulge scaling: stretch along totalDir
+      const bulgeScale = 1.0 + 0.5 * combinedFactor;
+      bulge.scale.set(1.2 + combinedFactor*0.4, 1.0, 1.2 + combinedFactor*0.4);
+      bulge.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0), totalDir);
+      
+      bulge.visible = showBulgeCheck.checked;
+      
+      // Vectors
+      lunarVector.setDirection(toMoonDir);
+      lunarVector.setLength(2.5 + combinedFactor*0.5, 0.8, 0.4);
+      solarVector.setDirection(toSunDir);
+      solarVector.setLength(1.8, 0.6, 0.3);
+      totalVector.setDirection(totalDir);
+      totalVector.setLength(3.0 + combinedFactor*1.2, 1.0, 0.5);
+      
+      lunarVector.visible = showVectorsCheck.checked;
+      solarVector.visible = showVectorsCheck.checked;
+      totalVector.visible = showVectorsCheck.checked;
+      
+      // Orbits visibility
+      moonOrbitLine.visible = showOrbitsCheck.checked;
+      earthOrbitLine.visible = showOrbitsCheck.checked;
+      moonOrbitLine.position.copy(earth.position);
+      
+      // Declination axis
+      axisLine.visible = showDeclinationCheck.checked;
+      
+      // Update info text
+      const tideType = Math.cos(angleDiff) > 0.8 ? '🌕 Spring tide (aligned)' : (Math.cos(angleDiff) < -0.8 ? '🌓 Neap tide' : '↗️ Mixed');
+      dynamicInfo.innerHTML = `${tideType} · Moon angle ${(moonAngle*180/Math.PI).toFixed(0)}° · Sun-Moon ${(angleDiff*180/Math.PI).toFixed(0)}°`;
+      bulgeFactorSpan.textContent = combinedFactor.toFixed(2);
+    }
+    
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      if (isPlaying) {
+        time += 0.05 * speed;
+        updateUI();
+      }
+      
+      controls.update();
+      
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    }
+    
+    // Reset
+    function resetSimulation() {
+      time = 0;
+      updateUI();
+    }
+    
+    // Event listeners
+    playPauseBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      playPauseBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+    });
+    resetBtn.addEventListener('click', resetSimulation);
+    speedSlider.addEventListener('input', (e) => speed = parseFloat(e.target.value));
+    showVectorsCheck.addEventListener('change', updateUI);
+    showOrbitsCheck.addEventListener('change', updateUI);
+    showBulgeCheck.addEventListener('change', updateUI);
+    showDeclinationCheck.addEventListener('change', updateUI);
+    
+    window.addEventListener('resize', onWindowResize, false);
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    
+    // Start
+    updateUI();
+    animate();
+    
+    // Initial earth tilt
+    earth.rotation.z = -0.15;
+    
+  </script>
+</body>
+</html>
