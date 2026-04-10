@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🌊🌕☀️ Amphidromic Tides + Sun & Moon</title>
+  <title>🌍🌕☀️ Correct Orbits · Amphidromic Tides</title>
   <style>
     body {
       margin: 0;
@@ -113,15 +113,14 @@
 </head>
 <body>
   <div id="info">
-    <h1 style="margin:0 0 8px; font-weight:500;">🌍🌊 Amphidromic Tides + Sun & Moon</h1>
-    <div id="dynamicInfo">M2 + S2 constituents · Spring‑Neap cycle visible</div>
+    <h1 style="margin:0 0 8px; font-weight:500;">🌍🌕☀️ Correct Orbits · Amphidromic Tides</h1>
+    <div id="dynamicInfo">Earth orbits Sun · Moon inclined 5.1° · M2 + S2 tides</div>
   </div>
   <div id="note">🖱️ Drag to rotate · Scroll to zoom</div>
   <div id="stats">
-    <span>⏱️ Time: <span id="timeDisplay">0.0 h</span> · Tidal Range: <span id="rangeDisplay">0.0 m</span> · <span id="tideType">Spring</span></span>
+    <span>⏱️ Time: <span id="timeDisplay">0.0 d</span> · Tidal Range: <span id="rangeDisplay">0.0 m</span> · <span id="tideType">Spring</span></span>
   </div>
   
-  <!-- Color bar for amplitude -->
   <div class="colorbar"></div>
   <div class="colorbar-label">← low amplitude &nbsp;&nbsp;&nbsp; high amplitude →</div>
 
@@ -156,7 +155,7 @@
     scene.background = new THREE.Color(0x020812);
     
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 6, 18);
+    camera.position.set(0, 8, 22);
     camera.lookAt(0, 0, 0);
     
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -180,7 +179,7 @@
     controls.maxPolarAngle = Math.PI / 2.2;
     controls.target.set(0, 0, 0);
     
-    // --- Lighting ---
+    // Lighting
     const ambientLight = new THREE.AmbientLight(0x404060);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
@@ -191,298 +190,228 @@
     scene.add(fillLight);
     
     // Stars
-    const starsGeometry = new THREE.BufferGeometry();
+    const starsGeo = new THREE.BufferGeometry();
     const starsCount = 4000;
-    const starPositions = new Float32Array(starsCount * 3);
+    const starsPos = new Float32Array(starsCount * 3);
     for (let i = 0; i < starsCount * 3; i += 3) {
       const r = 80 + Math.random() * 120;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos((Math.random() * 2) - 1);
-      starPositions[i] = Math.sin(phi) * Math.cos(theta) * r;
-      starPositions[i+1] = Math.sin(phi) * Math.sin(theta) * r;
-      starPositions[i+2] = Math.cos(phi) * r;
+      starsPos[i] = Math.sin(phi) * Math.cos(theta) * r;
+      starsPos[i+1] = Math.sin(phi) * Math.sin(theta) * r;
+      starsPos[i+2] = Math.cos(phi) * r;
     }
-    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starsMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.08});
-    const stars = new THREE.Points(starsGeometry, starsMaterial);
-    scene.add(stars);
+    starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+    scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.08})));
     
-    // --- Earth (with bathymetry) ---
-    const textureLoader = new THREE.TextureLoader();
-    const earthMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
-    const earthSpecularMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
-    const earthNormalMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
-    const cloudMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png');
-    
-    const earthMat = new THREE.MeshPhongMaterial({
-      map: earthMap,
-      specularMap: earthSpecularMap,
-      specular: new THREE.Color('grey'),
-      shininess: 5,
-      normalMap: earthNormalMap,
-    });
-    const earth = new THREE.Mesh(new THREE.SphereGeometry(3.0, 64, 32), earthMat);
-    scene.add(earth);
-    
-    const cloudGeo = new THREE.SphereGeometry(3.02, 64, 32);
-    const cloudMat = new THREE.MeshPhongMaterial({ map: cloudMap, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
-    const clouds = new THREE.Mesh(cloudGeo, cloudMat);
-    earth.add(clouds);
-    
-    // --- Sun and Moon ---
-    const sunGeo = new THREE.SphereGeometry(1.5, 32, 16);
-    const sunMat = new THREE.MeshStandardMaterial({ color: 0xffaa33, emissive: new THREE.Color(0xff5500), emissiveIntensity: 1.5 });
-    const sun = new THREE.Mesh(sunGeo, sunMat);
+    // --- Sun (center) ---
+    const sun = new THREE.Mesh(new THREE.SphereGeometry(2.5, 32, 16), 
+      new THREE.MeshStandardMaterial({ color: 0xffaa33, emissive: new THREE.Color(0xff5500), emissiveIntensity: 1.5 }));
     scene.add(sun);
-    
-    const moonGeo = new THREE.SphereGeometry(0.6, 24, 12);
-    const moonMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.8 });
-    const moon = new THREE.Mesh(moonGeo, moonMat);
-    scene.add(moon);
-    
-    // Labels
-    const sunLabelDiv = document.createElement('div');
-    sunLabelDiv.textContent = '☀️ SUN';
-    sunLabelDiv.style.color = '#ffaa00';
-    sunLabelDiv.style.fontWeight = 'bold';
-    const sunLabel = new CSS2DObject(sunLabelDiv);
-    sunLabel.position.set(0, 2.0, 0);
+    const sunLabel = new CSS2DObject(document.createElement('div'));
+    sunLabel.element.textContent = '☀️ SUN';
+    sunLabel.element.style.color = '#ffaa00';
+    sunLabel.element.style.fontWeight = 'bold';
+    sunLabel.position.set(0, 3.5, 0);
     sun.add(sunLabel);
     
-    const moonLabelDiv = document.createElement('div');
-    moonLabelDiv.textContent = '🌙 Moon';
-    moonLabelDiv.style.color = '#dddddd';
-    const moonLabel = new CSS2DObject(moonLabelDiv);
+    // --- Earth ---
+    const earth = new THREE.Mesh(new THREE.SphereGeometry(1.2, 48, 24),
+      new THREE.MeshPhongMaterial({
+        map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'),
+        specularMap: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg'),
+        normalMap: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg'),
+        specular: new THREE.Color('grey'), shininess: 5
+      }));
+    scene.add(earth);
+    const clouds = new THREE.Mesh(new THREE.SphereGeometry(1.21, 48, 24),
+      new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png'), transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending }));
+    earth.add(clouds);
+    earth.rotation.z = -0.41; // tilt
+    
+    const earthLabel = new CSS2DObject(document.createElement('div'));
+    earthLabel.element.textContent = '🌍 Earth';
+    earthLabel.element.style.color = '#88ccff';
+    earthLabel.element.style.fontWeight = 'bold';
+    earthLabel.position.set(0, 2.0, 0);
+    earth.add(earthLabel);
+    
+    // --- Moon ---
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(0.5, 24, 12),
+      new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.8 }));
+    scene.add(moon);
+    const moonLabel = new CSS2DObject(document.createElement('div'));
+    moonLabel.element.textContent = '🌙 Moon';
+    moonLabel.element.style.color = '#dddddd';
     moonLabel.position.set(0, 1.0, 0);
     moon.add(moonLabel);
     
-    // Orbits
+    // --- Orbits (visual lines) ---
     const earthOrbitRadius = 12.0;
-    const moonOrbitRadius = 5.0;
+    const moonOrbitRadius = 4.5;
+    const moonInclination = 5.145 * Math.PI/180;
+    
     const earthOrbitPoints = [];
     const moonOrbitPoints = [];
     for (let i = 0; i <= 128; i++) {
       const angle = (i / 128) * Math.PI * 2;
       earthOrbitPoints.push(new THREE.Vector3(Math.cos(angle) * earthOrbitRadius, 0, Math.sin(angle) * earthOrbitRadius));
-      moonOrbitPoints.push(new THREE.Vector3(Math.cos(angle) * moonOrbitRadius, 0, Math.sin(angle) * moonOrbitRadius));
+      const x = Math.cos(angle) * moonOrbitRadius;
+      const z = Math.sin(angle) * moonOrbitRadius * Math.cos(moonInclination);
+      const y = Math.sin(angle) * moonOrbitRadius * Math.sin(moonInclination);
+      moonOrbitPoints.push(new THREE.Vector3(x, y, z));
     }
     const earthOrbitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(earthOrbitPoints), new THREE.LineBasicMaterial({ color: 0xccaa88 }));
     const moonOrbitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(moonOrbitPoints), new THREE.LineBasicMaterial({ color: 0x88aacc }));
     scene.add(earthOrbitLine);
     scene.add(moonOrbitLine);
     
-    // --- Amphidromic System Data ---
+    // --- Amphidromic Points (same as before) ---
     const amphidromicPoints = [
-      { lon: -140, lat: 30, rotation: 1 },   // North Pacific
-      { lon: 160, lat: -20, rotation: -1 },  // South Pacific
-      { lon: -30, lat: 20, rotation: 1 },    // North Atlantic
-      { lon: 10, lat: -30, rotation: -1 },   // South Atlantic
-      { lon: 80, lat: 0, rotation: -1 },     // Indian Ocean
-      { lon: -100, lat: -40, rotation: 1 },  // South Pacific 2
-      { lon: 120, lat: 30, rotation: -1 },   // NW Pacific
-      { lon: -50, lat: -10, rotation: 1 }    // Equatorial Atlantic
+      { lon: -140, lat: 30, rot: 1 }, { lon: 160, lat: -20, rot: -1 }, { lon: -30, lat: 20, rot: 1 },
+      { lon: 10, lat: -30, rot: -1 }, { lon: 80, lat: 0, rot: -1 }, { lon: -100, lat: -40, rot: 1 },
+      { lon: 120, lat: 30, rot: -1 }, { lon: -50, lat: -10, rot: 1 }
     ];
     
-    const gridResolution = 36;
+    const gridRes = 36;
     const points = [];
-    const amplitudes = [];
-    const phases = [];
-    
-    // Precompute amplitudes and phases based on distance to amphidromic points
-    for (let i = 0; i <= gridResolution; i++) {
-      const lat = -Math.PI/2 + (i / gridResolution) * Math.PI;
-      const numLon = Math.max(16, Math.floor(gridResolution * 2 * Math.cos(lat)));
+    const amps = [], phases = [];
+    for (let i = 0; i <= gridRes; i++) {
+      const lat = -Math.PI/2 + (i/gridRes)*Math.PI;
+      const numLon = Math.max(16, Math.floor(gridRes*2*Math.cos(lat)));
       for (let j = 0; j < numLon; j++) {
-        const lon = (j / numLon) * Math.PI * 2 - Math.PI;
-        
-        let totalAmp = 0, totalPhase = 0, totalWeight = 0;
+        const lon = (j/numLon)*Math.PI*2 - Math.PI;
+        let totA=0, totP=0, totW=0;
         amphidromicPoints.forEach(ap => {
-          const apLat = ap.lat * Math.PI/180, apLon = ap.lon * Math.PI/180;
-          const dLat = lat - apLat, dLon = lon - apLon;
-          const a = Math.sin(dLat/2)**2 + Math.cos(lat) * Math.cos(apLat) * Math.sin(dLon/2)**2;
-          const dist = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-          
-          const amp = Math.min(3.0, dist * 7.0);
-          const bearing = Math.atan2(
-            Math.sin(dLon) * Math.cos(lat),
-            Math.cos(apLat) * Math.sin(lat) - Math.sin(apLat) * Math.cos(lat) * Math.cos(dLon)
-          );
-          const phase = (bearing + ap.rotation * dist * 2.5) % (Math.PI * 2);
-          
-          const weight = Math.exp(-dist * 1.8);
-          totalAmp += amp * weight;
-          totalPhase += phase * weight;
-          totalWeight += weight;
+          const apl = ap.lat*Math.PI/180, aplo = ap.lon*Math.PI/180;
+          const dLat = lat-apl, dLon = lon-aplo;
+          const a = Math.sin(dLat/2)**2 + Math.cos(lat)*Math.cos(apl)*Math.sin(dLon/2)**2;
+          const dist = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const amp = Math.min(3.0, dist*7.0);
+          const bearing = Math.atan2(Math.sin(dLon)*Math.cos(lat), Math.cos(apl)*Math.sin(lat)-Math.sin(apl)*Math.cos(lat)*Math.cos(dLon));
+          const phase = (bearing + ap.rot*dist*2.5) % (2*Math.PI);
+          const w = Math.exp(-dist*1.8);
+          totA += amp*w; totP += phase*w; totW += w;
         });
-        
-        const finalAmp = totalWeight > 0 ? totalAmp / totalWeight : 0;
-        const finalPhase = totalWeight > 0 ? totalPhase / totalWeight : 0;
-        
-        const x = Math.cos(lat) * Math.cos(lon);
-        const y = Math.sin(lat);
-        const z = Math.cos(lat) * Math.sin(lon);
-        
-        points.push({ pos: new THREE.Vector3(x, y, z), lat, lon });
-        amplitudes.push(finalAmp);
-        phases.push(finalPhase);
+        const fa = totW>0?totA/totW:0, fp = totW>0?totP/totW:0;
+        const x = Math.cos(lat)*Math.cos(lon), y = Math.sin(lat), z = Math.cos(lat)*Math.sin(lon);
+        points.push({pos: new THREE.Vector3(x,y,z)});
+        amps.push(fa); phases.push(fp);
       }
     }
     
-    // --- Visual Elements ---
+    // Visual markers
+    const markerGroup = new THREE.Group();
+    const meshes = [];
+    points.forEach((p, idx) => {
+      if (amps[idx] < 0.05) return;
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6), new THREE.MeshPhongMaterial({transparent: true}));
+      sphere.position.copy(p.pos.clone().multiplyScalar(3.05));
+      markerGroup.add(sphere);
+      meshes.push({mesh: sphere, amp: amps[idx], phase: phases[idx]});
+    });
+    scene.add(markerGroup);
+    
+    // Co-range lines
     const coRangeGroup = new THREE.Group();
     amphidromicPoints.forEach(ap => {
-      const apLat = ap.lat * Math.PI/180, apLon = ap.lon * Math.PI/180;
-      const center = new THREE.Vector3(
-        Math.cos(apLat) * Math.cos(apLon),
-        Math.sin(apLat),
-        Math.cos(apLat) * Math.sin(apLon)
-      );
-      [0.6, 1.2, 1.8, 2.4].forEach(r => {
+      const apl = ap.lat*Math.PI/180, aplo = ap.lon*Math.PI/180;
+      const ctr = new THREE.Vector3(Math.cos(apl)*Math.cos(aplo), Math.sin(apl), Math.cos(apl)*Math.sin(aplo));
+      [0.6,1.2,1.8,2.4].forEach(r => {
         const pts = [];
-        for (let i = 0; i <= 48; i++) {
-          const angle = (i / 48) * Math.PI * 2;
-          const north = new THREE.Vector3(0, 1, 0);
-          const east = new THREE.Vector3().crossVectors(center, north).normalize();
-          const north2 = new THREE.Vector3().crossVectors(east, center).normalize();
-          const offset = new THREE.Vector3().addVectors(
-            east.clone().multiplyScalar(Math.cos(angle) * r),
-            north2.clone().multiplyScalar(Math.sin(angle) * r)
-          );
-          const point = center.clone().add(offset).normalize().multiplyScalar(3.08);
-          pts.push(point);
+        for (let i=0; i<=48; i++) {
+          const ang = (i/48)*Math.PI*2;
+          const east = new THREE.Vector3().crossVectors(ctr, new THREE.Vector3(0,1,0)).normalize();
+          const north = new THREE.Vector3().crossVectors(east, ctr).normalize();
+          const off = east.clone().multiplyScalar(Math.cos(ang)*r).add(north.clone().multiplyScalar(Math.sin(ang)*r));
+          pts.push(ctr.clone().add(off).normalize().multiplyScalar(3.08));
         }
-        const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x3a9bdc }));
-        coRangeGroup.add(line);
+        coRangeGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color: 0x3a9bdc})));
       });
     });
     scene.add(coRangeGroup);
     
-    // Markers for tidal height visualization
-    const markerGroup = new THREE.Group();
-    const markerMeshes = [];
-    points.forEach((p, idx) => {
-      const amp = amplitudes[idx];
-      if (amp < 0.05) return;
-      const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6), new THREE.MeshPhongMaterial({ transparent: true }));
-      sphere.position.copy(p.pos.clone().multiplyScalar(3.05));
-      markerGroup.add(sphere);
-      markerMeshes.push({ mesh: sphere, amp, phase: phases[idx] });
-    });
-    scene.add(markerGroup);
-    
-    // Amphidromic point markers
-    const amphidromicGroup = new THREE.Group();
+    // Amphidromic markers
+    const amphGroup = new THREE.Group();
     amphidromicPoints.forEach(ap => {
-      const apLat = ap.lat * Math.PI/180, apLon = ap.lon * Math.PI/180;
-      const pos = new THREE.Vector3(
-        Math.cos(apLat) * Math.cos(apLon),
-        Math.sin(apLat),
-        Math.cos(apLat) * Math.sin(apLon)
-      ).multiplyScalar(3.1);
-      const marker = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16), new THREE.MeshPhongMaterial({ color: 0xff6666, emissive: new THREE.Color(0x440000) }));
-      marker.position.copy(pos);
-      amphidromicGroup.add(marker);
+      const apl = ap.lat*Math.PI/180, aplo = ap.lon*Math.PI/180;
+      const pos = new THREE.Vector3(Math.cos(apl)*Math.cos(aplo), Math.sin(apl), Math.cos(apl)*Math.sin(aplo)).multiplyScalar(3.1);
+      amphGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.1,16), new THREE.MeshPhongMaterial({color: 0xff6666, emissive: new THREE.Color(0x440000)}))).position.copy(pos);
     });
-    scene.add(amphidromicGroup);
+    scene.add(amphGroup);
     
-    // --- UI Elements ---
-    const timeDisplay = document.getElementById('timeDisplay');
-    const rangeDisplay = document.getElementById('rangeDisplay');
+    // --- UI ---
+    const timeDisp = document.getElementById('timeDisplay');
+    const rangeDisp = document.getElementById('rangeDisplay');
     const tideTypeSpan = document.getElementById('tideType');
-    const playPauseBtn = document.getElementById('playPauseBtn');
+    const playBtn = document.getElementById('playPauseBtn');
     const resetBtn = document.getElementById('resetBtn');
     const speedSlider = document.getElementById('speedSlider');
-    const showOrbitsCheck = document.getElementById('showOrbitsCheck');
-    const showCoRangeCheck = document.getElementById('showCoRangeCheck');
-    const showCelestialCheck = document.getElementById('showCelestialCheck');
+    const showOrbits = document.getElementById('showOrbitsCheck');
+    const showCoRange = document.getElementById('showCoRangeCheck');
+    const showCelestial = document.getElementById('showCelestialCheck');
     
-    // --- State ---
-    let time = 0;
-    let isPlaying = true;
-    let speed = 1.0;
-    const lunarPeriod = 24.84;
-    const solarPeriod = 8766;
+    let time = 0, isPlaying = true, speed = 1.0;
+    const lunarPeriod = 27.32; // days
+    const earthPeriod = 365.25; // days
     
-    // Color scale function: blue (low) -> cyan -> yellow -> red (high)
-    function getColorFromAmplitude(amp, maxAmp = 3.0) {
-      const t = Math.min(amp / maxAmp, 1.0);
-      if (t < 0.33) {
-        return new THREE.Color().lerpColors(new THREE.Color(0x0000ff), new THREE.Color(0x00ffff), t / 0.33);
-      } else if (t < 0.66) {
-        return new THREE.Color().lerpColors(new THREE.Color(0x00ffff), new THREE.Color(0xffff00), (t - 0.33) / 0.33);
-      } else {
-        return new THREE.Color().lerpColors(new THREE.Color(0xffff00), new THREE.Color(0xff0000), (t - 0.66) / 0.34);
-      }
+    function getColor(amp) {
+      const t = Math.min(amp/3.0, 1.0);
+      if (t<0.33) return new THREE.Color().lerpColors(new THREE.Color(0x0000ff), new THREE.Color(0x00ffff), t/0.33);
+      if (t<0.66) return new THREE.Color().lerpColors(new THREE.Color(0x00ffff), new THREE.Color(0xffff00), (t-0.33)/0.33);
+      return new THREE.Color().lerpColors(new THREE.Color(0xffff00), new THREE.Color(0xff0000), (t-0.66)/0.34);
     }
     
-    function updateTide() {
-      const moonAngle = (time * 2 * Math.PI / lunarPeriod) % (2*Math.PI);
-      const earthAngle = (time * 2 * Math.PI / solarPeriod) % (2*Math.PI);
+    function update() {
+      const moonAngle = (time / lunarPeriod) * 2 * Math.PI;
+      const earthAngle = (time / earthPeriod) * 2 * Math.PI;
       
-      // Sun position (Earth orbits Sun, so Sun appears opposite)
-      const sunX = -Math.cos(earthAngle) * earthOrbitRadius;
-      const sunZ = -Math.sin(earthAngle) * earthOrbitRadius;
-      sun.position.set(sunX, 0, sunZ);
+      // Earth position (orbits Sun)
+      const earthX = Math.cos(earthAngle) * earthOrbitRadius;
+      const earthZ = Math.sin(earthAngle) * earthOrbitRadius;
+      earth.position.set(earthX, 0, earthZ);
       
-      // Moon position (relative to Earth)
+      // Moon position (inclined orbit)
       const moonOffsetX = Math.cos(moonAngle) * moonOrbitRadius;
-      const moonOffsetZ = Math.sin(moonAngle) * moonOrbitRadius;
-      moon.position.set(moonOffsetX, 0, moonOffsetZ);
+      const moonOffsetZ = Math.sin(moonAngle) * moonOrbitRadius * Math.cos(moonInclination);
+      const moonOffsetY = Math.sin(moonAngle) * moonOrbitRadius * Math.sin(moonInclination);
+      moon.position.set(earthX + moonOffsetX, moonOffsetY, earthZ + moonOffsetZ);
       
-      // Moon orbit line follows Earth
-      moonOrbitLine.position.set(0, 0, 0);
+      moonOrbitLine.position.copy(earth.position);
       
-      // Calculate combined tidal factor (spring/neap)
-      const sunDir = new THREE.Vector3(-sunX, 0, -sunZ).normalize();
-      const moonDir = new THREE.Vector3(moonOffsetX, 0, moonOffsetZ).normalize();
-      const cosAngle = sunDir.dot(moonDir);
-      const combinedFactor = Math.sqrt(1 + 0.46*0.46 + 2*0.46*cosAngle);
+      // Sun/Earth direction for tide
+      const toSun = new THREE.Vector3().subVectors(sun.position, earth.position).normalize();
+      const toMoon = new THREE.Vector3().subVectors(moon.position, earth.position).normalize();
+      const cosAng = toSun.dot(toMoon);
+      const combFactor = Math.sqrt(1 + 0.46*0.46 + 2*0.46*cosAng);
       
-      // Update marker colors based on current tide
-      markerMeshes.forEach(item => {
-        const tidalHeight = item.amp * Math.cos((time / 12.42) * Math.PI * 2 - item.phase) * combinedFactor;
-        const color = getColorFromAmplitude(Math.abs(tidalHeight) * 1.5, 2.5);
-        item.mesh.material.color.set(color);
-        item.mesh.scale.setScalar(1.0 + Math.abs(tidalHeight) * 0.15);
+      // Update tide markers
+      meshes.forEach(m => {
+        const h = m.amp * Math.cos((time * 24 / 12.42) * 2 * Math.PI - m.phase) * combFactor;
+        m.mesh.material.color.set(getColor(Math.abs(h)*1.5));
+        m.mesh.scale.setScalar(1 + Math.abs(h)*0.15);
       });
       
-      // Update UI
-      const maxAmp = Math.max(...amplitudes) * combinedFactor;
-      rangeDisplay.textContent = maxAmp.toFixed(2);
-      timeDisplay.textContent = time.toFixed(1);
-      const tideType = cosAngle > 0.8 ? '🌕 Spring' : (cosAngle < -0.8 ? '🌓 Neap' : '↗️ Mixed');
-      tideTypeSpan.textContent = tideType;
+      rangeDisp.textContent = (Math.max(...amps)*combFactor).toFixed(2);
+      timeDisp.textContent = time.toFixed(1);
+      tideTypeSpan.textContent = cosAng > 0.8 ? '🌕 Spring' : (cosAng < -0.8 ? '🌓 Neap' : '↗️ Mixed');
       
-      // Rotate clouds
-      clouds.rotation.y += 0.001;
+      clouds.rotation.y += 0.005;
     }
     
-    // --- Animation ---
     function animate() {
       requestAnimationFrame(animate);
-      if (isPlaying) {
-        time += 0.05 * speed;
-        updateTide();
-      }
-      
-      // Visibility toggles
-      earthOrbitLine.visible = showOrbitsCheck.checked;
-      moonOrbitLine.visible = showOrbitsCheck.checked;
-      coRangeGroup.visible = showCoRangeCheck.checked;
-      sun.visible = showCelestialCheck.checked;
-      moon.visible = showCelestialCheck.checked;
-      
+      if (isPlaying) { time += 0.02 * speed; update(); }
+      earthOrbitLine.visible = moonOrbitLine.visible = showOrbits.checked;
+      coRangeGroup.visible = showCoRange.checked;
+      sun.visible = moon.visible = showCelestial.checked;
       controls.update();
       renderer.render(scene, camera);
       labelRenderer.render(scene, camera);
     }
     
-    // --- Event Listeners ---
-    playPauseBtn.addEventListener('click', () => {
-      isPlaying = !isPlaying;
-      playPauseBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
-    });
-    resetBtn.addEventListener('click', () => { time = 0; updateTide(); });
+    playBtn.addEventListener('click', () => { isPlaying = !isPlaying; playBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play'; });
+    resetBtn.addEventListener('click', () => { time = 0; update(); });
     speedSlider.addEventListener('input', e => speed = parseFloat(e.target.value));
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -491,8 +420,7 @@
       labelRenderer.setSize(window.innerWidth, window.innerHeight);
     });
     
-    // Start
-    updateTide();
+    update();
     animate();
   </script>
 </body>
