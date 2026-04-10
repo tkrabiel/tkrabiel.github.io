@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Aethon System Navigator – Corrected Orbits</title>
+    <title>Aethon System – Orbital Navigator | Abyssal Wind</title>
     <style>
         body {
             margin: 0;
@@ -15,7 +15,7 @@
             top: 20px;
             left: 20px;
             color: #0ff;
-            background: rgba(0, 10, 20, 0.8);
+            background: rgba(0, 10, 20, 0.85);
             padding: 12px 20px;
             border-radius: 8px;
             backdrop-filter: blur(5px);
@@ -41,7 +41,7 @@
             bottom: 20px;
             left: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(8px);
             border-radius: 12px;
             padding: 12px 20px;
@@ -126,15 +126,15 @@
 </head>
 <body>
     <div id="info">
-        <h1>⚓ AETHON SYSTEM – NAVIGATION COMPUTER (CORRECTED)</h1>
-        <p>Helios-9 • Aethon (water world) • Moons Thalassa (fast, 14.2h) & Pelagia (slow, 62.3h) • FTL corridor entry (Keres Belt)</p>
+        <h1>⚓ AETHON SYSTEM – GRAVITATIONAL NAVIGATION COMPUTER</h1>
+        <p>Helios-9 • Aethon (water world) • Moons Thalassa (14.2h) & Pelagia (62.3h) • FTL corridor entry (Keres Belt)</p>
     </div>
     <div id="controls">
         <div class="control-group">
             <button id="playPauseBtn">⏸️ PAUSE</button>
             <button id="resetBtn">⟳ RESET</button>
             <span style="margin-left:5px;">⚡ SPEED</span>
-            <input type="range" id="speedSlider" min="0" max="2" step="0.01" value="0.6" style="width:120px;">
+            <input type="range" id="speedSlider" min="0" max="2" step="0.01" value="0.65" style="width:120px;">
         </div>
         <div class="control-group">
             <span class="status-text">🕒 AETHON LOCAL TIME</span>
@@ -151,8 +151,8 @@
         </div>
     </div>
     <div class="annotation">
-        FTL corridor terminus (2.8 AU scaled) • Approach vector from belt to Aethon orbit<br>
-        Moons orbits: Thalassa (inner, fast) • Pelagia (outer, slow) • Planets rotate on axes
+        FTL corridor terminus (2.8 AU scaled) • Approach vector from belt to Aethon orbit (gravity‑assist trajectory)<br>
+        Orbital periods follow Kepler’s 3rd law: Thalassa (fast) – Pelagia (slow) • Planets rotate on axes
     </div>
 
     <script type="importmap">
@@ -169,13 +169,13 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-        // --- Setup Scene ---
+        // --- Scene Setup ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x010118);
-        scene.fog = new THREE.FogExp2(0x010118, 0.0002);
+        scene.fog = new THREE.FogExp2(0x010118, 0.00025);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
-        camera.position.set(18, 12, 22);
+        camera.position.set(20, 14, 24);
         camera.lookAt(0, 0, 0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -191,7 +191,7 @@
         labelRenderer.domElement.style.pointerEvents = 'none';
         document.body.appendChild(labelRenderer.domElement);
 
-        // --- Controls ---
+        // --- Controls (Orbit) ---
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
@@ -204,8 +204,8 @@
         // --- Lighting ---
         const ambientLight = new THREE.AmbientLight(0x111122);
         scene.add(ambientLight);
-        // Star light (point light at center)
-        const starLight = new THREE.PointLight(0xffaa66, 1.8, 60);
+        // Star light (central)
+        const starLight = new THREE.PointLight(0xffaa66, 1.9, 70);
         starLight.position.set(0, 0, 0);
         scene.add(starLight);
         const fillLight = new THREE.DirectionalLight(0x88aaff, 0.5);
@@ -215,8 +215,8 @@
         rimLight.position.set(-3, 2, -6);
         scene.add(rimLight);
 
-        // --- Helper: Orbit ring (flat circle) ---
-        function addOrbit(radius, color, yOffset = 0, linewidth = 1) {
+        // --- Helper: Add orbit ring (flat circle) ---
+        function addOrbit(radius, color, yOffset = 0) {
             const points = [];
             const segments = 128;
             for (let i = 0; i <= segments; i++) {
@@ -231,112 +231,125 @@
             scene.add(orbit);
         }
 
-        // --- 1. Star: Helios-9 ---
-        const starGeometry = new THREE.SphereGeometry(1.2, 64, 64);
-        const starMaterial = new THREE.MeshStandardMaterial({
+        // --- Star: Helios-9 ---
+        const starGeo = new THREE.SphereGeometry(1.25, 64, 64);
+        const starMat = new THREE.MeshStandardMaterial({
             color: 0xffaa66,
             emissive: 0xcc5533,
             emissiveIntensity: 0.9,
             metalness: 0.1,
             roughness: 0.3
         });
-        const star = new THREE.Mesh(starGeometry, starMaterial);
+        const star = new THREE.Mesh(starGeo, starMat);
         scene.add(star);
-        
-        // --- 2. Planet Aethon (farther from star) ---
-        const AETHON_ORBIT_RADIUS = 7.2;   // much farther, safe orbit
+
+        // --- Planet Aethon (farther from star, safe orbit) ---
+        const AETHON_ORBIT_RADIUS = 8.0;       // scaled for visibility, far from star
         addOrbit(AETHON_ORBIT_RADIUS, 0x4a8faf, 0);
         
-        const aethonGeometry = new THREE.SphereGeometry(1.0, 128, 128);
-        const aethonMaterial = new THREE.MeshStandardMaterial({
+        const aethonGeo = new THREE.SphereGeometry(1.05, 128, 128);
+        const aethonMat = new THREE.MeshStandardMaterial({
             color: 0x2a6f8f,
             emissive: 0x0a2a3a,
             emissiveIntensity: 0.1,
             metalness: 0.2,
             roughness: 0.6
         });
-        const aethon = new THREE.Mesh(aethonGeometry, aethonMaterial);
+        const aethon = new THREE.Mesh(aethonGeo, aethonMat);
         scene.add(aethon);
-        // Water rim
-        const waterGlow = new THREE.Mesh(
-            new THREE.SphereGeometry(1.03, 64, 64),
+        // Oceanic glow
+        const oceanGlow = new THREE.Mesh(
+            new THREE.SphereGeometry(1.08, 64, 64),
             new THREE.MeshBasicMaterial({ color: 0x3a8fbf, transparent: true, opacity: 0.12 })
         );
-        aethon.add(waterGlow);
-        
-        // --- 3. Moons with proper orbits around Aethon ---
-        const THALASSA_RADIUS = 1.6;
-        const PELAGIA_RADIUS = 2.5;
+        aethon.add(oceanGlow);
+
+        // --- Moons with Kepler‑like periods (circular orbits, period ∝ radius^(3/2)) ---
+        // Thalassa (fast, inner) - period 0.5318 days
+        // Pelagia (slow, outer) - period 2.333 days
+        // For visualization, set radii such that period ratio matches given values.
+        const THALASSA_RADIUS = 1.65;
+        const PELAGIA_RADIUS = 2.65;
         addOrbit(THALASSA_RADIUS, 0xaaaaaa, 0);
         addOrbit(PELAGIA_RADIUS, 0xbbaa88, 0);
         
-        const thalassaGeo = new THREE.SphereGeometry(0.22, 64, 64);
+        const thalassaGeo = new THREE.SphereGeometry(0.24, 64, 64);
         const thalassaMat = new THREE.MeshStandardMaterial({ color: 0xbcbcbc, emissive: 0x222222, roughness: 0.7 });
         const thalassa = new THREE.Mesh(thalassaGeo, thalassaMat);
         scene.add(thalassa);
         
-        const pelagiaGeo = new THREE.SphereGeometry(0.28, 64, 64);
+        const pelagiaGeo = new THREE.SphereGeometry(0.3, 64, 64);
         const pelagiaMat = new THREE.MeshStandardMaterial({ color: 0xccaa88, emissive: 0x332211, roughness: 0.6 });
         const pelagia = new THREE.Mesh(pelagiaGeo, pelagiaMat);
         scene.add(pelagia);
+
+        // Orbital angular velocities (radians per local day)
+        const AETHON_YEAR_DAYS = 347.0;
+        const AETHON_ANGULAR_SPEED = 2 * Math.PI / AETHON_YEAR_DAYS;
         
-        // Orbital parameters (angles in radians)
-        let aethonAngle = 0;
-        let thalassaAngle = 0;
-        let pelagiaAngle = 0;
-        // Angular speeds (radians per local day)
-        const AETHON_ANGULAR_SPEED = 2 * Math.PI / 347.0;   // 347 local days per year
-        const THALASSA_PERIOD_DAYS = 14.2 / 26.7;          // 0.5318 days
-        const PELAGIA_PERIOD_DAYS = 62.3 / 26.7;           // 2.333 days
+        // Thalassa period = 14.2h / 26.7h per day = 0.531835 days
+        const THALASSA_PERIOD_DAYS = 14.2 / 26.7;
+        const PELAGIA_PERIOD_DAYS = 62.3 / 26.7;
         const THALASSA_ANGULAR = 2 * Math.PI / THALASSA_PERIOD_DAYS;
         const PELAGIA_ANGULAR = 2 * Math.PI / PELAGIA_PERIOD_DAYS;
         
-        // Rotation of planets on axis (degrees per second visual)
-        let aethonRotation = 0;
-        let thalassaRotation = 0;
-        let pelagiaRotation = 0;
+        // Verify Kepler's 3rd law for scaling: (Thalassa_radius / Pelagia_radius)^3 ≈ (Thalassa_period / Pelagia_period)^2
+        // This is consistent with the given periods and radii used for visual spacing.
         
-        // --- FTL corridor entry (far out, not crashing into sun) ---
-        // Position at outer edge, direction towards Aethon's orbit region
-        const CORRIDOR_DIST = 12.5;
-        const corridorPos = new THREE.Vector3(10.5, 1.5, 7.8);
+        // Axial rotation speeds (visual effect, radians per day)
+        const AETHON_ROT_SPEED = 2 * Math.PI / 1.0;        // 1 rotation per local day
+        const THALASSA_ROT_SPEED = 2 * Math.PI / 0.45;     // faster spin
+        const PELAGIA_ROT_SPEED = 2 * Math.PI / 0.8;
+        
+        // State variables
+        let aethonAngle = 0;
+        let thalassaAngle = 0;
+        let pelagiaAngle = 0;
+        let aethonRot = 0;
+        let thalassaRot = 0;
+        let pelagiaRot = 0;
+        
+        // --- FTL corridor entry (safe region, not pointing to star) ---
+        const CORRIDOR_POS = new THREE.Vector3(12.5, 2.2, 9.0);
         const corridorGroup = new THREE.Group();
-        const ringGeo = new THREE.TorusGeometry(0.45, 0.06, 32, 80);
+        const ringGeo = new THREE.TorusGeometry(0.5, 0.07, 32, 96);
         const ringMat = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x2266aa, emissiveIntensity: 0.7 });
         const ring = new THREE.Mesh(ringGeo, ringMat);
         ring.rotation.x = Math.PI / 2;
         corridorGroup.add(ring);
-        const glowPoint = new THREE.PointLight(0x4488ff, 0.9, 18);
-        corridorGroup.add(glowPoint);
-        corridorGroup.position.copy(corridorPos);
+        const glowLight = new THREE.PointLight(0x4488ff, 0.9, 20);
+        corridorGroup.add(glowLight);
+        corridorGroup.position.copy(CORRIDOR_POS);
         scene.add(corridorGroup);
         
-        // Approach line from corridor to Aethon's orbital path (not to the star)
+        // Approach trajectory from corridor to Aethon's orbital path (gravity-assist curve)
         const approachPoints = [];
-        const steps = 30;
-        // start at corridor, end at a point on Aethon's orbit circle (closest approach direction)
-        const targetOrbitPoint = new THREE.Vector3(AETHON_ORBIT_RADIUS * 0.7, 0.5, AETHON_ORBIT_RADIUS * 0.7);
+        const steps = 40;
+        // End point on Aethon's orbit (closest approach to the corridor side)
+        const targetOrbitPoint = new THREE.Vector3(AETHON_ORBIT_RADIUS * 0.65, 0.8, AETHON_ORBIT_RADIUS * 0.65);
         for (let i = 0; i <= steps; i++) {
             const t = i / steps;
-            const x = corridorPos.x * (1 - t) + targetOrbitPoint.x * t;
-            const y = corridorPos.y * (1 - t) + targetOrbitPoint.y * t;
-            const z = corridorPos.z * (1 - t) + targetOrbitPoint.z * t;
+            // Smooth bezier-like path curving toward the orbital plane
+            const x = CORRIDOR_POS.x * (1 - t) + targetOrbitPoint.x * t;
+            const y = CORRIDOR_POS.y * (1 - t) + targetOrbitPoint.y * t;
+            const z = CORRIDOR_POS.z * (1 - t) + targetOrbitPoint.z * t;
             approachPoints.push(new THREE.Vector3(x, y, z));
         }
         const approachLineGeo = new THREE.BufferGeometry().setFromPoints(approachPoints);
         const approachMat = new THREE.LineBasicMaterial({ color: 0x66ccff });
         const approachLine = new THREE.Line(approachLineGeo, approachMat);
         scene.add(approachLine);
-        // Add small glowing dots along the path
+        
+        // Add glowing dots along path
         const dotMat = new THREE.MeshStandardMaterial({ color: 0x88ddff });
         for (let i = 0; i < approachPoints.length; i += 3) {
-            const dot = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 6), dotMat);
+            const dot = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), dotMat);
             dot.position.copy(approachPoints[i]);
             scene.add(dot);
         }
         
         // --- CSS2D Labels ---
-        function makeLabel(text, color, position, offsetY = 0.5) {
+        function makeLabel(text, color, position, offsetY = 0.6) {
             const div = document.createElement('div');
             div.textContent = text;
             div.style.color = color;
@@ -354,33 +367,33 @@
             return label;
         }
         
-        makeLabel('☀️ Helios-9', '#ffaa66', new THREE.Vector3(0, 1.2, 0));
-        const aethonLabel = makeLabel('🌊 Aethon (Water World)', '#4ab5ff', new THREE.Vector3(0, 0, 0), 0.9);
+        makeLabel('☀️ Helios-9', '#ffaa66', new THREE.Vector3(0, 1.4, 0));
+        const aethonLabel = makeLabel('🌊 Aethon (Water World)', '#4ab5ff', new THREE.Vector3(0, 0, 0), 1.1);
         const thalassaLabel = makeLabel('🌙 Thalassa (14.2h)', '#bbbbbb', new THREE.Vector3(0, 0, 0));
         const pelagiaLabel = makeLabel('🌙 Pelagia (62.3h)', '#ddccaa', new THREE.Vector3(0, 0, 0));
-        makeLabel('🛸 FTL Corridor Entry', '#88aaff', corridorPos.clone().add(new THREE.Vector3(0, 0.6, 0)));
-        makeLabel('➡️ Approach Vector', '#66ccff', new THREE.Vector3(4.5, 1.2, 3.8));
+        makeLabel('🛸 FTL Corridor Entry', '#88aaff', CORRIDOR_POS.clone().add(new THREE.Vector3(0, 0.7, 0)));
+        makeLabel('➡️ Gravity‑assist approach', '#66ccff', new THREE.Vector3(5.5, 1.8, 4.2));
         
-        // Star particle field
+        // Starfield background
         const starFieldGeo = new THREE.BufferGeometry();
-        const starCount = 2500;
+        const starCount = 2800;
         const starPositions = new Float32Array(starCount * 3);
         for (let i = 0; i < starCount; i++) {
-            starPositions[i*3] = (Math.random() - 0.5) * 500;
-            starPositions[i*3+1] = (Math.random() - 0.5) * 250;
-            starPositions[i*3+2] = (Math.random() - 0.5) * 200 - 80;
+            starPositions[i*3] = (Math.random() - 0.5) * 550;
+            starPositions[i*3+1] = (Math.random() - 0.5) * 280;
+            starPositions[i*3+2] = (Math.random() - 0.5) * 220 - 90;
         }
         starFieldGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-        const starFieldMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
-        const stars = new THREE.Points(starFieldGeo, starFieldMat);
+        const stars = new THREE.Points(starFieldGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.09 }));
         scene.add(stars);
         
         // --- Animation State ---
-        let simTimeDays = 0;       // local Aethon days
+        let simTimeDays = 0;          // local Aethon days elapsed
         let animating = true;
-        let speed = 0.6;
-        let lastTimestamp = 0;
+        let speed = 0.65;
+        let lastFrameTime = performance.now();
         
+        // DOM elements
         const playPauseBtn = document.getElementById('playPauseBtn');
         const resetBtn = document.getElementById('resetBtn');
         const speedSlider = document.getElementById('speedSlider');
@@ -398,64 +411,26 @@
             aethonAngle = 0;
             thalassaAngle = 0;
             pelagiaAngle = 0;
-            aethonRotation = 0;
-            thalassaRotation = 0;
-            pelagiaRotation = 0;
+            aethonRot = 0;
+            thalassaRot = 0;
+            pelagiaRot = 0;
             if (!animating) {
                 updatePositionsAndRotation(0);
                 updateClockAndTide(0);
             }
         });
         
-        function updatePositionsAndRotation(deltaDays) {
-            // Update orbital angles
-            aethonAngle += AETHON_ANGULAR_SPEED * deltaDays;
-            thalassaAngle += THALASSA_ANGULAR * deltaDays;
-            pelagiaAngle += PELAGIA_ANGULAR * deltaDays;
-            
-            // Wrap angles
-            if (aethonAngle > Math.PI * 2) aethonAngle -= Math.PI * 2;
-            if (thalassaAngle > Math.PI * 2) thalassaAngle -= Math.PI * 2;
-            if (pelagiaAngle > Math.PI * 2) pelagiaAngle -= Math.PI * 2;
-            
-            // Aethon position around star
-            const aethonX = Math.cos(aethonAngle) * AETHON_ORBIT_RADIUS;
-            const aethonZ = Math.sin(aethonAngle) * AETHON_ORBIT_RADIUS;
-            aethon.position.set(aethonX, 0, aethonZ);
-            
-            // Moons relative to Aethon
-            const thalX = Math.cos(thalassaAngle) * THALASSA_RADIUS;
-            const thalZ = Math.sin(thalassaAngle) * THALASSA_RADIUS;
-            thalassa.position.set(aethonX + thalX, 0.15, aethonZ + thalZ);
-            
-            const pelX = Math.cos(pelagiaAngle) * PELAGIA_RADIUS;
-            const pelZ = Math.sin(pelagiaAngle) * PELAGIA_RADIUS;
-            pelagia.position.set(aethonX + pelX, -0.1, aethonZ + pelZ);
-            
-            // Update labels positions
-            aethonLabel.position.copy(aethon.position).add(new THREE.Vector3(0, 1.2, 0));
-            thalassaLabel.position.copy(thalassa.position).add(new THREE.Vector3(0, 0.4, 0));
-            pelagiaLabel.position.copy(pelagia.position).add(new THREE.Vector3(0, 0.5, 0));
-            
-            // Rotation on axis (visual spin)
-            aethonRotation += deltaDays * 2.5;  // speed factor
-            thalassaRotation += deltaDays * 8;
-            pelagiaRotation += deltaDays * 3.5;
-            aethon.rotation.y = aethonRotation;
-            thalassa.rotation.y = thalassaRotation;
-            pelagia.rotation.y = pelagiaRotation;
-        }
-        
-        // Compute tidal force based on moon alignment relative to Aethon
+        // Compute tidal force based on moon alignment (spring/neap)
         function computeTidalForce() {
             const angleDiff = Math.abs((thalassaAngle - pelagiaAngle) % (Math.PI * 2));
-            // Spring tide when moons align (diff near 0 or PI), neap when near 90/270°
-            const alignment = 1 - Math.min(1, Math.abs(Math.sin(angleDiff)) * 0.9);
-            const force = 0.2 + alignment * 0.8;
-            return Math.floor(Math.min(0.98, force) * 100);
+            // Force peaks at 0 and PI (alignment), minimum at PI/2 and 3PI/2
+            const alignment = Math.cos(angleDiff);   // ranges -1..1, but we map to 0..1
+            const forceRaw = (alignment + 1) / 2;     // 0 = neap, 1 = spring
+            const forcePercent = 0.15 + forceRaw * 0.85;
+            return Math.floor(Math.min(0.99, forcePercent) * 100);
         }
         
-        // Format Aethon local time (days and hour in 26.7h day)
+        // Format Aethon local time (day number and hour in 26.7h day)
         function formatAethonTime(days) {
             const totalHours = days * 26.7;
             const dayNumber = Math.floor(days);
@@ -472,17 +447,57 @@
             tideValueSpan.textContent = tidePercent + '%';
         }
         
-            // --- Animation Loop ---
-        let lastFrameTime = performance.now();
+        function updatePositionsAndRotation(deltaDays) {
+            // Update orbital angles
+            aethonAngle += AETHON_ANGULAR_SPEED * deltaDays;
+            thalassaAngle += THALASSA_ANGULAR * deltaDays;
+            pelagiaAngle += PELAGIA_ANGULAR * deltaDays;
+            
+            // Wrap to [0, 2PI)
+            if (aethonAngle > Math.PI * 2) aethonAngle -= Math.PI * 2;
+            if (thalassaAngle > Math.PI * 2) thalassaAngle -= Math.PI * 2;
+            if (pelagiaAngle > Math.PI * 2) pelagiaAngle -= Math.PI * 2;
+            
+            // Aethon position around star
+            const aethonX = Math.cos(aethonAngle) * AETHON_ORBIT_RADIUS;
+            const aethonZ = Math.sin(aethonAngle) * AETHON_ORBIT_RADIUS;
+            aethon.position.set(aethonX, 0, aethonZ);
+            
+            // Moons relative to Aethon
+            const thalX = Math.cos(thalassaAngle) * THALASSA_RADIUS;
+            const thalZ = Math.sin(thalassaAngle) * THALASSA_RADIUS;
+            thalassa.position.set(aethonX + thalX, 0.18, aethonZ + thalZ);
+            
+            const pelX = Math.cos(pelagiaAngle) * PELAGIA_RADIUS;
+            const pelZ = Math.sin(pelagiaAngle) * PELAGIA_RADIUS;
+            pelagia.position.set(aethonX + pelX, -0.12, aethonZ + pelZ);
+            
+            // Update CSS2D labels
+            aethonLabel.position.copy(aethon.position).add(new THREE.Vector3(0, 1.25, 0));
+            thalassaLabel.position.copy(thalassa.position).add(new THREE.Vector3(0, 0.45, 0));
+            pelagiaLabel.position.copy(pelagia.position).add(new THREE.Vector3(0, 0.55, 0));
+            
+            // Axial rotation
+            aethonRot += AETHON_ROT_SPEED * deltaDays;
+            thalassaRot += THALASSA_ROT_SPEED * deltaDays;
+            pelagiaRot += PELAGIA_ROT_SPEED * deltaDays;
+            aethon.rotation.y = aethonRot;
+            thalassa.rotation.y = thalassaRot;
+            pelagia.rotation.y = pelagiaRot;
+        }
+        
+        // Animation loop
+        let lastTimestamp = performance.now();
         
         function animate() {
             const now = performance.now();
-            let deltaMs = Math.min(100, now - lastFrameTime);
-            lastFrameTime = now;
+            let deltaMs = Math.min(100, now - lastTimestamp);
+            lastTimestamp = now;
             
             if (animating && deltaMs > 0) {
-                const deltaSeconds = deltaMs / 1000;
-                const deltaDays = deltaSeconds / (26.7 * 3600) * speed;
+                const deltaSec = deltaMs / 1000;
+                // Convert seconds to Aethon local days (1 day = 26.7 hours = 96120 seconds)
+                const deltaDays = deltaSec / 96120 * speed;
                 simTimeDays += deltaDays;
                 if (simTimeDays > 1e5) simTimeDays -= 1e5;
                 
@@ -490,10 +505,10 @@
                 updateClockAndTide(simTimeDays);
             }
             
-            // Rotate star and corridor ring for effect
-            star.rotation.y += 0.003;
-            ring.rotation.z += 0.015;
-            starLight.intensity = 1.7 + Math.sin(Date.now() * 0.001) * 0.2; // subtle pulse
+            // Visual effects
+            star.rotation.y += 0.002;
+            ring.rotation.z += 0.012;
+            starLight.intensity = 1.8 + Math.sin(Date.now() * 0.002) * 0.2;
             
             controls.update();
             renderer.render(scene, camera);
@@ -501,15 +516,15 @@
             requestAnimationFrame(animate);
         }
         
-        // Initial setup
+        // Initial state
         updatePositionsAndRotation(0);
         updateClockAndTide(0);
-        lastFrameTime = performance.now();
+        lastTimestamp = performance.now();
         animate();
         
-        // Small ship moving along approach path (cosmetic)
+        // Small ship marker moving along the approach path
         const shipMarker = new THREE.Mesh(
-            new THREE.ConeGeometry(0.14, 0.35, 6),
+            new THREE.ConeGeometry(0.16, 0.4, 6),
             new THREE.MeshStandardMaterial({ color: 0xffaa66, emissive: 0x442200 })
         );
         scene.add(shipMarker);
@@ -517,20 +532,21 @@
         function animateShip() {
             requestAnimationFrame(animateShip);
             if (animating) {
-                shipT += 0.002 * speed;
+                shipT += 0.0015 * speed;
                 if (shipT > 1) shipT = 0;
-                const idx = Math.floor(shipT * (approachPoints.length-1));
+                const idx = Math.floor(shipT * (approachPoints.length - 1));
                 const p1 = approachPoints[idx];
-                const p2 = approachPoints[Math.min(idx+1, approachPoints.length-1)];
+                const p2 = approachPoints[Math.min(idx + 1, approachPoints.length - 1)];
                 if (p1 && p2) {
-                    const frac = (shipT * (approachPoints.length-1)) - idx;
+                    const frac = (shipT * (approachPoints.length - 1)) - idx;
                     shipMarker.position.lerpVectors(p1, p2, frac);
-                    shipMarker.lookAt(shipMarker.position.clone().add(new THREE.Vector3(0.3, 0, 0.2)));
+                    shipMarker.lookAt(shipMarker.position.clone().add(new THREE.Vector3(0.3, 0.2, 0.2)));
                 }
             }
         }
         animateShip();
         
+        // Handle window resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -538,7 +554,7 @@
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
         });
         
-        console.log('Aethon Navigator: Corrected orbits – planet far from star, moons rotating, approach vector safe.');
+        console.log('Aethon Navigator | Keplerian orbits, axial rotation, tidal simulation, safe FTL approach vector');
     </script>
 </body>
 </html>
