@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🌍 Tide Station Dot · 3D NOAA Predictions</title>
+  <title>🌍 Tide Dot · 3D NOAA Station</title>
   <style>
     body {
       margin: 0;
@@ -42,20 +42,6 @@
       pointer-events: auto;
       border: 1px solid #3a9bdc40;
     }
-    #graphPanel {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 380px;
-      background: rgba(10, 30, 40, 0.8);
-      backdrop-filter: blur(8px);
-      border-radius: 24px;
-      padding: 16px;
-      color: white;
-      border: 1px solid #2a9d8f60;
-      z-index: 20;
-      pointer-events: auto;
-    }
     button {
       background: #1a7a8c;
       color: white;
@@ -66,10 +52,7 @@
       cursor: pointer;
       border: 1px solid #3a9bdc;
     }
-    button.outline {
-      background: transparent;
-      border: 1.5px solid #2a9d8f;
-    }
+    button.outline { background: transparent; border: 1.5px solid #2a9d8f; }
     select, input {
       padding: 8px 16px;
       border-radius: 40px;
@@ -83,41 +66,33 @@
       font-weight: 500;
       margin-left: auto;
     }
-    #tideChart { background: #112a33; border-radius: 16px; margin-top: 10px; }
-    .colorbar {
+    #stats {
       position: absolute;
       bottom: 100px;
-      left: 20px;
-      width: 200px;
-      height: 16px;
-      background: linear-gradient(to right, #0000ff, #00ffff, #ffff00, #ff0000);
-      border-radius: 8px;
-      border: 1px solid white;
-      z-index: 25;
+      right: 20px;
+      color: white;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
     }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div id="info">
-    <h1 style="margin:0; font-weight:500;">🌍 Tide Station Dot · 3D NOAA Predictions</h1>
-    <div>Expanding dot at selected location · Graph shows tide at station</div>
+    <h1 style="margin:0; font-weight:500;">🌍 Tide Dot · 3D NOAA Station</h1>
+    <div>Dot expands with tide height · color = amplitude (blue→red)</div>
   </div>
 
-  <div id="graphPanel">
-    <div style="display:flex; justify-content:space-between;">
-      <span>📈 <span id="stationName">San Francisco</span> (MLLW)</span>
-      <span id="graphUnit">m</span>
-    </div>
-    <canvas id="tideChart" width="350" height="150"></canvas>
-    <div style="margin-top:8px; font-size:0.8rem; text-align:center;">Current height: <span id="currentHeight">0.00</span> m</div>
+  <div id="stats">
+    <span>📍 <span id="stationDisplay">San Francisco</span> · Height: <span id="heightDisplay">0.00</span> m (MLLW)</span>
   </div>
-
-  <div class="colorbar"></div>
 
   <div id="controls">
-    <select id="stationSelect" style="min-width:200px;">
+    <select id="stationSelect" style="min-width:220px;">
       <option value="sf">🌉 San Francisco (37.8°N, 122.4°W)</option>
       <option value="boston">⚓ Boston (42.3°N, 71.0°W)</option>
       <option value="anchorage">❄️ Anchorage (61.2°N, 149.9°W)</option>
@@ -157,7 +132,7 @@
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-    // ---------- Station data with harmonic constants and coordinates ----------
+    // ---------- Station data ----------
     const STATIONS = {
       sf: { name: 'San Francisco', lat: 37.8, lon: -122.4, consts: [0.542,0.142,0.112,0.368,0.233,0.122], phases: [330.5,358.9,306.7,342.3,315.8,340.1] },
       boston: { name: 'Boston', lat: 42.3, lon: -71.0, consts: [2.840,0.540,0.540,0.190,0.140,0.060], phases: [135.2,172.8,108.0,195.5,184.2,195.0] },
@@ -177,15 +152,20 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020812);
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 6, 18);
+    camera.position.set(0, 5, 16);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
+    
     const labelRenderer = new CSS2DRenderer();
     labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0';
+    labelRenderer.domElement.style.left = '0';
     labelRenderer.domElement.style.pointerEvents = 'none';
     document.body.appendChild(labelRenderer.domElement);
+    
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -213,10 +193,17 @@
     starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos,3));
     scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({color:0xffffff, size:0.08})));
 
-    // Sun, Earth, Moon
+    // Sun
     const sun = new THREE.Mesh(new THREE.SphereGeometry(2.5,32,16), new THREE.MeshStandardMaterial({color:0xffaa33, emissive:0xff5500, emissiveIntensity:1.5}));
     scene.add(sun);
-    const earth = new THREE.Mesh(new THREE.SphereGeometry(1.8,64,32), new THREE.MeshPhongMaterial({
+    const sunLabel = new CSS2DObject(document.createElement('div'));
+    sunLabel.element.textContent = '☀️ SUN';
+    sunLabel.element.style.color = '#ffaa00'; sunLabel.element.style.fontWeight = 'bold';
+    sunLabel.position.set(0, 3.5, 0);
+    sun.add(sunLabel);
+
+    // Earth
+    const earth = new THREE.Mesh(new THREE.SphereGeometry(1.8, 64, 32), new THREE.MeshPhongMaterial({
       map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'),
       specularMap: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg'),
       normalMap: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg'),
@@ -229,8 +216,21 @@
     }));
     earth.add(clouds);
     earth.rotation.z = -0.41;
+    
+    const earthLabel = new CSS2DObject(document.createElement('div'));
+    earthLabel.element.textContent = '🌍 Earth';
+    earthLabel.element.style.color = '#88ccff'; earthLabel.element.style.fontWeight = 'bold';
+    earthLabel.position.set(0, 2.5, 0);
+    earth.add(earthLabel);
+
+    // Moon
     const moon = new THREE.Mesh(new THREE.SphereGeometry(0.6,24,12), new THREE.MeshStandardMaterial({color:0xcccccc, roughness:0.8}));
     scene.add(moon);
+    const moonLabel = new CSS2DObject(document.createElement('div'));
+    moonLabel.element.textContent = '🌙 Moon';
+    moonLabel.element.style.color = '#dddddd';
+    moonLabel.position.set(0, 1.2, 0);
+    moon.add(moonLabel);
 
     // Orbits
     const earthOrbitR = 12, moonOrbitR = 4.5;
@@ -239,26 +239,11 @@
     const moonOrbitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([...Array(129)].map((_,i)=>new THREE.Vector3(Math.cos(i/128*Math.PI*2)*moonOrbitR, Math.sin(i/128*Math.PI*2)*moonOrbitR*Math.sin(moonInc), Math.sin(i/128*Math.PI*2)*moonOrbitR*Math.cos(moonInc)))), new THREE.LineBasicMaterial({color:0x88aacc}));
     scene.add(earthOrbitLine, moonOrbitLine);
 
-    // Station marker (single expanding dot)
-    const stationMarker = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16), new THREE.MeshPhongMaterial({color: 0xffaa00, emissive: new THREE.Color(0x442200)}));
-    earth.add(stationMarker); // directly child of earth so it rotates with Earth
-
-    // Labels for Sun, Moon, Earth
-    const sunLabel = new CSS2DObject(document.createElement('div'));
-    sunLabel.element.textContent = '☀️ SUN';
-    sunLabel.element.style.color = '#ffaa00'; sunLabel.element.style.fontWeight = 'bold';
-    sunLabel.position.set(0, 3.5, 0);
-    sun.add(sunLabel);
-    const earthLabel = new CSS2DObject(document.createElement('div'));
-    earthLabel.element.textContent = '🌍 Earth';
-    earthLabel.element.style.color = '#88ccff'; earthLabel.element.style.fontWeight = 'bold';
-    earthLabel.position.set(0, 2.5, 0);
-    earth.add(earthLabel);
-    const moonLabel = new CSS2DObject(document.createElement('div'));
-    moonLabel.element.textContent = '🌙 Moon';
-    moonLabel.element.style.color = '#dddddd';
-    moonLabel.position.set(0, 1.2, 0);
-    moon.add(moonLabel);
+    // Station marker dot (child of Earth)
+    const markerGeo = new THREE.SphereGeometry(0.18, 24);
+    const markerMat = new THREE.MeshPhongMaterial({ color: 0xffaa00, emissive: new THREE.Color(0x442200) });
+    const stationMarker = new THREE.Mesh(markerGeo, markerMat);
+    earth.add(stationMarker); // attached to Earth
 
     // UI elements
     const stationSelect = document.getElementById('stationSelect');
@@ -269,18 +254,15 @@
     const resetBtn = document.getElementById('resetBtn');
     const speedSlider = document.getElementById('speedSlider');
     const clockDiv = document.getElementById('clock');
-    const stationNameSpan = document.getElementById('stationName');
-    const currentHeightSpan = document.getElementById('currentHeight');
-    
-    let chart;
-    const chartCtx = document.getElementById('tideChart').getContext('2d');
+    const stationDisplay = document.getElementById('stationDisplay');
+    const heightDisplay = document.getElementById('heightDisplay');
     
     let currentTime = new Date(Date.UTC(2025,0,1,0,0,0));
     let isPlaying = true;
     let speed = 1.0;
     let currentStationKey = 'sf';
-    
-    // Helper: compute tide height at station for given hours since reference (epoch 2025-01-01 00:00 GMT)
+
+    // Helper: compute tide height (meters)
     function computeTideHeight(stationKey, hoursFromRef) {
       const s = STATIONS[stationKey];
       let total = 0;
@@ -289,90 +271,39 @@
       });
       return total;
     }
-    
-    // Get color based on normalized amplitude (0..1)
+
+    // Color mapping
     function getColorFromAmp(t) {
       if (t < 0.33) return new THREE.Color().lerpColors(new THREE.Color(0x0000ff), new THREE.Color(0x00ffff), t/0.33);
       if (t < 0.66) return new THREE.Color().lerpColors(new THREE.Color(0x00ffff), new THREE.Color(0xffff00), (t-0.33)/0.33);
       return new THREE.Color().lerpColors(new THREE.Color(0xffff00), new THREE.Color(0xff0000), (t-0.66)/0.34);
     }
-    
-    function updateClock() {
-      clockDiv.textContent = `🕒 ${currentTime.toISOString().slice(0,10).replace(/-/g,'-')} ${currentTime.toISOString().slice(11,19)} GMT`;
-    }
-    
-    function updateStationMarker() {
+
+    function updateMarker() {
       const s = STATIONS[currentStationKey];
-      // Convert lat/lon to 3D position on Earth sphere (radius = 1.8)
       const latRad = s.lat * Math.PI/180;
       const lonRad = s.lon * Math.PI/180;
-      const r = 1.85; // slightly above surface
+      const r = 1.86; // slightly above surface to avoid z-fighting
       const x = r * Math.cos(latRad) * Math.cos(lonRad);
       const y = r * Math.sin(latRad);
       const z = r * Math.cos(latRad) * Math.sin(lonRad);
       stationMarker.position.set(x, y, z);
       
-      // Compute current tide height
       const refTime = new Date(Date.UTC(2025,0,1,0,0,0));
       const hoursSinceRef = (currentTime - refTime) / 3600000;
       const height = computeTideHeight(currentStationKey, hoursSinceRef);
-      currentHeightSpan.textContent = height.toFixed(2);
       
-      // Scale marker: base size 0.15, add tide contribution (max about 3m -> scale 1.5)
-      const baseSize = 0.18;
-      const maxTideRange = 4.0; // approximate max for these stations
-      const scale = baseSize + Math.abs(height) * 0.25;
+      // Scale: base 0.18, add up to 0.5 for large tides
+      const scale = 0.18 + Math.abs(height) * 0.12;
       stationMarker.scale.set(scale, scale, scale);
       
-      // Color based on height relative to typical range
       const normAmp = Math.min(Math.abs(height) / 2.5, 1.0);
       stationMarker.material.color.set(getColorFromAmp(normAmp));
+      
+      stationDisplay.textContent = s.name;
+      heightDisplay.textContent = height.toFixed(2);
     }
-    
-    function updateGraph() {
-      const s = STATIONS[currentStationKey];
-      stationNameSpan.textContent = s.name;
-      
-      const refTime = new Date(currentTime);
-      refTime.setUTCHours(0,0,0,0);
-      const hoursNow = (currentTime - refTime) / 3600000;
-      
-      const labels = [], heights = [];
-      for (let h = -24; h <= 48; h += 0.5) {
-        const t = hoursNow + h;
-        heights.push(computeTideHeight(currentStationKey, t));
-        const d = new Date(refTime.getTime() + t*3600000);
-        labels.push(d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', timeZone:'GMT'}));
-      }
-      
-      if (chart) chart.destroy();
-      chart = new Chart(chartCtx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: 'm (MLLW)',
-            data: heights,
-            borderColor: '#2a9d8f',
-            backgroundColor: 'rgba(42,157,143,0.1)',
-            borderWidth: 2,
-            pointRadius: 0,
-            tension: 0.2,
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { maxTicksLimit: 8 }, grid: { color: '#3a5a6a' } },
-            y: { grid: { color: '#3a5a6a' } }
-          }
-        }
-      });
-    }
-    
+
     function updateCelestial() {
       const days = (currentTime - new Date(Date.UTC(2025,0,1))) / 86400000;
       const earthAngle = (days / 365.25) * 2*Math.PI;
@@ -390,14 +321,17 @@
       clouds.rotation.y += 0.002;
       earth.rotation.y += 0.001;
     }
-    
-    function refreshAll() {
+
+    function updateClock() {
+      clockDiv.textContent = `🕒 ${currentTime.toISOString().slice(0,10)} ${currentTime.toISOString().slice(11,19)} GMT`;
+    }
+
+    function refresh() {
       updateClock();
       updateCelestial();
-      updateStationMarker();
-      updateGraph();
+      updateMarker();
     }
-    
+
     // Event listeners
     playBtn.addEventListener('click', () => {
       isPlaying = !isPlaying;
@@ -405,41 +339,38 @@
     });
     resetBtn.addEventListener('click', () => {
       currentTime = new Date(Date.UTC(2025,0,1,0,0,0));
-      refreshAll();
+      refresh();
     });
     setTimeBtn.addEventListener('click', () => {
-      const date = datePicker.value;
-      const time = timePicker.value;
-      currentTime = new Date(`${date}T${time}Z`);
-      refreshAll();
+      currentTime = new Date(`${datePicker.value}T${timePicker.value}Z`);
+      refresh();
     });
     speedSlider.addEventListener('input', e => speed = parseFloat(e.target.value));
     stationSelect.addEventListener('change', (e) => {
       currentStationKey = e.target.value;
-      refreshAll();
+      refresh();
     });
-    
+
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
       labelRenderer.setSize(window.innerWidth, window.innerHeight);
     });
-    
+
     // Animation loop
     function animate() {
       requestAnimationFrame(animate);
       if (isPlaying) {
-        currentTime = new Date(currentTime.getTime() + 1000 * 60 * speed); // advance minutes
-        refreshAll();
+        currentTime = new Date(currentTime.getTime() + 1000 * 60 * speed);
+        refresh();
       }
       controls.update();
       renderer.render(scene, camera);
       labelRenderer.render(scene, camera);
     }
-    
-    // Initialize
-    refreshAll();
+
+    refresh();
     animate();
   </script>
 </body>
