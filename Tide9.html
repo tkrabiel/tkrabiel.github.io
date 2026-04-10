@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🌊 NOAA Style · 2D Tide Viewer</title>
+  <title>🌊 NOAA Tide Viewer · Live API + 2D Animation</title>
   <style>
     * { box-sizing: border-box; margin: 0; }
     body {
@@ -15,11 +15,7 @@
       display: flex;
       flex-direction: column;
     }
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      width: 100%;
-    }
+    .container { max-width: 1100px; margin: 0 auto; width: 100%; }
     h1 {
       font-weight: 400;
       font-size: 2rem;
@@ -90,9 +86,7 @@
       border: 1px solid #cde3ec;
       margin-bottom: 25px;
     }
-    .scene-container {
-      position: relative;
-    }
+    .scene-container { position: relative; }
     #sceneCanvas {
       width: 100%;
       height: auto;
@@ -122,41 +116,36 @@
     .chart-container {
       height: 250px;
       margin-top: 10px;
+      position: relative;
     }
-    #tideChart {
-      width: 100% !important;
-      height: 100% !important;
-    }
+    #tideChart { width: 100% !important; height: 100% !important; }
     .water-level-indicator {
       text-align: center;
       font-size: 1.3rem;
       margin: 10px 0 0;
     }
-    .footnote {
-      margin-top: 20px;
-      color: #3a6e80;
-      text-align: center;
-    }
+    .footnote { margin-top: 20px; color: #3a6e80; text-align: center; }
+    .status { margin-left: 15px; color: #2a9d8f; }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <div class="container">
-  <h1>🌊 Tide Viewer · 2D Shoreline <span class="noaa-badge">NOAA style</span></h1>
+  <h1>🌊 NOAA Tide Viewer · Live API <span class="noaa-badge">2D Animation</span></h1>
   
   <div class="station-bar">
     <select id="stationSelect">
-      <option value="sf">🌉 San Francisco, CA</option>
-      <option value="boston">⚓ Boston, MA</option>
-      <option value="anchorage">❄️ Anchorage, AK</option>
-      <option value="seattle">🌲 Seattle, WA</option>
-      <option value="portsmouth">🦞 Portsmouth, NH</option>
-      <option value="portland">🦐 Portland, ME</option>
-      <option value="galveston">🌴 Galveston, TX</option>
-      <option value="sanjuan">🇵🇷 San Juan, PR</option>
-      <option value="nyc">🗽 New York, NY</option>
-      <option value="stpete">🌴 St. Petersburg, FL</option>
+      <option value="9414290">🌉 San Francisco, CA</option>
+      <option value="8443970">⚓ Boston, MA</option>
+      <option value="9455920">❄️ Anchorage, AK</option>
+      <option value="9447130">🌲 Seattle, WA</option>
+      <option value="8423898">🦞 Portsmouth, NH</option>
+      <option value="8418150">🦐 Portland, ME</option>
+      <option value="8771450">🌴 Galveston, TX</option>
+      <option value="9755371">🇵🇷 San Juan, PR</option>
+      <option value="8518750">🗽 New York, NY</option>
+      <option value="8726520">🌴 St. Petersburg, FL</option>
     </select>
     <div class="time-controls">
       <button id="rewindBtn" title="Rewind 1 hour">⏪ 1h</button>
@@ -166,12 +155,13 @@
     </div>
     <div style="display:flex; align-items:center; gap:8px;">
       <span>⏩ Speed</span>
-      <input type="range" id="speedSlider" min="0.5" max="4.0" step="0.5" value="2.0" style="width:100px;">
+      <input type="range" id="speedSlider" min="0.5" max="4.0" step="0.5" value="1.0">
     </div>
-    <div class="clock" id="clockDisplay">2025-01-01 00:00 GMT</div>
+    <div class="clock" id="clockDisplay">--</div>
+    <span class="status" id="statusText">Ready</span>
   </div>
 
-  <!-- 2D Animation at top -->
+  <!-- 2D Animation -->
   <div class="animation-card">
     <div class="scene-container">
       <canvas id="sceneCanvas" width="800" height="350"></canvas>
@@ -180,13 +170,14 @@
       🌊 Water height: <strong id="currentHeightDisplay">0.00 ft</strong> (MLLW)
     </div>
     <div class="depth-legend">
-      <div class="legend-item"><span style="color:#1a7a8c; font-weight:bold;">──</span> MLLW (20 ft) – blue line</div>
-      <div class="legend-item"><span style="color:#c0392b; opacity:0.7;">──</span> Wreck top (10 ft) – translucent red</div>
-      <div class="legend-item"><span style="color:#c0392b; border-bottom:2px dotted #c0392b;">····</span> Rocks (5 ft) – dotted red</div>
+      <div class="legend-item"><span style="color:#1a7a8c; font-weight:bold;">──</span> MLLW (0 ft) – blue</div>
+      <div class="legend-item"><span style="color:#c0392b; opacity:0.7;">──</span> Wreck top (-10 ft) – red</div>
+      <div class="legend-item"><span style="color:#c0392b; border-bottom:2px dotted #c0392b;">····</span> Rocks (-5 ft) – dotted red</div>
     </div>
+    <div style="text-align:center; margin-top:5px; font-size:0.9rem;">📏 Datum: MLLW (0 ft). Water depth shown: 20 ft.</div>
   </div>
 
-  <!-- Graph at bottom -->
+  <!-- Graph -->
   <div class="graph-card">
     <div style="display:flex; justify-content:space-between;">
       <h3 style="margin:0;">📈 Tide predictions (48 hours)</h3>
@@ -197,39 +188,29 @@
     </div>
   </div>
   <div class="footnote">
-    ⏱️ Based on harmonic constituents (M2,S2,N2,K1,O1,P1) · MLLW datum · Animation shows cross‑section
+    ⏱️ Live data from NOAA CO‑OPS API · 6‑minute predictions · Red dot = current time
   </div>
 </div>
 
 <script>
   (function(){
-    // ---------- Station data (harmonic constants, ft) ----------
-    const STATIONS = {
-      sf:      { name: 'San Francisco', consts: [1.778,0.466,0.367,1.207,0.764,0.400], phases: [330.5,358.9,306.7,342.3,315.8,340.1] },
-      boston:  { name: 'Boston', consts: [9.32,1.77,1.77,0.62,0.46,0.20], phases: [135.2,172.8,108.0,195.5,184.2,195.0] },
-      anchorage:{ name: 'Anchorage', consts: [12.93,3.64,2.03,6.20,4.30,1.97], phases: [282.8,322.0,248.0,195.4,164.7,194.0] },
-      seattle: { name: 'Seattle', consts: [3.15,0.76,0.65,1.72,1.06,0.56], phases: [222.5,247.3,195.6,230.4,211.2,229.1] },
-      portsmouth:{ name: 'Portsmouth', consts: [8.79,1.67,1.67,0.59,0.43,0.18], phases: [142.5,178.0,115.0,200.0,188.0,198.0] },
-      portland: { name: 'Portland', consts: [9.71,1.84,1.87,0.66,0.48,0.21], phases: [131.8,166.2,104.0,193.0,181.5,192.0] },
-      galveston:{ name: 'Galveston', consts: [0.74,0.18,0.15,0.57,0.39,0.18], phases: [275.0,310.0,250.0,320.0,300.0,318.0] },
-      sanjuan:  { name: 'San Juan', consts: [0.32,0.10,0.06,0.27,0.20,0.09], phases: [245.0,285.0,220.0,310.0,290.0,308.0] },
-      nyc:      { name: 'New York', consts: [4.46,0.98,0.92,0.36,0.25,0.11], phases: [152.0,187.0,125.0,215.0,205.0,213.0] },
-      stpete:   { name: 'St. Petersburg', consts: [0.54,0.17,0.09,0.53,0.48,0.17], phases: [54.5,64.8,48.2,334.6,326.8,333.0] }
-    };
-    const CONST_NAMES = ['M2','S2','N2','K1','O1','P1'];
-    const SPEEDS = { M2:28.984104, S2:30.0, N2:28.43973, K1:15.041069, O1:13.943035, P1:14.958931 };
+    // ---------- NOAA API configuration ----------
+    const API_BASE = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter';
+    const CORS_PROXY = 'https://corsproxy.io/?';
     
     // State
-    let currentStationKey = 'sf';
-    // Start at current date/time (rounded to hour)
-    let currentTime = new Date();
-    currentTime.setMinutes(0, 0, 0);
+    let currentStationId = '9414290'; // San Francisco
+    let currentTime = new Date(); // will be set to now on reset
     let isPlaying = false;
-    let speed = 2.0; // hours per second
+    let speed = 1.0; // multiplier for time step (1.0 = 24 min per second)
+    let predictions = []; // array of { time: Date, height: number (ft) }
     let chartInstance = null;
     let animFrame = null;
+    let lastTimestamp = 0;
+    const STEP_MINUTES = 6; // advance 6 minutes per animation frame
+    const FRAME_INTERVAL_MS = 250; // 0.25 sec per frame -> 24 min/sec
     
-    // DOM
+    // DOM elements
     const stationSelect = document.getElementById('stationSelect');
     const playPauseBtn = document.getElementById('playPauseBtn');
     const rewindBtn = document.getElementById('rewindBtn');
@@ -241,27 +222,92 @@
     const sceneCanvas = document.getElementById('sceneCanvas');
     const ctx = sceneCanvas.getContext('2d');
     const graphTimeRange = document.getElementById('graphTimeRange');
+    const statusText = document.getElementById('statusText');
     
-    // Compute tide height (feet, MLLW)
-    function computeTideHeight(stationKey, hoursFromRef) {
-      const s = STATIONS[stationKey];
-      let total = 0;
-      CONST_NAMES.forEach((n, i) => {
-        total += s.consts[i] * Math.cos((SPEEDS[n] * hoursFromRef - s.phases[i]) * Math.PI/180);
+    // Helper: fetch predictions from NOAA
+    async function fetchPredictions(stationId) {
+      const now = new Date();
+      const start = new Date(now);
+      start.setHours(0,0,0,0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 2); // 48 hours
+      
+      const params = new URLSearchParams({
+        product: 'predictions',
+        station: stationId,
+        begin_date: start.toISOString().slice(0,10).replace(/-/g,''),
+        end_date: end.toISOString().slice(0,10).replace(/-/g,''),
+        datum: 'MLLW',
+        units: 'english',
+        interval: '6',
+        time_zone: 'gmt',
+        format: 'json'
       });
-      return total;
+      const url = API_BASE + '?' + params.toString();
+      const proxyUrl = CORS_PROXY + encodeURIComponent(url);
+      
+      statusText.textContent = 'Fetching...';
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      
+      // Parse predictions
+      const preds = data.predictions.map(p => ({
+        time: new Date(p.t + ' GMT'), // GMT time
+        height: parseFloat(p.v)
+      }));
+      statusText.textContent = `Loaded ${preds.length} points`;
+      return preds;
     }
     
-    // Draw 2D scene with current water height (ft)
+    // Load predictions and reset state
+    async function loadStation(stationId) {
+      try {
+        const preds = await fetchPredictions(stationId);
+        predictions = preds;
+        // Set current time to the first prediction time (or now if within range)
+        const now = new Date();
+        if (now >= predictions[0].time && now <= predictions[predictions.length-1].time) {
+          currentTime = new Date(now);
+        } else {
+          currentTime = new Date(predictions[0].time);
+        }
+        currentTime.setSeconds(0,0);
+        refreshAll();
+      } catch (err) {
+        console.error(err);
+        statusText.textContent = 'Error: ' + err.message;
+        predictions = [];
+      }
+    }
+    
+    // Find closest prediction to given time
+    function getHeightAtTime(time) {
+      if (predictions.length === 0) return 0;
+      // binary search or simple loop (small array)
+      let closest = predictions[0];
+      let minDiff = Math.abs(time - closest.time);
+      for (const p of predictions) {
+        const diff = Math.abs(time - p.time);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = p;
+        }
+      }
+      return closest.height;
+    }
+    
+    // Draw 2D scene
     function drawScene(waterHeightFt) {
       const w = sceneCanvas.width, h = sceneCanvas.height;
       ctx.clearRect(0, 0, w, h);
       
-      // Fixed parameters: MLLW depth = 20 ft, scale 3 px/ft
-      const scale = 3;
+      const scale = 3; // px per ft
       const seafloorY = h - 30;
-      const mllwY = seafloorY - 20 * scale;
-      const waterSurfaceY = mllwY - waterHeightFt * scale;
+      // MLLW = 0 ft reference
+      const mllwY = seafloorY - 20 * scale; // 20 ft depth at MLLW
+      const waterSurfaceY = mllwY - waterHeightFt * scale; // positive height = higher water (lower Y)
       
       // Sky
       const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
@@ -282,30 +328,37 @@
       ctx.rect(0, seafloorY, w, h - seafloorY);
       ctx.fill();
       
-      // Rocks (circles) at depth 5 ft
-      const rockY = mllwY + 5 * scale;
+      // Rocks (circles) on seafloor, top at -5 ft (i.e., 5 ft below MLLW)
+      const rockBaseY = seafloorY;
+      const rockTopY = mllwY + 5 * scale; // -5 ft relative to MLLW
+      const rockHeight = rockBaseY - rockTopY;
       ctx.fillStyle = '#7a8a9a';
       ctx.shadowColor = '#00000030';
       ctx.shadowBlur = 6;
+      // rock 1
       ctx.beginPath();
-      ctx.arc(70, rockY - 3, 14, 0, 2*Math.PI);
+      ctx.ellipse(70, rockBaseY - rockHeight/2, 14, rockHeight/2, 0, 0, Math.PI*2);
       ctx.fill();
+      // rock 2
       ctx.beginPath();
-      ctx.arc(120, rockY - 5, 10, 0, 2*Math.PI);
+      ctx.ellipse(120, rockBaseY - rockHeight*0.7, 10, rockHeight*0.6, 0, 0, Math.PI*2);
       ctx.fill();
+      // rock 3
       ctx.beginPath();
-      ctx.arc(600, rockY - 4, 16, 0, 2*Math.PI);
+      ctx.ellipse(600, rockBaseY - rockHeight*0.6, 16, rockHeight*0.5, 0, 0, Math.PI*2);
       ctx.fill();
       
-      // Shipwreck (triangle) at depth 10 ft
-      const wreckY = mllwY + 10 * scale;
+      // Shipwreck (triangle) on seafloor, top at -10 ft
+      const wreckBaseY = seafloorY;
+      const wreckTopY = mllwY + 10 * scale; // -10 ft
+      const wreckHeight = wreckBaseY - wreckTopY;
       ctx.fillStyle = '#8b5e3c';
       ctx.shadowBlur = 6;
       // hull (triangle)
       ctx.beginPath();
-      ctx.moveTo(320, wreckY);
-      ctx.lineTo(360, wreckY - 18);
-      ctx.lineTo(400, wreckY);
+      ctx.moveTo(320, wreckBaseY);
+      ctx.lineTo(360, wreckBaseY - wreckHeight);
+      ctx.lineTo(400, wreckBaseY);
       ctx.closePath();
       ctx.fill();
       ctx.strokeStyle = '#5a3a1a';
@@ -313,31 +366,34 @@
       ctx.stroke();
       // mast
       ctx.beginPath();
-      ctx.moveTo(360, wreckY - 18);
-      ctx.lineTo(365, wreckY - 40);
-      ctx.lineTo(355, wreckY - 40);
+      ctx.moveTo(360, wreckBaseY - wreckHeight);
+      ctx.lineTo(365, wreckBaseY - wreckHeight - 15);
+      ctx.lineTo(355, wreckBaseY - wreckHeight - 15);
       ctx.closePath();
       ctx.fillStyle = '#6b4a2a';
       ctx.fill();
       ctx.shadowBlur = 0;
       
-      // Ruler on the left side
+      // Ruler with positive/negative values
       ctx.font = '11px Inter';
       ctx.fillStyle = '#1a3a4a';
-      ctx.fillText('Depth (ft)', 10, 30);
-      for (let ft = 0; ft <= 30; ft += 5) {
-        const y = mllwY + ft * scale;
+      ctx.fillText('Depth (ft)', 10, 25);
+      for (let ft = -20; ft <= 20; ft += 5) {
+        const y = mllwY - ft * scale; // ft positive = above MLLW (lower Y)
         ctx.beginPath();
         ctx.moveTo(20, y);
         ctx.lineTo(40, y);
         ctx.strokeStyle = '#3a6e80';
         ctx.lineWidth = 1;
         ctx.stroke();
-        ctx.fillText(ft + ' ft', 45, y+4);
+        let label = ft.toString();
+        if (ft > 0) label = '+' + ft;
+        else if (ft === 0) label = '0';
+        ctx.fillText(label + ' ft', 45, y+4);
       }
       
-      // Guide lines across the water
-      // MLLW (20 ft) – blue
+      // Guide lines
+      // MLLW (0 ft) – blue
       ctx.beginPath();
       ctx.moveTo(60, mllwY);
       ctx.lineTo(w, mllwY);
@@ -345,21 +401,19 @@
       ctx.lineWidth = 2.5;
       ctx.stroke();
       
-      // Wreck top (10 ft) – translucent red
-      const wreckLineY = mllwY + 10 * scale;
+      // Wreck top (-10 ft) – translucent red
       ctx.beginPath();
-      ctx.moveTo(60, wreckLineY);
-      ctx.lineTo(w, wreckLineY);
+      ctx.moveTo(60, mllwY + 10*scale);
+      ctx.lineTo(w, mllwY + 10*scale);
       ctx.strokeStyle = '#c0392b';
       ctx.globalAlpha = 0.5;
       ctx.lineWidth = 2;
       ctx.stroke();
       
-      // Rocks (5 ft) – dotted red
-      const rockLineY = mllwY + 5 * scale;
+      // Rocks (-5 ft) – dotted red
       ctx.beginPath();
-      ctx.moveTo(60, rockLineY);
-      ctx.lineTo(w, rockLineY);
+      ctx.moveTo(60, mllwY + 5*scale);
+      ctx.lineTo(w, mllwY + 5*scale);
       ctx.strokeStyle = '#c0392b';
       ctx.globalAlpha = 0.8;
       ctx.lineWidth = 1.8;
@@ -379,40 +433,51 @@
       currentHeightDisplay.textContent = waterHeightFt.toFixed(2) + ' ft';
     }
     
-    // Update graph (48h window from currentTime)
+    // Update graph with red dot at current time
     function updateGraph() {
-      const startTime = new Date(currentTime);
-      startTime.setHours(startTime.getHours() - 24);
-      const endTime = new Date(currentTime);
-      endTime.setHours(endTime.getHours() + 24);
+      if (predictions.length === 0) return;
       
-      // Reference for harmonic calculation (epoch: 2025-01-01 00:00 GMT)
-      const ref = new Date(Date.UTC(2025,0,1,0,0,0));
+      const labels = predictions.map(p => p.time.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'GMT' }));
+      const heights = predictions.map(p => p.height);
       
-      const labels = [];
-      const heights = [];
-      const step = 0.5; // hours
-      for (let t = new Date(startTime); t <= endTime; t.setMinutes(t.getMinutes() + 30)) {
-        const hoursFromRef = (t - ref) / 3600000;
-        heights.push(computeTideHeight(currentStationKey, hoursFromRef));
-        labels.push(t.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'GMT' }));
-      }
+      // Find index closest to currentTime
+      let currentIndex = 0;
+      let minDiff = Infinity;
+      predictions.forEach((p, i) => {
+        const diff = Math.abs(currentTime - p.time);
+        if (diff < minDiff) {
+          minDiff = diff;
+          currentIndex = i;
+        }
+      });
       
       if (chartInstance) chartInstance.destroy();
       chartInstance = new Chart(document.getElementById('tideChart'), {
         type: 'line',
         data: {
           labels,
-          datasets: [{
-            label: 'Water level (ft MLLW)',
-            data: heights,
-            borderColor: '#1a7a8c',
-            backgroundColor: 'rgba(26,122,140,0.08)',
-            borderWidth: 2.5,
-            pointRadius: 0,
-            tension: 0.2,
-            fill: true
-          }]
+          datasets: [
+            {
+              label: 'Water level (ft MLLW)',
+              data: heights,
+              borderColor: '#1a7a8c',
+              backgroundColor: 'rgba(26,122,140,0.08)',
+              borderWidth: 2.5,
+              pointRadius: 0,
+              tension: 0.2,
+              fill: true
+            },
+            {
+              label: 'Current time',
+              data: heights.map((_, i) => i === currentIndex ? heights[i] : null),
+              borderColor: '#c0392b',
+              backgroundColor: '#c0392b',
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              showLine: false,
+              order: 1
+            }
+          ]
         },
         options: {
           responsive: true,
@@ -428,59 +493,89 @@
         }
       });
       
-      graphTimeRange.textContent = `${startTime.toLocaleDateString()} – ${endTime.toLocaleDateString()}`;
+      const start = predictions[0].time;
+      const end = predictions[predictions.length-1].time;
+      graphTimeRange.textContent = `${start.toLocaleDateString()} – ${end.toLocaleDateString()}`;
     }
     
     function refreshAll() {
-      const ref = new Date(Date.UTC(2025,0,1,0,0,0));
-      const hoursNow = (currentTime - ref) / 3600000;
-      const height = computeTideHeight(currentStationKey, hoursNow);
-      
+      if (predictions.length === 0) return;
+      const height = getHeightAtTime(currentTime);
       clockDisplay.textContent = currentTime.toLocaleString('en-GB', { timeZone:'GMT', hour12:false }).replace(',','');
       drawScene(height);
       updateGraph();
     }
     
-    function step() {
+    // Animation step (called via requestAnimationFrame with time throttling)
+    function animationLoop(now) {
       if (isPlaying) {
-        currentTime = new Date(currentTime.getTime() + 1000 * 60 * speed);
-        refreshAll();
+        if (!lastTimestamp) lastTimestamp = now;
+        const elapsed = now - lastTimestamp;
+        if (elapsed >= FRAME_INTERVAL_MS) {
+          const steps = Math.floor(elapsed / FRAME_INTERVAL_MS) * speed;
+          currentTime = new Date(currentTime.getTime() + steps * STEP_MINUTES * 60 * 1000);
+          // Clamp to prediction range
+          if (currentTime > predictions[predictions.length-1].time) {
+            currentTime = new Date(predictions[predictions.length-1].time);
+            isPlaying = false;
+            playPauseBtn.textContent = '▶️ Play';
+          }
+          if (currentTime < predictions[0].time) {
+            currentTime = new Date(predictions[0].time);
+          }
+          refreshAll();
+          lastTimestamp = now - (elapsed % FRAME_INTERVAL_MS);
+        }
+      } else {
+        lastTimestamp = 0;
       }
-      animFrame = requestAnimationFrame(step);
+      animFrame = requestAnimationFrame(animationLoop);
     }
     
     // Event listeners
-    stationSelect.addEventListener('change', e => {
-      currentStationKey = e.target.value;
-      refreshAll();
+    stationSelect.addEventListener('change', async (e) => {
+      currentStationId = e.target.value;
+      await loadStation(currentStationId);
     });
     
     playPauseBtn.addEventListener('click', () => {
       isPlaying = !isPlaying;
       playPauseBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+      lastTimestamp = 0;
     });
     
     rewindBtn.addEventListener('click', () => {
       currentTime = new Date(currentTime.getTime() - 60 * 60 * 1000);
+      if (currentTime < predictions[0]?.time) currentTime = new Date(predictions[0].time);
       refreshAll();
     });
     
     fastForwardBtn.addEventListener('click', () => {
       currentTime = new Date(currentTime.getTime() + 60 * 60 * 1000);
+      if (currentTime > predictions[predictions.length-1]?.time) currentTime = new Date(predictions[predictions.length-1].time);
       refreshAll();
     });
     
     resetBtn.addEventListener('click', () => {
-      currentTime = new Date();
-      currentTime.setMinutes(0,0,0);
+      const now = new Date();
+      if (predictions.length && now >= predictions[0].time && now <= predictions[predictions.length-1].time) {
+        currentTime = new Date(now);
+      } else if (predictions.length) {
+        currentTime = new Date(predictions[0].time);
+      } else {
+        currentTime = new Date();
+      }
+      currentTime.setSeconds(0,0);
       refreshAll();
     });
     
     speedSlider.addEventListener('input', e => speed = parseFloat(e.target.value));
     
     // Initialize
-    refreshAll();
-    step();
+    (async () => {
+      await loadStation(currentStationId);
+      animFrame = requestAnimationFrame(animationLoop);
+    })();
     
     window.addEventListener('beforeunload', () => {
       if (animFrame) cancelAnimationFrame(animFrame);
