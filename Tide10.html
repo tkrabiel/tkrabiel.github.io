@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚙️ Lord Kelvin's Tide Predictor · San Francisco</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: #2b2a26;
+      background-image: radial-gradient(circle at 20% 30%, #3a3832, #1e1d1a);
+      color: #e8dcc8;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    h1 {
+      font-family: 'Cinzel', 'Georgia', serif;
+      font-weight: 400;
+      font-size: 2.6rem;
+      letter-spacing: 4px;
+      text-shadow: 3px 3px 0px #1a1815;
+      color: #d4b483;
+      margin-bottom: 5px;
+    }
+    .subhead {
+      font-style: italic;
+      color: #b9a98a;
+      margin-bottom: 25px;
+      border-bottom: 1px solid #7a6e5a;
+      padding-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .machine-panel {
+      background: #4a4238;
+      background: linear-gradient(145deg, #5e5547, #3f3a31);
+      border-radius: 40px;
+      padding: 25px;
+      box-shadow: inset 0 0 15px #1e1b16, 10px 10px 20px rgba(0,0,0,0.5);
+      border: 2px solid #8b7a62;
+      margin-bottom: 30px;
+    }
+    .graph-container {
+      background: #2c2922;
+      border-radius: 30px;
+      padding: 20px;
+      box-shadow: inset 0 0 20px #0f0e0b, 5px 5px 10px #0f0e0b;
+      border: 1px solid #aa9b84;
+    }
+    #tideChart { width: 100% !important; height: 250px !important; }
+    .constituents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 20px;
+      margin: 30px 0 20px;
+    }
+    .constituent-card {
+      background: #2e2a23;
+      border-radius: 30px;
+      padding: 15px 12px;
+      box-shadow: inset 0 2px 5px #0a0907, 4px 4px 8px #0f0e0b, -2px -2px 5px #5a5245;
+      border: 1px solid #8b7a62;
+      text-align: center;
+    }
+    .const-name {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #d4b483;
+      text-shadow: 1px 1px 0 #1a1815;
+      margin-bottom: 5px;
+    }
+    .const-desc {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #b9a98a;
+      margin-bottom: 12px;
+    }
+    .slider-group {
+      margin: 12px 0;
+    }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #d4cbb8;
+    }
+    input[type=range] {
+      width: 100%;
+      margin: 5px 0;
+      background: transparent;
+      -webkit-appearance: none;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 6px;
+      background: #1e1b16;
+      border-radius: 10px;
+      box-shadow: inset 0 1px 3px #000;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: #b8865b;
+      border: 2px solid #e8cfa6;
+      box-shadow: 0 2px 4px black;
+      margin-top: -7px;
+      cursor: grab;
+    }
+    .brass-button {
+      background: #8b734b;
+      border: 2px solid #c9af7c;
+      color: #1e1a14;
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 40px;
+      box-shadow: 0 4px 0 #4a3e2e, 2px 2px 5px black;
+      cursor: pointer;
+      font-family: 'Cinzel', serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: 0.05s linear;
+    }
+    .brass-button:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #4a3e2e, 2px 2px 5px black;
+    }
+    .reset-button {
+      background: #5f4e38;
+    }
+    .reading {
+      font-family: 'Courier New', monospace;
+      background: #1e1b16;
+      padding: 4px 10px;
+      border-radius: 30px;
+      display: inline-block;
+      color: #d4b483;
+      border: 1px solid #8b7a62;
+    }
+    .footer-note {
+      text-align: right;
+      color: #9b8e7a;
+      margin-top: 15px;
+      font-size: 0.8rem;
+    }
+  </style>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Google Fonts for steampunk feel -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Georgia&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+  <h1>⚙️ KELVIN TIDE PREDICTOR</h1>
+  <div class="subhead">
+    <span>San Francisco · 7 primary constituents</span>
+    <span class="reading" id="clockDisplay">GMT</span>
+  </div>
+
+  <div class="machine-panel">
+    <div class="graph-container">
+      <canvas id="tideChart"></canvas>
+    </div>
+
+    <!-- Constituent "pulleys" (sliders) -->
+    <div class="constituents-grid" id="constituentsGrid"></div>
+
+    <div style="display:flex; gap:20px; justify-content:center; margin-top:20px;">
+      <button class="brass-button" id="resetToSF">⚡ Reset to SF constants</button>
+      <button class="brass-button reset-button" id="zeroAll">🔄 Zero all amplitudes</button>
+    </div>
+    <div style="text-align:center; margin-top:15px;">
+      <span class="reading">Sum of squares: <span id="sumSqDisplay">0.00</span> ft²</span>
+    </div>
+  </div>
+  <div class="footer-note">
+    Inspired by Lord Kelvin's mechanical tide predictor (1872) · each constituent is a pulley adding its cosine wave
+  </div>
+</div>
+
+<script>
+  (function(){
+    // ---------- San Francisco harmonic constants (approx, from NOAA) ----------
+    // Units: feet, degrees (GMT)
+    const DEFAULT_CONSTITUENTS = [
+      { name: 'M2', desc: 'Principal lunar', amp: 1.78, phase: 330.5, speed: 28.984104 },
+      { name: 'S2', desc: 'Principal solar', amp: 0.47, phase: 358.9, speed: 30.0 },
+      { name: 'N2', desc: 'Lunar elliptic', amp: 0.37, phase: 306.7, speed: 28.43973 },
+      { name: 'K1', desc: 'Luni-solar diurnal', amp: 1.21, phase: 342.3, speed: 15.041069 },
+      { name: 'O1', desc: 'Lunar diurnal', amp: 0.76, phase: 315.8, speed: 13.943035 },
+      { name: 'P1', desc: 'Solar diurnal', amp: 0.40, phase: 340.1, speed: 14.958931 },
+      { name: 'K2', desc: 'Luni-solar semidiurnal', amp: 0.13, phase: 5.0, speed: 30.082137 } // estimated phase
+    ];
+
+    // State: current amplitudes and phases (editable)
+    let constituents = JSON.parse(JSON.stringify(DEFAULT_CONSTITUENTS)); // copy
+
+    let chartInstance = null;
+    const canvas = document.getElementById('tideChart');
+    const ctx = canvas.getContext('2d');
+    const gridDiv = document.getElementById('constituentsGrid');
+    const sumSqDisplay = document.getElementById('sumSqDisplay');
+    const clockDisplay = document.getElementById('clockDisplay');
+
+    // Time reference: start at current time, but we will use hours from now for prediction
+    // For the graph, we'll show a 48-hour window starting from now.
+    const now = new Date();
+    const startTime = new Date(now);
+    startTime.setMinutes(0,0,0);
+    
+    // Helper: compute tide height at hours from start
+    function computeTideHeight(hours) {
+      let total = 0;
+      for (let c of constituents) {
+        // Convert phase to radians, speed is deg/hour
+        const arg = (c.speed * hours - c.phase) * Math.PI / 180;
+        total += c.amp * Math.cos(arg);
+      }
+      return total;
+    }
+
+    // Build chart
+    function updateChart() {
+      const hoursRange = 48;
+      const step = 0.25; // 15 minutes
+      const labels = [];
+      const heights = [];
+      for (let h = 0; h <= hoursRange; h += step) {
+        const t = new Date(startTime.getTime() + h * 3600 * 1000);
+        labels.push(t.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'GMT' }));
+        heights.push(computeTideHeight(h));
+      }
+      
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Tide height (ft MLLW)',
+            data: heights,
+            borderColor: '#d4b483',
+            backgroundColor: 'rgba(180,134,91,0.1)',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            tension: 0.2,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(2)} ft` } }
+          },
+          scales: {
+            x: { ticks: { maxTicksLimit: 12 }, grid: { color: '#7a6e5a40' } },
+            y: { title: { display: true, text: 'feet (MLLW)' }, grid: { color: '#7a6e5a40' } }
+          }
+        }
+      });
+
+      // Update clock display with start time
+      clockDisplay.textContent = `Start: ${startTime.toLocaleDateString('en-GB', {timeZone:'GMT'})} ${startTime.toLocaleTimeString('en-GB', {timeZone:'GMT'})}`;
+      
+      // Update sum of squares (for fun)
+      const sumSq = constituents.reduce((sum, c) => sum + c.amp * c.amp, 0);
+      sumSqDisplay.textContent = sumSq.toFixed(3);
+    }
+
+    // Build interactive sliders for each constituent
+    function buildControls() {
+      let html = '';
+      constituents.forEach((c, index) => {
+        html += `
+          <div class="constituent-card">
+            <div class="const-name">${c.name}</div>
+            <div class="const-desc">${c.desc}</div>
+            <div class="slider-group">
+              <div class="slider-label"><span>⚓ Amplitude (ft)</span> <span class="reading" id="ampVal${index}">${c.amp.toFixed(2)}</span></div>
+              <input type="range" id="ampSlider${index}" min="0" max="4.0" step="0.01" value="${c.amp}">
+            </div>
+            <div class="slider-group">
+              <div class="slider-label"><span>⏳ Phase (°)</span> <span class="reading" id="phaseVal${index}">${c.phase.toFixed(1)}</span></div>
+              <input type="range" id="phaseSlider${index}" min="0" max="360" step="1" value="${c.phase}">
+            </div>
+            <div style="font-size:0.7rem; margin-top:5px;">speed: ${c.speed.toFixed(3)}°/h</div>
+          </div>
+        `;
+      });
+      gridDiv.innerHTML = html;
+
+      // Attach listeners
+      constituents.forEach((c, idx) => {
+        const ampSlider = document.getElementById(`ampSlider${idx}`);
+        const phaseSlider = document.getElementById(`phaseSlider${idx}`);
+        const ampVal = document.getElementById(`ampVal${idx}`);
+        const phaseVal = document.getElementById(`phaseVal${idx}`);
+
+        ampSlider.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          constituents[idx].amp = val;
+          ampVal.textContent = val.toFixed(2);
+          updateChart();
+        });
+        phaseSlider.addEventListener('input', (e) => {
+          const val = parseFloat(e.target.value);
+          constituents[idx].phase = val;
+          phaseVal.textContent = val.toFixed(1);
+          updateChart();
+        });
+      });
+    }
+
+    // Reset to default SF constants
+    function resetToDefaults() {
+      constituents = JSON.parse(JSON.stringify(DEFAULT_CONSTITUENTS));
+      // Update UI sliders
+      constituents.forEach((c, idx) => {
+        const ampSlider = document.getElementById(`ampSlider${idx}`);
+        const phaseSlider = document.getElementById(`phaseSlider${idx}`);
+        const ampVal = document.getElementById(`ampVal${idx}`);
+        const phaseVal = document.getElementById(`phaseVal${idx}`);
+        if (ampSlider) {
+          ampSlider.value = c.amp;
+          phaseSlider.value = c.phase;
+          ampVal.textContent = c.amp.toFixed(2);
+          phaseVal.textContent = c.phase.toFixed(1);
+        }
+      });
+      updateChart();
+    }
+
+    function zeroAllAmps() {
+      constituents.forEach((c, idx) => {
+        c.amp = 0;
+        const ampSlider = document.getElementById(`ampSlider${idx}`);
+        const ampVal = document.getElementById(`ampVal${idx}`);
+        if (ampSlider) {
+          ampSlider.value = 0;
+          ampVal.textContent = '0.00';
+        }
+      });
+      updateChart();
+    }
+
+    // Initialize
+    buildControls();
+    updateChart();
+
+    // Buttons
+    document.getElementById('resetToSF').addEventListener('click', resetToDefaults);
+    document.getElementById('zeroAll').addEventListener('click', zeroAllAmps);
+
+    // Optional: set start time to current hour
+    setInterval(() => {
+      // Could update clock but not necessary
+    }, 1000);
+  })();
+</script>
+</body>
+</html>
