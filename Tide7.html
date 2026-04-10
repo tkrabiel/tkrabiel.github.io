@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🌍 3D Tide Explorer · NOAA Stations + Graph</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #020812;
+    }
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      background: rgba(10, 30, 40, 0.8);
+      padding: 12px 24px;
+      border-radius: 40px;
+      backdrop-filter: blur(8px);
+      border-left: 4px solid #2a9d8f;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      background: rgba(10, 30, 40, 0.75);
+      backdrop-filter: blur(8px);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 40px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px;
+      z-index: 30;
+      pointer-events: auto;
+      border: 1px solid #3a9bdc40;
+    }
+    #graphPanel {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 380px;
+      background: rgba(10, 30, 40, 0.8);
+      backdrop-filter: blur(8px);
+      border-radius: 24px;
+      padding: 16px;
+      color: white;
+      border: 1px solid #2a9d8f60;
+      z-index: 20;
+      pointer-events: auto;
+    }
+    button {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid #3a9bdc;
+    }
+    button.outline {
+      background: transparent;
+      border: 1.5px solid #2a9d8f;
+    }
+    select, input {
+      padding: 8px 16px;
+      border-radius: 40px;
+      border: 1.5px solid #aacfdf;
+      background: white;
+      font-family: inherit;
+    }
+    .slider-container { display: flex; align-items: center; gap: 12px; }
+    #stats {
+      color: #ccddee;
+      font-size: 0.9rem;
+    }
+    #clock {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-left: auto;
+    }
+    canvas { display: block; }
+    .graph-header { display: flex; justify-content: space-between; }
+    #tideChart { background: #112a33; border-radius: 16px; margin-top: 10px; }
+    .colorbar {
+      position: absolute;
+      bottom: 100px;
+      left: 20px;
+      width: 200px;
+      height: 16px;
+      background: linear-gradient(to right, #0000ff, #00ffff, #ffff00, #ff0000);
+      border-radius: 8px;
+      border: 1px solid white;
+      z-index: 25;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div id="info">
+    <h1 style="margin:0; font-weight:500;">🌍🌊 3D Tide Explorer</h1>
+    <div>NOAA stations · January 2025 start · Amphidromic markers</div>
+  </div>
+
+  <div id="graphPanel">
+    <div class="graph-header">
+      <span>📈 <span id="stationName">San Francisco</span> tide (MLLW)</span>
+      <span id="graphUnit">m</span>
+    </div>
+    <canvas id="tideChart" width="350" height="150"></canvas>
+    <div style="margin-top: 8px; font-size:0.8rem; text-align:center;">Highs & Lows for selected date</div>
+  </div>
+
+  <div class="colorbar"></div>
+
+  <div id="controls">
+    <select id="stationSelect" style="min-width:200px;">
+      <option value="sf">🌉 San Francisco (9414290)</option>
+      <option value="boston">⚓ Boston (8443970)</option>
+      <option value="anchorage">❄️ Anchorage (9455920)</option>
+      <option value="seattle">🌲 Seattle (9447130)</option>
+      <option value="portsmouth">🦞 Portsmouth, NH</option>
+      <option value="portland">🦐 Portland, ME</option>
+      <option value="galveston">🌴 Galveston, TX</option>
+      <option value="sanjuan">🇵🇷 San Juan, PR</option>
+      <option value="nyc">🗽 New York</option>
+      <option value="stpete">🌴 St. Petersburg, FL</option>
+    </select>
+    <div style="display:flex; gap:10px;">
+      <input type="date" id="datePicker" value="2025-01-01">
+      <input type="time" id="timePicker" value="00:00">
+    </div>
+    <button id="setTimeBtn">Set time</button>
+    <button id="playPauseBtn">⏸️ Pause</button>
+    <button id="resetBtn" class="outline">⟲ Reset to Jan 1</button>
+    <div class="slider-container">
+      <span>⏩</span>
+      <input type="range" id="speedSlider" min="0.1" max="5.0" step="0.1" value="1.0">
+    </div>
+    <div id="clock">🕒 2025-01-01 00:00 GMT</div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    // ---------- Configuration ----------
+    const STATIONS = {
+      sf: { name: 'San Francisco', consts: [0.542,0.142,0.112,0.368,0.233,0.122], phases: [330.5,358.9,306.7,342.3,315.8,340.1] },
+      boston: { name: 'Boston', consts: [2.840,0.540,0.540,0.190,0.140,0.060], phases: [135.2,172.8,108.0,195.5,184.2,195.0] },
+      anchorage: { name: 'Anchorage', consts: [3.940,1.110,0.620,1.890,1.310,0.600], phases: [282.8,322.0,248.0,195.4,164.7,194.0] },
+      seattle: { name: 'Seattle', consts: [0.961,0.231,0.199,0.523,0.323,0.171], phases: [222.5,247.3,195.6,230.4,211.2,229.1] },
+      portsmouth: { name: 'Portsmouth', consts: [2.680,0.510,0.510,0.180,0.130,0.055], phases: [142.5,178.0,115.0,200.0,188.0,198.0] },
+      portland: { name: 'Portland', consts: [2.960,0.560,0.570,0.200,0.145,0.065], phases: [131.8,166.2,104.0,193.0,181.5,192.0] },
+      galveston: { name: 'Galveston', consts: [0.225,0.055,0.045,0.175,0.120,0.055], phases: [275.0,310.0,250.0,320.0,300.0,318.0] },
+      sanjuan: { name: 'San Juan', consts: [0.098,0.029,0.018,0.082,0.060,0.027], phases: [245.0,285.0,220.0,310.0,290.0,308.0] },
+      nyc: { name: 'New York', consts: [1.360,0.300,0.280,0.110,0.075,0.035], phases: [152.0,187.0,125.0,215.0,205.0,213.0] },
+      stpete: { name: 'St. Petersburg', consts: [0.165,0.052,0.027,0.162,0.146,0.053], phases: [54.5,64.8,48.2,334.6,326.8,333.0] }
+    };
+    const CONST_NAMES = ['M2','S2','N2','K1','O1','P1'];
+    const SPEEDS = { M2:28.984104, S2:30.0, N2:28.43973, K1:15.041069, O1:13.943035, P1:14.958931 };
+
+    // ---------- Scene Setup ----------
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020812);
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 6, 18);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(labelRenderer.domElement);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = false;
+    controls.enableZoom = true;
+    controls.maxPolarAngle = Math.PI/2.2;
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0x404060));
+    const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+    dirLight.position.set(5,15,10);
+    scene.add(dirLight);
+    scene.add(new THREE.PointLight(0x446688, 0.6)).position.set(-10,5,10);
+
+    // Stars
+    const starsGeo = new THREE.BufferGeometry();
+    const starsPos = new Float32Array(4000*3);
+    for (let i=0; i<4000*3; i+=3) {
+      const r = 80+Math.random()*120;
+      const theta = Math.random()*Math.PI*2, phi = Math.acos(2*Math.random()-1);
+      starsPos[i]=Math.sin(phi)*Math.cos(theta)*r;
+      starsPos[i+1]=Math.sin(phi)*Math.sin(theta)*r;
+      starsPos[i+2]=Math.cos(phi)*r;
+    }
+    starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos,3));
+    scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({color:0xffffff, size:0.08})));
+
+    // Sun, Earth, Moon
+    const sun = new THREE.Mesh(new THREE.SphereGeometry(2.5,32,16), new THREE.MeshStandardMaterial({color:0xffaa33, emissive:0xff5500, emissiveIntensity:1.5}));
+    scene.add(sun);
+    const earth = new THREE.Mesh(new THREE.SphereGeometry(1.8,64,32), new THREE.MeshPhongMaterial({
+      map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'),
+      specularMap: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg'),
+      normalMap: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg'),
+      specular: 0x333333, shininess:5
+    }));
+    scene.add(earth);
+    const clouds = new THREE.Mesh(new THREE.SphereGeometry(1.81,64,32), new THREE.MeshPhongMaterial({
+      map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png'),
+      transparent:true, opacity:0.3, blending:THREE.AdditiveBlending
+    }));
+    earth.add(clouds);
+    earth.rotation.z = -0.41;
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(0.6,24,12), new THREE.MeshStandardMaterial({color:0xcccccc, roughness:0.8}));
+    scene.add(moon);
+
+    // Orbits
+    const earthOrbitR = 12, moonOrbitR = 4.5;
+    const moonInc = 5.145*Math.PI/180;
+    const earthOrbitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([...Array(129)].map((_,i)=>new THREE.Vector3(Math.cos(i/128*Math.PI*2)*earthOrbitR,0,Math.sin(i/128*Math.PI*2)*earthOrbitR))), new THREE.LineBasicMaterial({color:0xccaa88}));
+    const moonOrbitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([...Array(129)].map((_,i)=>new THREE.Vector3(Math.cos(i/128*Math.PI*2)*moonOrbitR, Math.sin(i/128*Math.PI*2)*moonOrbitR*Math.sin(moonInc), Math.sin(i/128*Math.PI*2)*moonOrbitR*Math.cos(moonInc)))), new THREE.LineBasicMaterial({color:0x88aacc}));
+    scene.add(earthOrbitLine, moonOrbitLine);
+
+    // Tide markers (amphidromic)
+    const earthGroup = new THREE.Group();
+    earth.add(earthGroup);
+    const markerMeshes = [];
+    const amphidromicPoints = [
+      {lon:-140,lat:30,rot:1},{lon:160,lat:-20,rot:-1},{lon:-30,lat:20,rot:1},{lon:10,lat:-30,rot:-1},
+      {lon:80,lat:0,rot:-1},{lon:-100,lat:-40,rot:1},{lon:120,lat:30,rot:-1},{lon:-50,lat:-10,rot:1}
+    ];
+    const gridRes = 32;
+    const markerData = [];
+    for (let i=0; i<=gridRes; i++) {
+      const lat = -Math.PI/2 + (i/gridRes)*Math.PI;
+      const numLon = Math.max(16, Math.floor(gridRes*2*Math.cos(lat)));
+      for (let j=0; j<numLon; j++) {
+        const lon = (j/numLon)*Math.PI*2 - Math.PI;
+        let amp=0, phase=0, wsum=0;
+        amphidromicPoints.forEach(ap => {
+          const apl=ap.lat*Math.PI/180, aplo=ap.lon*Math.PI/180;
+          const dLat=lat-apl, dLon=lon-aplo;
+          const a = Math.sin(dLat/2)**2 + Math.cos(lat)*Math.cos(apl)*Math.sin(dLon/2)**2;
+          const dist = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const w = Math.exp(-dist*2);
+          amp += Math.min(2.5, dist*5) * w;
+          const bearing = Math.atan2(Math.sin(dLon)*Math.cos(lat), Math.cos(apl)*Math.sin(lat)-Math.sin(apl)*Math.cos(lat)*Math.cos(dLon));
+          phase += (bearing + ap.rot*dist*2.5) * w;
+          wsum += w;
+        });
+        if (wsum===0) continue;
+        amp /= wsum; phase /= wsum;
+        const pos = new THREE.Vector3(Math.cos(lat)*Math.cos(lon), Math.sin(lat), Math.cos(lat)*Math.sin(lon));
+        const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.06,6), new THREE.MeshPhongMaterial({transparent:true}));
+        sphere.position.copy(pos.multiplyScalar(1.85));
+        earthGroup.add(sphere);
+        markerMeshes.push({mesh: sphere, baseAmp: amp, phase});
+      }
+    }
+
+    // Station marker (highlight)
+    const stationMarker = new THREE.Mesh(new THREE.SphereGeometry(0.15,16), new THREE.MeshPhongMaterial({color:0xffaa00, emissive:0x442200}));
+    earthGroup.add(stationMarker);
+    
+    // UI elements
+    const stationSelect = document.getElementById('stationSelect');
+    const datePicker = document.getElementById('datePicker');
+    const timePicker = document.getElementById('timePicker');
+    const setTimeBtn = document.getElementById('setTimeBtn');
+    const playBtn = document.getElementById('playPauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const speedSlider = document.getElementById('speedSlider');
+    const clockDiv = document.getElementById('clock');
+    const stationNameSpan = document.getElementById('stationName');
+    const graphUnit = document.getElementById('graphUnit');
+    
+    let chart;
+    const chartCtx = document.getElementById('tideChart').getContext('2d');
+    
+    let currentTime = new Date(Date.UTC(2025,0,1,0,0,0));
+    let isPlaying = true;
+    let speed = 1.0;
+    
+    function updateClock() {
+      clockDiv.textContent = `🕒 ${currentTime.toISOString().slice(0,10).replace(/-/g,'-')} ${currentTime.toISOString().slice(11,19)} GMT`;
+    }
+    
+    function computeStationTide(stationKey, hoursFromRef) {
+      const s = STATIONS[stationKey];
+      let total = 0;
+      CONST_NAMES.forEach((n,i) => {
+        total += s.consts[i] * Math.cos((SPEEDS[n]*hoursFromRef - s.phases[i]) * Math.PI/180);
+      });
+      return total;
+    }
+    
+    function updateGraph() {
+      const stationKey = stationSelect.value;
+      const s = STATIONS[stationKey];
+      stationNameSpan.textContent = s.name;
+      
+      const refTime = new Date(currentTime);
+      refTime.setUTCHours(0,0,0,0);
+      const hoursNow = (currentTime - refTime) / 3600000;
+      
+      const labels = [], heights = [];
+      for (let h=-24; h<=48; h+=0.5) {
+        const t = hoursNow + h;
+        heights.push(computeStationTide(stationKey, t));
+        const d = new Date(refTime.getTime() + t*3600000);
+        labels.push(d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit', timeZone:'GMT'}));
+      }
+      
+      if (chart) chart.destroy();
+      chart = new Chart(chartCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'm (MLLW)',
+            data: heights,
+            borderColor: '#2a9d8f',
+            backgroundColor: 'rgba(42,157,143,0.1)',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.2,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { maxTicksLimit: 8 }, grid: { color: '#3a5a6a' } },
+            y: { grid: { color: '#3a5a6a' } }
+          }
+        }
+      });
+      
+      // Update station marker position (approximate for demo)
+      const lat = 37.8 * Math.PI/180, lon = -122.4 * Math.PI/180;
+      if (stationKey === 'boston') { lat = 42.3*Math.PI/180; lon = -71.0*Math.PI/180; }
+      else if (stationKey === 'anchorage') { lat = 61.2*Math.PI/180; lon = -149.9*Math.PI/180; }
+      else if (stationKey === 'seattle') { lat = 47.6*Math.PI/180; lon = -122.3*Math.PI/180; }
+      // ... simplified
+      stationMarker.position.set(Math.cos(lat)*Math.cos(lon), Math.sin(lat), Math.cos(lat)*Math.sin(lon)).multiplyScalar(1.9);
+    }
+    
+    function updateScene() {
+      const days = (currentTime - new Date(Date.UTC(2025,0,1))) / 86400000;
+      const earthAngle = (days / 365.25) * 2*Math.PI;
+      const moonAngle = (days / 27.32) * 2*Math.PI;
+      
+      const earthX = Math.cos(earthAngle)*12, earthZ = Math.sin(earthAngle)*12;
+      earth.position.set(earthX, 0, earthZ);
+      
+      const moonOffX = Math.cos(moonAngle)*4.5;
+      const moonOffZ = Math.sin(moonAngle)*4.5*Math.cos(5.145*Math.PI/180);
+      const moonOffY = Math.sin(moonAngle)*4.5*Math.sin(5.145*Math.PI/180);
+      moon.position.set(earthX+moonOffX, moonOffY, earthZ+moonOffZ);
+      moonOrbitLine.position.copy(earth.position);
+      
+      // Compute global tide factor
+      const toSun = new THREE.Vector3().subVectors(sun.position, earth.position).normalize();
+      const toMoon = new THREE.Vector3().subVectors(moon.position, earth.position).normalize();
+      const cosAng = toSun.dot(toMoon);
+      const springFactor = 0.6 + 0.4*cosAng;
+      
+      const hoursSinceEpoch = (currentTime - new Date(Date.UTC(2025,0,1))) / 3600000;
+      markerMeshes.forEach(m => {
+        const h = m.baseAmp * Math.cos((SPEEDS.M2 * hoursSinceEpoch - m.phase) * Math.PI/180) * springFactor;
+        const absH = Math.abs(h);
+        m.mesh.scale.setScalar(1 + absH*0.3);
+        const t = Math.min(absH/2.0, 1.0);
+        let color;
+        if (t<0.33) color = new THREE.Color().lerpColors(new THREE.Color(0x0000ff), new THREE.Color(0x00ffff), t/0.33);
+        else if (t<0.66) color = new THREE.Color().lerpColors(new THREE.Color(0x00ffff), new THREE.Color(0xffff00), (t-0.33)/0.33);
+        else color = new THREE.Color().lerpColors(new THREE.Color(0xffff00), new THREE.Color(0xff0000), (t-0.66)/0.34);
+        m.mesh.material.color.set(color);
+      });
+      
+      clouds.rotation.y += 0.002;
+      earth.rotation.y += 0.001;
+    }
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      if (isPlaying) {
+        currentTime = new Date(currentTime.getTime() + 1000 * 60 * speed); // advance minutes
+        updateClock();
+        updateScene();
+        updateGraph();
+      }
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    }
+    
+    // Event listeners
+    playBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      playBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+    });
+    resetBtn.addEventListener('click', () => {
+      currentTime = new Date(Date.UTC(2025,0,1,0,0,0));
+      updateClock();
+      updateScene();
+      updateGraph();
+    });
+    setTimeBtn.addEventListener('click', () => {
+      const date = datePicker.value;
+      const time = timePicker.value;
+      currentTime = new Date(`${date}T${time}Z`);
+      updateClock();
+      updateScene();
+      updateGraph();
+    });
+    speedSlider.addEventListener('input', e => speed = parseFloat(e.target.value));
+    stationSelect.addEventListener('change', updateGraph);
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    
+    // Initialize
+    updateClock();
+    updateGraph();
+    animate();
+  </script>
+</body>
+</html>
