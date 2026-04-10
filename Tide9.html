@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🌊 NOAA Tide Viewer · Smooth Animation</title>
+  <title>🌊 NOAA Tide Viewer · Smooth Water Animation</title>
   <style>
     * { box-sizing: border-box; margin: 0; }
     body {
@@ -104,7 +104,7 @@
       box-shadow: 0 6px 16px rgba(0,20,30,0.05);
       border: 1px solid #cde3ec;
     }
-    .chart-container { height: 250px; margin-top: 10px; position: relative; }
+    .chart-container { height: 250px; margin-top: 10px; }
     #tideChart { width: 100% !important; height: 100% !important; }
     .water-level-indicator { text-align: center; font-size: 1.3rem; margin: 10px 0 0; }
     .footnote { margin-top: 20px; color: #3a6e80; text-align: center; }
@@ -115,7 +115,7 @@
 </head>
 <body>
 <div class="container">
-  <h1>🌊 NOAA Tide Viewer · Smooth Animation <span class="noaa-badge">2D + Graph</span></h1>
+  <h1>🌊 NOAA Tide Viewer · Smooth Animation <span class="noaa-badge">2D Water Level</span></h1>
   
   <div class="station-bar">
     <select id="stationSelect">
@@ -155,10 +155,10 @@
       <div class="legend-item"><span style="color:#c0392b; opacity:0.7;">──</span> Wreck top (-10 ft)</div>
       <div class="legend-item"><span style="color:#c0392b; border-bottom:2px dotted #c0392b;">····</span> Rocks (-5 ft)</div>
     </div>
-    <div style="text-align:center; margin-top:5px; font-size:0.9rem;">📏 Datum: MLLW (0 ft). Rocks buried in sand.</div>
+    <div style="text-align:center; margin-top:5px; font-size:0.9rem;">📏 Datum: MLLW (0 ft). Water depth: 20 ft.</div>
   </div>
 
-  <!-- Graph -->
+  <!-- Graph (static reference) -->
   <div class="graph-card">
     <div style="display:flex; justify-content:space-between;">
       <h3 style="margin:0;">📈 Tide predictions (48 hours)</h3>
@@ -169,7 +169,7 @@
     </div>
   </div>
   <div class="footnote">
-    ⏱️ Live data from NOAA CO‑OPS API · Red dot moves smoothly with time
+    ⏱️ Live data from NOAA CO‑OPS API · Water level animates smoothly
   </div>
 </div>
 
@@ -242,7 +242,6 @@
     function getHeightAtTime(time) {
       if (predictions.length === 0) return 0;
       const t = time.getTime();
-      // Find surrounding points
       let i = 0;
       while (i < predictions.length - 1 && predictions[i+1].time.getTime() <= t) i++;
       if (i >= predictions.length - 1) return predictions[predictions.length-1].height;
@@ -254,7 +253,7 @@
       return p1.height + ratio * (p2.height - p1.height);
     }
     
-    // Build static chart
+    // Build static chart (no moving dot)
     function buildChart() {
       if (chartInstance) chartInstance.destroy();
       const labels = predictions.map(p => p.time.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', timeZone:'GMT' }));
@@ -264,28 +263,16 @@
         type: 'line',
         data: {
           labels,
-          datasets: [
-            {
-              label: 'Water level (ft MLLW)',
-              data: heights,
-              borderColor: '#1a7a8c',
-              backgroundColor: 'rgba(26,122,140,0.08)',
-              borderWidth: 2.5,
-              pointRadius: 0,
-              tension: 0.2,
-              fill: true
-            },
-            {
-              label: 'Current time',
-              data: heights.map(() => null),
-              borderColor: '#c0392b',
-              backgroundColor: '#c0392b',
-              pointRadius: 6,
-              pointHoverRadius: 8,
-              showLine: false,
-              order: 1
-            }
-          ]
+          datasets: [{
+            label: 'Water level (ft MLLW)',
+            data: heights,
+            borderColor: '#1a7a8c',
+            backgroundColor: 'rgba(26,122,140,0.08)',
+            borderWidth: 2.5,
+            pointRadius: 0,
+            tension: 0.2,
+            fill: true
+          }]
         },
         options: {
           responsive: true,
@@ -301,23 +288,6 @@
       const start = predictions[0].time;
       const end = predictions[predictions.length-1].time;
       graphTimeRange.textContent = `${start.toLocaleDateString()} – ${end.toLocaleDateString()}`;
-    }
-    
-    // Update red dot position on chart
-    function updateChartDot() {
-      if (!chartInstance || predictions.length === 0) return;
-      const t = currentTime.getTime();
-      let index = 0;
-      while (index < predictions.length - 1 && predictions[index+1].time.getTime() <= t) index++;
-      
-      const newData = predictions.map(() => null);
-      if (index < predictions.length) {
-        // place dot at closest point (or interpolated? we'll place at nearest index for simplicity)
-        // for smoother look, we can use the same index but that's fine
-        newData[index] = predictions[index].height;
-      }
-      chartInstance.data.datasets[1].data = newData;
-      chartInstance.update();
     }
     
     // Draw 2D scene with given water height (ft, MLLW)
@@ -445,7 +415,6 @@
       clockDisplay.textContent = currentTime.toLocaleString('en-GB', { timeZone:'GMT', hour12:false }).replace(',','');
       currentHeightDisplay.textContent = height.toFixed(2) + ' ft';
       drawScene(height);
-      updateChartDot();
     }
     
     // Animation loop: smooth time progression
@@ -457,7 +426,6 @@
           const delta = now - lastTimestamp;
           const timeAdvance = delta * speed * TIME_FACTOR / 1000; // ms
           let newTime = new Date(currentTime.getTime() + timeAdvance);
-          // Clamp
           if (predictions.length) {
             const start = predictions[0].time;
             const end = predictions[predictions.length-1].time;
@@ -478,7 +446,6 @@
       try {
         const preds = await fetchPredictions(stationId);
         predictions = preds;
-        // Set current time to now or start of data
         const now = new Date();
         if (now >= predictions[0].time && now <= predictions[predictions.length-1].time) {
           currentTime = new Date(now);
