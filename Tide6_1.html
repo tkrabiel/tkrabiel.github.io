@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🌊 Global Amphidromic Tide Simulation</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #020812;
+    }
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      background: rgba(10, 30, 40, 0.8);
+      padding: 16px 24px;
+      border-radius: 40px;
+      backdrop-filter: blur(8px);
+      border-left: 4px solid #2a9d8f;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #controls {
+      position: absolute;
+      bottom: 30px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      background: rgba(10, 30, 40, 0.7);
+      padding: 15px 25px;
+      border-radius: 50px;
+      backdrop-filter: blur(8px);
+      color: white;
+      z-index: 20;
+    }
+    button {
+      background: #1a7a8c;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: 0.2s;
+      border: 1px solid #3a9bdc;
+    }
+    button:hover { background: #0f5e6f; }
+    button.outline {
+      background: transparent;
+      border: 1.5px solid #2a9d8f;
+    }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type="range"] { width: 140px; }
+    label { display: flex; align-items: center; gap: 8px; }
+    #stats {
+      position: absolute;
+      bottom: 100px;
+      right: 20px;
+      color: #ccddee;
+      background: rgba(0,0,0,0.5);
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+      z-index: 15;
+    }
+    #note {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: #aaccdd;
+      background: rgba(0,20,30,0.6);
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="info">
+    <h1 style="margin:0 0 8px; font-weight:500;">🌍🌊 Global Amphidromic Tides</h1>
+    <div id="dynamicInfo">M2 Constituent · Bathymetry & Coriolis Simulation</div>
+  </div>
+  <div id="note">🖱️ Drag to rotate · Scroll to zoom · Co-range lines show tidal range</div>
+  <div id="stats">
+    <span>⏱️ Time: <span id="timeDisplay">0.0 h</span> · Tidal Range: <span id="rangeDisplay">0.0 m</span></span>
+  </div>
+
+  <div id="controls">
+    <button id="playPauseBtn">⏸️ Pause</button>
+    <button id="resetBtn" class="outline">⟲ Reset</button>
+    <div class="slider-container">
+      <span>⏩ Speed</span>
+      <input type="range" id="speedSlider" min="0.0" max="3.0" step="0.1" value="1.0">
+    </div>
+    <label><input type="checkbox" id="showBathymetryCheck" checked> Show Bathymetry</label>
+    <label><input type="checkbox" id="showCoRangeCheck" checked> Show Co-range Lines</label>
+    <label><input type="checkbox" id="showAmplitudeCheck"> Color by Amplitude</label>
+  </div>
+
+  <!-- Three.js Libraries -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    // --- Initialize Scene ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020812);
+    
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 8, 18);
+    camera.lookAt(0, 0, 0);
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+    
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.left = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(labelRenderer.domElement);
+    
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = false;
+    controls.enableZoom = true;
+    controls.maxPolarAngle = Math.PI / 2.2;
+    controls.target.set(0, 0, 0);
+    
+    // --- Lighting ---
+    const ambientLight = new THREE.AmbientLight(0x404060);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+    dirLight.position.set(5, 15, 10);
+    dirLight.castShadow = true;
+    dirLight.receiveShadow = true;
+    scene.add(dirLight);
+    const fillLight = new THREE.PointLight(0x446688, 0.6);
+    fillLight.position.set(-10, 5, 10);
+    scene.add(fillLight);
+    
+    // Add stars
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsCount = 4000;
+    const starPositions = new Float32Array(starsCount * 3);
+    for (let i = 0; i < starsCount * 3; i += 3) {
+      const r = 80 + Math.random() * 120;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos((Math.random() * 2) - 1);
+      starPositions[i] = Math.sin(phi) * Math.cos(theta) * r;
+      starPositions[i+1] = Math.sin(phi) * Math.sin(theta) * r;
+      starPositions[i+2] = Math.cos(phi) * r;
+    }
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starsMaterial = new THREE.PointsMaterial({color: 0xffffff, size: 0.08});
+    const stars = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(stars);
+    
+    // --- Create Earth Sphere with Bathymetry Texture ---
+    // Using a high-quality Earth texture with bathymetry information
+    const textureLoader = new THREE.TextureLoader();
+    const earthMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+    const earthSpecularMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
+    const earthNormalMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+    const cloudMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png');
+    // Bathymetry-style bump map (simulated)
+    const bumpMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+    
+    const earthMat = new THREE.MeshPhongMaterial({
+      map: earthMap,
+      specularMap: earthSpecularMap,
+      specular: new THREE.Color('grey'),
+      shininess: 5,
+      normalMap: earthNormalMap,
+      bumpMap: bumpMap,
+      bumpScale: 0.3,
+    });
+    const earth = new THREE.Mesh(new THREE.SphereGeometry(3.0, 64, 32), earthMat);
+    earth.castShadow = true;
+    earth.receiveShadow = true;
+    scene.add(earth);
+    
+    // Clouds
+    const cloudGeo = new THREE.SphereGeometry(3.02, 64, 32);
+    const cloudMat = new THREE.MeshPhongMaterial({ map: cloudMap, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+    const clouds = new THREE.Mesh(cloudGeo, cloudMat);
+    earth.add(clouds);
+    
+    // --- Simulated Amphidromic System Data (M2 constituent) ---
+    // We'll create a grid of points on the sphere and compute tidal amplitude & phase
+    // based on a simplified analytical model of amphidromic systems.
+    
+    const gridResolution = 24; // number of latitude divisions
+    const points = [];
+    const amplitudes = [];
+    const phases = [];
+    
+    // Simplified amphidromic point locations (longitude, latitude)
+    const amphidromicPoints = [
+      { lon: -140, lat: 30, rotation: 1 },   // North Pacific
+      { lon: 160, lat: -20, rotation: -1 },  // South Pacific
+      { lon: -30, lat: 20, rotation: 1 },    // North Atlantic
+      { lon: 10, lat: -30, rotation: -1 },   // South Atlantic
+      { lon: 80, lat: 0, rotation: -1 },     // Indian Ocean
+      { lon: -100, lat: -40, rotation: 1 },  // South Pacific 2
+      { lon: 120, lat: 30, rotation: -1 },   // NW Pacific
+      { lon: -50, lat: -10, rotation: 1 }    // Equatorial Atlantic
+    ];
+    
+    // Generate points on sphere
+    for (let i = 0; i <= gridResolution; i++) {
+      const lat = -Math.PI/2 + (i / gridResolution) * Math.PI;
+      const numLon = Math.max(12, Math.floor(gridResolution * 2 * Math.cos(lat)));
+      for (let j = 0; j < numLon; j++) {
+        const lon = (j / numLon) * Math.PI * 2 - Math.PI;
+        
+        // Skip land? Simplified: keep all ocean points (approx)
+        const isOcean = true; // In a full implementation, we'd use a land mask
+        
+        if (isOcean) {
+          // Compute amplitude based on distance to nearest amphidromic points
+          let totalAmp = 0;
+          let totalPhase = 0;
+          let totalWeight = 0;
+          
+          amphidromicPoints.forEach(ap => {
+            const apLat = ap.lat * Math.PI/180;
+            const apLon = ap.lon * Math.PI/180;
+            
+            // Great-circle distance
+            const dLat = lat - apLat;
+            const dLon = lon - apLon;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat) * Math.cos(apLat) * Math.sin(dLon/2)**2;
+            const dist = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            // Amplitude increases with distance from amphidromic point
+            const amp = Math.min(2.5, dist * 6.0);
+            // Phase rotates around the point (Coriolis effect determines direction)
+            const bearing = Math.atan2(
+              Math.sin(dLon) * Math.cos(lat),
+              Math.cos(apLat) * Math.sin(lat) - Math.sin(apLat) * Math.cos(lat) * Math.cos(dLon)
+            );
+            const phase = (bearing + ap.rotation * dist * 2) % (Math.PI * 2);
+            
+            const weight = Math.exp(-dist * 1.5);
+            totalAmp += amp * weight;
+            totalPhase += phase * weight;
+            totalWeight += weight;
+          });
+          
+          const finalAmp = totalWeight > 0 ? totalAmp / totalWeight : 0;
+          const finalPhase = totalWeight > 0 ? totalPhase / totalWeight : 0;
+          
+          // Convert to Cartesian
+          const x = Math.cos(lat) * Math.cos(lon);
+          const y = Math.sin(lat);
+          const z = Math.cos(lat) * Math.sin(lon);
+          
+          points.push({ pos: new THREE.Vector3(x, y, z), lat, lon });
+          amplitudes.push(finalAmp);
+          phases.push(finalPhase);
+        }
+      }
+    }
+    
+    // --- Create Visual Elements ---
+    
+    // 1. Co-range lines (circles of equal amplitude around amphidromic points)
+    const coRangeGroup = new THREE.Group();
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x88ccff });
+    
+    // Generate circles around each amphidromic point
+    amphidromicPoints.forEach(ap => {
+      const apLat = ap.lat * Math.PI/180;
+      const apLon = ap.lon * Math.PI/180;
+      const center = new THREE.Vector3(
+        Math.cos(apLat) * Math.cos(apLon),
+        Math.sin(apLat),
+        Math.cos(apLat) * Math.sin(apLon)
+      );
+      
+      const radii = [0.5, 1.0, 1.5, 2.0];
+      radii.forEach(r => {
+        const points = [];
+        const segments = 48;
+        for (let i = 0; i <= segments; i++) {
+          const angle = (i / segments) * Math.PI * 2;
+          // Create a circle in the tangent plane
+          const north = new THREE.Vector3(0, 1, 0);
+          const east = new THREE.Vector3().crossVectors(center, north).normalize();
+          const north2 = new THREE.Vector3().crossVectors(east, center).normalize();
+          
+          const offset = new THREE.Vector3().addVectors(
+            east.clone().multiplyScalar(Math.cos(angle) * r),
+            north2.clone().multiplyScalar(Math.sin(angle) * r)
+          );
+          const point = center.clone().add(offset).normalize().multiplyScalar(3.05);
+          points.push(point);
+        }
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0x3a9bdc }));
+        coRangeGroup.add(line);
+      });
+    });
+    scene.add(coRangeGroup);
+    
+    // 2. Amplitude markers (colored spheres)
+    const markerGroup = new THREE.Group();
+    points.forEach((p, idx) => {
+      const amp = amplitudes[idx];
+      if (amp < 0.1) return;
+      
+      const color = new THREE.Color().setHSL(0.6 - amp * 0.15, 0.9, 0.5);
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.03 + amp * 0.02, 8), new THREE.MeshPhongMaterial({ color, transparent: true, opacity: 0.7 }));
+      sphere.position.copy(p.pos.clone().multiplyScalar(3.05));
+      markerGroup.add(sphere);
+    });
+    scene.add(markerGroup);
+    
+    // 3. Amphidromic point markers
+    const amphidromicGroup = new THREE.Group();
+    amphidromicPoints.forEach(ap => {
+      const apLat = ap.lat * Math.PI/180;
+      const apLon = ap.lon * Math.PI/180;
+      const pos = new THREE.Vector3(
+        Math.cos(apLat) * Math.cos(apLon),
+        Math.sin(apLat),
+        Math.cos(apLat) * Math.sin(apLon)
+      ).multiplyScalar(3.08);
+      
+      const marker = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16), new THREE.MeshPhongMaterial({ color: 0xff6666, emissive: new THREE.Color(0x440000) }));
+      marker.position.copy(pos);
+      amphidromicGroup.add(marker);
+      
+      // Add rotation arrow indicator
+      const arrowDir = ap.rotation > 0 ? 1 : -1;
+      const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, arrowDir, 0), pos, 0.3, 0xffaa00);
+      amphidromicGroup.add(arrow);
+    });
+    scene.add(amphidromicGroup);
+    
+    // --- UI Elements ---
+    const timeDisplay = document.getElementById('timeDisplay');
+    const rangeDisplay = document.getElementById('rangeDisplay');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const speedSlider = document.getElementById('speedSlider');
+    const showBathymetryCheck = document.getElementById('showBathymetryCheck');
+    const showCoRangeCheck = document.getElementById('showCoRangeCheck');
+    const showAmplitudeCheck = document.getElementById('showAmplitudeCheck');
+    
+    // --- Animation State ---
+    let time = 0;
+    let isPlaying = true;
+    let speed = 1.0;
+    const tidalPeriod = 12.42; // M2 period in hours
+    
+    // Update visualization
+    function updateTide() {
+      // Update marker colors based on current tidal phase
+      const children = markerGroup.children;
+      points.forEach((p, idx) => {
+        if (idx >= children.length) return;
+        const amp = amplitudes[idx];
+        const phase = phases[idx];
+        
+        // Current tidal height at this point
+        const tidalHeight = amp * Math.cos((time / tidalPeriod) * Math.PI * 2 - phase);
+        
+        // Update marker color and scale
+        const marker = children[idx];
+        if (marker) {
+          const intensity = 0.4 + (tidalHeight / 3.0) * 0.6;
+          const hue = 0.6 - amp * 0.15;
+          marker.material.color.setHSL(hue, 0.9, 0.4 + intensity * 0.3);
+          const scale = 1.0 + tidalHeight * 0.3;
+          marker.scale.set(scale, scale, scale);
+        }
+      });
+      
+      // Update range display
+      const maxAmp = Math.max(...amplitudes);
+      const currentMax = maxAmp * Math.abs(Math.cos((time / tidalPeriod) * Math.PI * 2));
+      rangeDisplay.textContent = currentMax.toFixed(2);
+      timeDisplay.textContent = time.toFixed(1);
+    }
+    
+    // --- Animation Loop ---
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      if (isPlaying) {
+        time += 0.05 * speed;
+        updateTide();
+      }
+      
+      // Rotate clouds slowly
+      clouds.rotation.y += 0.0005;
+      
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    }
+    
+    // --- Event Listeners ---
+    playPauseBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      playPauseBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+    });
+    
+    resetBtn.addEventListener('click', () => {
+      time = 0;
+      updateTide();
+    });
+    
+    speedSlider.addEventListener('input', (e) => {
+      speed = parseFloat(e.target.value);
+    });
+    
+    showBathymetryCheck.addEventListener('change', (e) => {
+      earthMat.bumpScale = e.target.checked ? 0.3 : 0;
+    });
+    
+    showCoRangeCheck.addEventListener('change', (e) => {
+      coRangeGroup.visible = e.target.checked;
+    });
+    
+    showAmplitudeCheck.addEventListener('change', (e) => {
+      markerGroup.visible = e.target.checked;
+    });
+    
+    window.addEventListener('resize', onWindowResize, false);
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    
+    // Start animation
+    updateTide();
+    animate();
+    
+    // Add some labels for major amphidromic points
+    const labelDiv = document.createElement('div');
+    labelDiv.textContent = 'Amphidromic Point';
+    labelDiv.style.color = '#ffaa00';
+    labelDiv.style.fontSize = '12px';
+    labelDiv.style.fontWeight = 'bold';
+    labelDiv.style.textShadow = '1px 1px 3px black';
+    
+    amphidromicPoints.slice(0, 4).forEach(ap => {
+      const apLat = ap.lat * Math.PI/180;
+      const apLon = ap.lon * Math.PI/180;
+      const pos = new THREE.Vector3(
+        Math.cos(apLat) * Math.cos(apLon),
+        Math.sin(apLat),
+        Math.cos(apLat) * Math.sin(apLon)
+      ).multiplyScalar(3.2);
+      
+      const label = new CSS2DObject(labelDiv.cloneNode(true));
+      label.position.copy(pos);
+      scene.add(label);
+    });
+    
+  </script>
+</body>
+</html>
