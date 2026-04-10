@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🧬 EVOLUTION ISLAND · Pass‑Around Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #1a3a2e 0%, #0f2c1f 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        .game-container {
+            max-width: 1100px;
+            width: 100%;
+            background: #2d4a3bcc;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 3px solid #c9b16b;
+            border-radius: 56px;
+            padding: 24px 20px 30px;
+            box-shadow: 0 20px 30px #041008, inset 0 0 0 2px #6f8f72;
+        }
+        h1 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: 4px;
+            color: #f3e9c0;
+            text-shadow: 0 4px 0 #1d3b2a, 0 8px 12px black;
+            margin-top: -8px;
+            margin-bottom: 20px;
+        }
+        h1 span {
+            font-size: 3rem;
+        }
+        .env-panel {
+            background: #1f3e2d;
+            border-radius: 60px;
+            padding: 18px 24px;
+            margin-bottom: 28px;
+            border: 2px solid #e6d89c;
+            box-shadow: inset 0 2px 8px #b1aa7a33, 0 8px 0 #0b1f14;
+            color: #fbf5dd;
+        }
+        .env-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .env-title {
+            font-size: 1.9rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .env-desc {
+            font-size: 1.2rem;
+            margin-top: 6px;
+            font-style: italic;
+        }
+        .round-info {
+            background: #0c2619;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 1.4rem;
+            border: 1px solid #bcae72;
+        }
+        .creature-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            justify-content: center;
+            margin: 24px 0 20px;
+        }
+        .creature-card {
+            flex: 1 1 260px;
+            min-width: 230px;
+            background: #1e3f30;
+            background-image: radial-gradient(circle at 20% 20%, #3b7058, #153727);
+            border-radius: 36px;
+            padding: 18px 14px 18px;
+            border: 3px solid #dac282;
+            box-shadow: inset 0 2px 8px #b7c99e, 0 10px 0 #0b2619, 0 8px 15px black;
+            color: #faf0cf;
+            transition: transform 0.1s;
+        }
+        .dead-card {
+            opacity: 0.6;
+            filter: grayscale(0.5);
+            border-color: #8f7a7a;
+            box-shadow: inset 0 2px 8px #a09b9b, 0 6px 0 #1f1414, 0 8px 15px black;
+        }
+        .creature-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .creature-name {
+            font-size: 1.8rem;
+            font-weight: 800;
+            text-shadow: 0 3px 0 #0e2b1c;
+        }
+        .gen-badge {
+            background: #5f4e2e;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-weight: bold;
+            border: 1px solid #f3da9b;
+            color: #ffefb2;
+            font-size: 1.1rem;
+        }
+        .traits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 14px 0 12px;
+        }
+        .trait-tag {
+            background: #163f2c;
+            border: 1px solid #cbb26a;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            box-shadow: inset 0 1px 3px #aacfae;
+            color: #f7efcf;
+        }
+        .modifier-badge {
+            background: #0e1f14;
+            border-radius: 40px;
+            padding: 8px 14px;
+            margin: 8px 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.3rem;
+            border: 1px solid #b6a86b;
+        }
+        .survival-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+        .roll-btn {
+            background: #7f6b3c;
+            border: none;
+            border-bottom: 5px solid #3f321c;
+            color: #fcf5db;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #2b422b, inset 0 1px 4px #eeddaa;
+            transition: all 0.05s;
+            flex: 1;
+            margin-right: 8px;
+        }
+        .roll-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #2b422b, inset 0 1px 4px #eeddaa;
+            border-bottom-width: 2px;
+        }
+        .roll-btn:disabled {
+            opacity: 0.5;
+            transform: none;
+            pointer-events: none;
+        }
+        .survival-result {
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 1.6rem;
+            min-width: 70px;
+            text-align: right;
+        }
+        .alive-text { color: #b1f7b1; text-shadow: 0 2px 0 #0a421a; }
+        .dead-text { color: #f7a1a1; text-shadow: 0 2px 0 #4a1a1a; }
+
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 16px 22px;
+            margin: 15px 0 20px;
+        }
+        .big-btn {
+            background: #2c4f35;
+            border: none;
+            border-bottom: 8px solid #163d21;
+            color: #fcf0c0;
+            font-weight: bold;
+            font-size: 1.5rem;
+            padding: 14px 28px;
+            border-radius: 60px;
+            box-shadow: 0 6px 0 #0e2617, inset 0 2px 8px #b1d2a4;
+            cursor: pointer;
+            transition: all 0.08s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            min-width: 180px;
+        }
+        .big-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #0e2617, inset 0 2px 8px #b1d2a4;
+            border-bottom-width: 4px;
+        }
+        .big-btn:disabled {
+            opacity: 0.4;
+            transform: none;
+            pointer-events: none;
+        }
+        .mate-panel {
+            background: #172e21e0;
+            border-radius: 48px;
+            padding: 18px 22px;
+            margin-top: 12px;
+            border: 1px dashed #c7b16b;
+        }
+        select {
+            background: #1d3a26;
+            color: #f3eaca;
+            font-size: 1.2rem;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 2px solid #ad9e5e;
+            font-weight: bold;
+        }
+        .mate-btn {
+            background: #6d5432;
+            border-bottom: 6px solid #3f2e1b;
+            padding: 10px 22px;
+            font-size: 1.2rem;
+        }
+        .footer-note {
+            text-align: center;
+            margin-top: 20px;
+            color: #bfd6bc;
+            font-weight: 500;
+        }
+        .player-tag {
+            font-size: 1rem;
+            background: #00000033;
+            border-radius: 20px;
+            padding: 2px 10px;
+        }
+        .dead-msg {
+            font-style: italic;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <h1>
+        <span>🧬</span> EVOLUTION ISLAND <span>🌿</span>
+    </h1>
+
+    <!-- ENVIRONMENT CARD DISPLAY -->
+    <div class="env-panel" id="envPanel">
+        <div class="env-header">
+            <div class="env-title">
+                <span>🌍</span> <span id="envName">Draw an environment</span>
+            </div>
+            <div class="round-info">
+                <span id="roundDisplay">Round 0 / 3</span> &nbsp;|&nbsp; <span id="cycleDisplay">Cycle 1</span>
+            </div>
+        </div>
+        <div class="env-desc" id="envDesc">Click "New Environment" to start</div>
+    </div>
+
+    <!-- CREATURES (PLAYERS) -->
+    <div id="creatureContainer" class="creature-grid">
+        <!-- dynamically filled -->
+    </div>
+
+    <!-- GLOBAL ACTIONS -->
+    <div class="action-bar">
+        <button class="big-btn" id="newEnvBtn">🌱 New Environment</button>
+        <button class="big-btn" id="rollAllSurvivalBtn">🎲 Roll All Survival</button>
+        <button class="big-btn" id="nextRoundBtn">⏩ Next Round</button>
+    </div>
+
+    <!-- MATING SECTION (pass-around style) -->
+    <div class="mate-panel" id="matePanel">
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: center;">
+            <span style="font-size: 1.6rem; font-weight: bold; color: #f3e2b0;">🧬 MATE:</span>
+            <select id="parent1Select" style="min-width: 160px;"></select>
+            <span style="font-size: 2rem;">❤️</span>
+            <select id="parent2Select" style="min-width: 160px;"></select>
+            <button class="big-btn mate-btn" id="mateBtn">🐣 Breed Offspring</button>
+        </div>
+        <div style="margin-top: 10px; font-size: 1rem; color: #cddbb9; text-align: center;">
+            ⚡ Choose two survivors → create a new Gen creature (traits inherited)
+        </div>
+    </div>
+    <div class="footer-note">
+        👥 Pass the device · Each player rolls for their creature · Survive & breed for 3 generations!
+    </div>
+</div>
+
+<script>
+    (function(){
+        "use strict";
+
+        // ---------- GAME DATA ----------
+        const TRAITS = [
+            { id: 'wings', name: '🪽 Wings' },
+            { id: 'teeth', name: '🦷 Sharp Teeth' },
+            { id: 'camou', name: '🍃 Camouflage' },
+            { id: 'speed', name: '⚡ Speed' }
+        ];
+
+        // Environment cards (each has two conditions, we pick one randomly when drawn)
+        const ENV_CARDS = [
+            { 
+                name: '🌋 Volcanic Eruption', 
+                conditions: [
+                    { desc: 'Ash clouds block sun — creatures with Wings thrive (+1)', mod: { wings: 1, speed: 0, teath: 0, camou: -1 } },
+                    { desc: 'Lava flows — fast creatures escape (+1), camouflage useless (-1)', mod: { speed: 1, wings: 0, teath: 0, camou: -1 } }
+                ]
+            },
+            { 
+                name: '🍫 Candy Rain', 
+                conditions: [
+                    { desc: 'Chocolate candies everywhere — sharp teeth help crack shells (+1)', mod: { teath: 1, wings: 0, speed: 0, camou: -1 } },
+                    { desc: 'Marshmallow flood — camouflage lets you sneak (+1), teeth useless', mod: { camou: 1, teath: -1, wings: 0, speed: 0 } }
+                ]
+            },
+            { 
+                name: '🦅 Hawkins giganticus', 
+                conditions: [
+                    { desc: 'Flying predator snatches by antennae — Wings give escape (+1)', mod: { wings: 1, teath: -1, speed: 0, camou: 0 } },
+                    { desc: 'Blind army ants attack — Speed helps (+1), Wings useless', mod: { speed: 1, wings: -1, teath: 0, camou: 0 } }
+                ]
+            },
+            { 
+                name: '🏔️ Mountainous terrain', 
+                conditions: [
+                    { desc: 'Steep cliffs — Wings (+1), Speed helps (+1), Teeth no effect', mod: { wings: 1, speed: 1, teath: 0, camou: 0 } },
+                    { desc: 'Rock slides — Camouflage to hide (+1), Teeth irrelevant', mod: { camou: 1, teath: -1, wings: 0, speed: 0 } }
+                ]
+            },
+            { 
+                name: '🌊 Swampy land', 
+                conditions: [
+                    { desc: 'Thick mud — Speed (+1), Wings get wet (-1)', mod: { speed: 1, wings: -1, teath: 0, camou: 0 } },
+                    { desc: 'Hidden predators — Camouflage (+1), Teeth useless', mod: { camou: 1, teath: -1, wings: 0, speed: 0 } }
+                ]
+            }
+        ];
+
+        // ----- state -----
+        let players = [
+            { name: 'Alex', creatureId: 'c1' },
+            { name: 'Jordan', creatureId: 'c2' },
+            { name: 'Taylor', creatureId: 'c3' }
+        ];
+
+        let creatures = [
+            { id: 'c1', name: 'Fangor', generation: 1, traits: ['teath', 'speed'], alive: true, owner: 0 },
+            { id: 'c2', name: 'Aerix', generation: 1, traits: ['wings', 'camou'], alive: true, owner: 1 },
+            { id: 'c3', name: 'Swiftclaw', generation: 1, traits: ['speed', 'teath'], alive: true, owner: 2 }
+        ];
+
+        let currentEnv = null;           // { name, desc, mod }
+        let currentEnvCondition = null;
+        let round = 1;                   // 1,2,3 within cycle
+        let cycle = 1;                   // 1.. (new env every 3 rounds)
+        let gameActive = true;
+        let nextCreatureId = 100;
+
+        // Helper functions
+        function getCreatureModifier(creature, envMod) {
+            let mod = 0;
+            if (!envMod) return 0;
+            for (let trait of creature.traits) {
+                if (envMod.hasOwnProperty(trait)) {
+                    mod += envMod[trait];
+                }
+            }
+            return mod;
+        }
+
+        // Survival roll (d6 + mod, need >=3)
+        function rollSurvival(modifier) {
+            const roll = Math.floor(Math.random() * 6) + 1;
+            return { roll, total: roll + modifier, survived: (roll + modifier) >= 3 };
+        }
+
+        // Draw random environment (pick random card, then random condition)
+        function drawEnvironment() {
+            const card = ENV_CARDS[Math.floor(Math.random() * ENV_CARDS.length)];
+            const condition = card.conditions[Math.floor(Math.random() * card.conditions.length)];
+            return {
+                name: card.name,
+                desc: condition.desc,
+                mod: condition.mod
+            };
+        }
+
+        // Reset survival results but keep alive status (unless dead)
+        function resetRollDisplay() {
+            renderCreatures();
+        }
+
+        // Render all creature cards
+        function renderCreatures() {
+            const container = document.getElementById('creatureContainer');
+            let html = '';
+            for (let i = 0; i < creatures.length; i++) {
+                const c = creatures[i];
+                const player = players[c.owner];
+                const modifier = currentEnv ? getCreatureModifier(c, currentEnv.mod) : 0;
+                const modText = (modifier > 0 ? `+${modifier}` : `${modifier}`);
+                
+                // Determine if we should show roll result (stored in dataset later)
+                const savedRoll = c.lastRoll; // we'll store temporarily
+                let survivalDisplay = '';
+                let rollBtnDisabled = !c.alive || !currentEnv || !gameActive;
+                
+                if (c.alive && c.survivalRollResult) {
+                    const res = c.survivalRollResult;
+                    survivalDisplay = `<span class="${res.survived ? 'alive-text' : 'dead-text'}">${res.roll} + ${modifier} = ${res.total} ${res.survived ? '✓' : '✗'}</span>`;
+                } else if (!c.alive) {
+                    survivalDisplay = `<span class="dead-text">☠️ EXTINCT</span>`;
+                } else {
+                    survivalDisplay = `<span style="opacity:0.7;">❓ roll</span>`;
+                }
+
+                html += `
+                    <div class="creature-card ${c.alive ? '' : 'dead-card'}">
+                        <div class="creature-header">
+                            <span class="creature-name">${c.name}</span>
+                            <span class="gen-badge">Gen ${c.generation}</span>
+                        </div>
+                        <div class="player-tag">👤 ${player.name}</div>
+                        <div class="traits">
+                            ${c.traits.map(tid => {
+                                const trait = TRAITS.find(t=>t.id===tid);
+                                return `<span class="trait-tag">${trait ? trait.name : tid}</span>`;
+                            }).join('')}
+                        </div>
+                        <div class="modifier-badge">
+                            🌿 ENV mod: ${modText}
+                        </div>
+                        <div class="survival-area">
+                            <button class="roll-btn" data-creature-id="${c.id}" ${rollBtnDisabled ? 'disabled' : ''}>🎲 Roll</button>
+                            <div class="survival-result" id="result-${c.id}">${survivalDisplay}</div>
+                        </div>
+                        ${!c.alive ? '<div class="dead-msg">— lost to evolution —</div>' : ''}
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+
+            // Attach event listeners to roll buttons
+            document.querySelectorAll('.roll-btn[data-creature-id]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const cid = btn.dataset.creatureId;
+                    handleRollSurvival(cid);
+                });
+            });
+
+            // Update mate dropdowns
+            updateMateSelects();
+        }
+
+        function handleRollSurvival(creatureId) {
+            if (!currentEnv) { alert('Draw an environment first!'); return; }
+            const creature = creatures.find(c => c.id === creatureId);
+            if (!creature || !creature.alive) return;
+            
+            const modifier = getCreatureModifier(creature, currentEnv.mod);
+            const result = rollSurvival(modifier);
+            creature.survivalRollResult = result;
+            creature.alive = result.survived;  // update alive status
+            
+            // If died, mark
+            renderCreatures();
+            updateMateSelects();
+        }
+
+        // Roll survival for all alive creatures
+        function rollAllSurvival() {
+            if (!currentEnv) { alert('Draw an environment first!'); return; }
+            creatures.forEach(c => {
+                if (c.alive) {
+                    const mod = getCreatureModifier(c, currentEnv.mod);
+                    const result = rollSurvival(mod);
+                    c.survivalRollResult = result;
+                    c.alive = result.survived;
+                }
+            });
+            renderCreatures();
+        }
+
+        // Update dropdowns for mating (only alive creatures)
+        function updateMateSelects() {
+            const aliveCreatures = creatures.filter(c => c.alive);
+            const sel1 = document.getElementById('parent1Select');
+            const sel2 = document.getElementById('parent2Select');
+            if (!sel1 || !sel2) return;
+            
+            let options = '';
+            aliveCreatures.forEach(c => {
+                const player = players[c.owner];
+                options += `<option value="${c.id}">${c.name} (Gen ${c.generation}) - ${player.name}</option>`;
+            });
+            sel1.innerHTML = options;
+            sel2.innerHTML = options;
+            
+            // If less than 2 alive, disable mate button
+            const mateBtn = document.getElementById('mateBtn');
+            mateBtn.disabled = (aliveCreatures.length < 2);
+        }
+
+                // Breed offspring
+        function breedOffspring(parent1Id, parent2Id) {
+            const p1 = creatures.find(c => c.id === parent1Id);
+            const p2 = creatures.find(c => c.id === parent2Id);
+            if (!p1 || !p2 || !p1.alive || !p2.alive) return null;
+            if (p1.id === p2.id) { alert('Choose two different parents!'); return null; }
+
+            // Combine traits: each trait from one parent (random)
+            const allTraits = [...new Set([...p1.traits, ...p2.traits])];
+            const inherited = [];
+            allTraits.forEach(trait => {
+                // randomly pick from which parent (if both have, still pick one)
+                const fromP1 = p1.traits.includes(trait);
+                const fromP2 = p2.traits.includes(trait);
+                if (fromP1 && fromP2) {
+                    inherited.push(trait); // both have, always inherit
+                } else if (fromP1 || fromP2) {
+                    // 50% chance if only one has it
+                    if (Math.random() < 0.5) inherited.push(trait);
+                }
+            });
+            // Ensure at least one trait
+            if (inherited.length === 0 && allTraits.length>0) {
+                inherited.push(allTraits[Math.floor(Math.random()*allTraits.length)]);
+            }
+
+            const newGen = Math.max(p1.generation, p2.generation) + 1;
+            // Assign to a player? pass-around style: we'll assign to a new "player"? For simplicity, we assign to a new player "Offspring keeper"
+            // But better: let user choose? For simplicity, we add a new player slot or assign to a random existing? 
+            // We'll create a new player entry "New Player X" to pass around.
+            const newPlayerIndex = players.length;
+            players.push({ name: `Explorer ${newPlayerIndex+1}`, creatureId: null });
+            
+            const newId = `c${nextCreatureId++}`;
+            const offspring = {
+                id: newId,
+                name: `${p1.name.slice(0,3)}${p2.name.slice(0,3)}-ling`,
+                generation: newGen,
+                traits: inherited,
+                alive: true,
+                owner: newPlayerIndex,
+                survivalRollResult: null
+            };
+            creatures.push(offspring);
+            players[newPlayerIndex].creatureId = newId;
+            
+            return offspring;
+        }
+
+        // Advance round (up to 3, then new environment)
+        function nextRound() {
+            if (round < 3) {
+                round++;
+            } else {
+                // cycle complete: new environment and reset round to 1
+                cycle++;
+                round = 1;
+                const newEnv = drawEnvironment();
+                currentEnv = newEnv;
+                // clear roll results
+                creatures.forEach(c => { c.survivalRollResult = null; });
+            }
+            updateUI();
+            renderCreatures();
+        }
+
+        function newEnvironmentAction() {
+            const newEnv = drawEnvironment();
+            currentEnv = newEnv;
+            // reset round to 1, cycle continues
+            round = 1;
+            // clear survival results
+            creatures.forEach(c => { c.survivalRollResult = null; });
+            updateUI();
+            renderCreatures();
+        }
+
+        function updateUI() {
+            if (currentEnv) {
+                document.getElementById('envName').innerText = currentEnv.name;
+                document.getElementById('envDesc').innerText = currentEnv.desc;
+            } else {
+                document.getElementById('envName').innerText = 'No environment';
+                document.getElementById('envDesc').innerText = 'Draw an environment card';
+            }
+            document.getElementById('roundDisplay').innerText = `Round ${round} / 3`;
+            document.getElementById('cycleDisplay').innerText = `Cycle ${cycle}`;
+        }
+
+        // Initialize
+        function initGame() {
+            // assign creature ids to players
+            players.forEach((p, idx) => { if (creatures[idx]) p.creatureId = creatures[idx].id; });
+            renderCreatures();
+            updateUI();
+            
+            document.getElementById('newEnvBtn').addEventListener('click', () => {
+                newEnvironmentAction();
+            });
+            document.getElementById('rollAllSurvivalBtn').addEventListener('click', () => {
+                rollAllSurvival();
+            });
+            document.getElementById('nextRoundBtn').addEventListener('click', () => {
+                nextRound();
+            });
+            document.getElementById('mateBtn').addEventListener('click', () => {
+                const p1 = document.getElementById('parent1Select').value;
+                const p2 = document.getElementById('parent2Select').value;
+                if (!p1 || !p2) return;
+                const offspring = breedOffspring(p1, p2);
+                if (offspring) {
+                    renderCreatures();
+                    updateMateSelects();
+                    alert(`🐣 New creature born: ${offspring.name} (Gen ${offspring.generation})! Pass to a new player.`);
+                }
+            });
+        }
+
+        // Start
+        initGame();
+    })();
+</script>
+</body>
+</html>
