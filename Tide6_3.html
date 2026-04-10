@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🌍🌕☀️ Tides on Earth · Amphidromic Animation</title>
+  <title>🌍🌊 Harmonic Tide Model · Amphidromic + Constituents</title>
   <style>
     body {
       margin: 0;
@@ -57,11 +57,7 @@
       background: transparent;
       border: 1.5px solid #2a9d8f;
     }
-    .slider-container {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .slider-container { display: flex; align-items: center; gap: 12px; }
     input[type="range"] { width: 140px; }
     label { display: flex; align-items: center; gap: 8px; }
     #stats {
@@ -87,7 +83,6 @@
       border-radius: 30px;
       font-size: 0.8rem;
       backdrop-filter: blur(4px);
-      pointer-events: none;
     }
     .colorbar {
       position: absolute;
@@ -113,12 +108,12 @@
 </head>
 <body>
   <div id="info">
-    <h1 style="margin:0 0 8px; font-weight:500;">🌍🌊 Tides on Earth · Amphidromic Systems</h1>
-    <div id="dynamicInfo">Earth orbits Sun · Moon inclined 5.1° · M2 + S2</div>
+    <h1 style="margin:0 0 8px; font-weight:500;">🌍🌊 Harmonic Tide Model (9 constituents)</h1>
+    <div id="dynamicInfo">M2 S2 N2 K1 O1 P1 K2 Q1 M4 · Amphidromic patterns</div>
   </div>
   <div id="note">🖱️ Drag to rotate · Scroll to zoom</div>
   <div id="stats">
-    <span>⏱️ Time: <span id="timeDisplay">0.0 d</span> · Tidal Range: <span id="rangeDisplay">0.0 m</span> · <span id="tideType">Spring</span></span>
+    <span>⏱️ Time: <span id="timeDisplay">0.0 d</span> · Max Range: <span id="rangeDisplay">0.0 m</span> · <span id="tideType">Spring</span></span>
   </div>
   
   <div class="colorbar"></div>
@@ -131,9 +126,9 @@
       <span>⏩ Speed</span>
       <input type="range" id="speedSlider" min="0.0" max="3.0" step="0.1" value="1.0">
     </div>
-    <label><input type="checkbox" id="showOrbitsCheck" checked> Show Orbits</label>
-    <label><input type="checkbox" id="showCoRangeCheck" checked> Show Co‑range Lines</label>
-    <label><input type="checkbox" id="showCelestialCheck" checked> Show Sun & Moon</label>
+    <label><input type="checkbox" id="showOrbitsCheck" checked> Orbits</label>
+    <label><input type="checkbox" id="showCoRangeCheck" checked> Co‑range lines</label>
+    <label><input type="checkbox" id="showCelestialCheck" checked> Sun & Moon</label>
   </div>
 
   <script type="importmap">
@@ -204,7 +199,7 @@
     starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
     scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.08})));
     
-    // --- Sun (center) ---
+    // --- Sun ---
     const sun = new THREE.Mesh(new THREE.SphereGeometry(2.5, 32, 16), 
       new THREE.MeshStandardMaterial({ color: 0xffaa33, emissive: new THREE.Color(0xff5500), emissiveIntensity: 1.5 }));
     scene.add(sun);
@@ -215,7 +210,7 @@
     sunLabel.position.set(0, 3.5, 0);
     sun.add(sunLabel);
     
-    // --- Earth (will orbit Sun) ---
+    // --- Earth ---
     const earth = new THREE.Mesh(new THREE.SphereGeometry(1.8, 64, 32),
       new THREE.MeshPhongMaterial({
         map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'),
@@ -227,7 +222,7 @@
     const clouds = new THREE.Mesh(new THREE.SphereGeometry(1.81, 64, 32),
       new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png'), transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending }));
     earth.add(clouds);
-    earth.rotation.z = -0.41; // axial tilt
+    earth.rotation.z = -0.41;
     
     const earthLabel = new CSS2DObject(document.createElement('div'));
     earthLabel.element.textContent = '🌍 Earth';
@@ -246,7 +241,7 @@
     moonLabel.position.set(0, 1.2, 0);
     moon.add(moonLabel);
     
-    // --- Orbits (visual lines) ---
+    // --- Orbits ---
     const earthOrbitRadius = 12.0;
     const moonOrbitRadius = 4.5;
     const moonInclination = 5.145 * Math.PI/180;
@@ -266,57 +261,103 @@
     scene.add(earthOrbitLine);
     scene.add(moonOrbitLine);
     
-    // --- Amphidromic Points (same as before) ---
+    // --- Harmonic Constituent Data (speeds in °/h) ---
+    const CONSTITUENTS = [
+      { name: 'M2', speed: 28.984104, baseAmp: 1.0 },
+      { name: 'S2', speed: 30.0, baseAmp: 0.46 },
+      { name: 'N2', speed: 28.43973, baseAmp: 0.19 },
+      { name: 'K1', speed: 15.041069, baseAmp: 0.58 },
+      { name: 'O1', speed: 13.943035, baseAmp: 0.42 },
+      { name: 'P1', speed: 14.958931, baseAmp: 0.19 },
+      { name: 'K2', speed: 30.082137, baseAmp: 0.12 },
+      { name: 'Q1', speed: 13.398661, baseAmp: 0.08 },
+      { name: 'M4', speed: 57.968208, baseAmp: 0.15 }
+    ];
+    
+    // Amphidromic points (simplified global set)
     const amphidromicPoints = [
       { lon: -140, lat: 30, rot: 1 }, { lon: 160, lat: -20, rot: -1 }, { lon: -30, lat: 20, rot: 1 },
       { lon: 10, lat: -30, rot: -1 }, { lon: 80, lat: 0, rot: -1 }, { lon: -100, lat: -40, rot: 1 },
       { lon: 120, lat: 30, rot: -1 }, { lon: -50, lat: -10, rot: 1 }
     ];
     
+    // Generate grid points and constituent amplitudes/phases
     const gridRes = 36;
     const points = [];
-    const amps = [], phases = [];
+    const markerData = []; // each entry: { mesh, constAmps: [], constPhases: [] }
+    
+    // Precompute per-constituent amphidromic patterns
     for (let i = 0; i <= gridRes; i++) {
       const lat = -Math.PI/2 + (i/gridRes)*Math.PI;
       const numLon = Math.max(16, Math.floor(gridRes*2*Math.cos(lat)));
       for (let j = 0; j < numLon; j++) {
         const lon = (j/numLon)*Math.PI*2 - Math.PI;
-        let totA=0, totP=0, totW=0;
-        amphidromicPoints.forEach(ap => {
-          const apl = ap.lat*Math.PI/180, aplo = ap.lon*Math.PI/180;
-          const dLat = lat-apl, dLon = lon-aplo;
-          const a = Math.sin(dLat/2)**2 + Math.cos(lat)*Math.cos(apl)*Math.sin(dLon/2)**2;
-          const dist = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-          const amp = Math.min(3.0, dist*7.0);
-          const bearing = Math.atan2(Math.sin(dLon)*Math.cos(lat), Math.cos(apl)*Math.sin(lat)-Math.sin(apl)*Math.cos(lat)*Math.cos(dLon));
-          const phase = (bearing + ap.rot*dist*2.5) % (2*Math.PI);
-          const w = Math.exp(-dist*1.8);
-          totA += amp*w; totP += phase*w; totW += w;
+        
+        // Compute constituent amplitudes and phases based on amphidromic model
+        const constAmps = [];
+        const constPhases = [];
+        
+        CONSTITUENTS.forEach(c => {
+          let totA = 0, totP = 0, totW = 0;
+          amphidromicPoints.forEach(ap => {
+            const apl = ap.lat*Math.PI/180, aplo = ap.lon*Math.PI/180;
+            const dLat = lat-apl, dLon = lon-aplo;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat)*Math.cos(apl)*Math.sin(dLon/2)**2;
+            const dist = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            // Amplitude scaling: varies by constituent type
+            let ampScale = c.baseAmp;
+            if (c.name.includes('2')) ampScale *= 1.2; // semidiurnal stronger
+            const amp = Math.min(2.5, dist * 5.0) * ampScale;
+            
+            // Phase: rotates around point, direction depends on constituent type (simplified)
+            const bearing = Math.atan2(Math.sin(dLon)*Math.cos(lat), Math.cos(apl)*Math.sin(lat)-Math.sin(apl)*Math.cos(lat)*Math.cos(dLon));
+            let phaseOffset = 0;
+            if (c.name === 'K1' || c.name === 'O1') phaseOffset = 1.2;
+            if (c.name === 'M4') phaseOffset = 0.8;
+            const phase = (bearing + ap.rot * dist * 2.5 + phaseOffset) % (2*Math.PI);
+            
+            const w = Math.exp(-dist * 1.8);
+            totA += amp * w;
+            totP += phase * w;
+            totW += w;
+          });
+          
+          constAmps.push(totW > 0 ? totA / totW : 0);
+          constPhases.push(totW > 0 ? totP / totW : 0);
         });
-        const fa = totW>0?totA/totW:0, fp = totW>0?totP/totW:0;
-        const x = Math.cos(lat)*Math.cos(lon), y = Math.sin(lat), z = Math.cos(lat)*Math.sin(lon);
-        points.push({pos: new THREE.Vector3(x,y,z)});
-        amps.push(fa); phases.push(fp);
+        
+        const pos = new THREE.Vector3(
+          Math.cos(lat)*Math.cos(lon),
+          Math.sin(lat),
+          Math.cos(lat)*Math.sin(lon)
+        );
+        points.push(pos);
+        markerData.push({ constAmps, constPhases });
       }
     }
     
-    // --- Tide visualization attached to Earth ---
+    // --- Earth-attached visualization ---
     const earthGroup = new THREE.Group();
     earth.add(earthGroup);
     
-    // Markers
-    const markerGroup = new THREE.Group();
     const meshes = [];
-    points.forEach((p, idx) => {
-      if (amps[idx] < 0.05) return;
+    points.forEach((pos, idx) => {
+      const data = markerData[idx];
+      if (data.constAmps.reduce((a,b)=>a+b,0) < 0.1) return;
+      
       const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6), new THREE.MeshPhongMaterial({transparent: true}));
-      sphere.position.copy(p.pos.clone().multiplyScalar(1.85));
-      markerGroup.add(sphere);
-      meshes.push({mesh: sphere, amp: amps[idx], phase: phases[idx]});
+      sphere.position.copy(pos.clone().multiplyScalar(1.85));
+      earthGroup.add(sphere);
+      
+      meshes.push({
+        mesh: sphere,
+        constAmps: data.constAmps,
+        constPhases: data.constPhases
+      });
     });
-    earthGroup.add(markerGroup);
     
-    // Co-range lines
+    // Co-range lines (static for now)
     const coRangeGroup = new THREE.Group();
     amphidromicPoints.forEach(ap => {
       const apl = ap.lat*Math.PI/180, aplo = ap.lon*Math.PI/180;
@@ -344,7 +385,7 @@
     });
     earthGroup.add(amphGroup);
     
-    // --- UI ---
+    // --- UI elements ---
     const timeDisp = document.getElementById('timeDisplay');
     const rangeDisp = document.getElementById('rangeDisplay');
     const tideTypeSpan = document.getElementById('tideType');
@@ -355,49 +396,62 @@
     const showCoRange = document.getElementById('showCoRangeCheck');
     const showCelestial = document.getElementById('showCelestialCheck');
     
-    let time = 0, isPlaying = true, speed = 1.0;
-    const lunarPeriod = 27.32; // days
-    const earthPeriod = 365.25; // days
+    let timeHours = 0; // hours
+    let isPlaying = true;
+    let speed = 1.0;
+    const hoursPerDay = 24;
     
-    function getColor(amp) {
-      const t = Math.min(amp/3.0, 1.0);
-      if (t<0.33) return new THREE.Color().lerpColors(new THREE.Color(0x0000ff), new THREE.Color(0x00ffff), t/0.33);
-      if (t<0.66) return new THREE.Color().lerpColors(new THREE.Color(0x00ffff), new THREE.Color(0xffff00), (t-0.33)/0.33);
+    function getColor(val, maxVal = 2.5) {
+      const t = Math.min(val / maxVal, 1.0);
+      if (t < 0.33) return new THREE.Color().lerpColors(new THREE.Color(0x0000ff), new THREE.Color(0x00ffff), t/0.33);
+      if (t < 0.66) return new THREE.Color().lerpColors(new THREE.Color(0x00ffff), new THREE.Color(0xffff00), (t-0.33)/0.33);
       return new THREE.Color().lerpColors(new THREE.Color(0xffff00), new THREE.Color(0xff0000), (t-0.66)/0.34);
     }
     
+    function computeTidalHeight(constAmps, constPhases, tHours) {
+      let total = 0;
+      for (let i = 0; i < CONSTITUENTS.length; i++) {
+        const c = CONSTITUENTS[i];
+        const arg = (c.speed * tHours - constPhases[i]) * Math.PI / 180;
+        total += constAmps[i] * Math.cos(arg);
+      }
+      return total;
+    }
+    
     function update() {
-      const moonAngle = (time / lunarPeriod) * 2 * Math.PI;
-      const earthAngle = (time / earthPeriod) * 2 * Math.PI;
+      // Update celestial positions (using days for orbit)
+      const days = timeHours / 24;
+      const moonAngle = (days / 27.32) * 2 * Math.PI;
+      const earthAngle = (days / 365.25) * 2 * Math.PI;
       
-      // Earth position (orbits Sun)
       const earthX = Math.cos(earthAngle) * earthOrbitRadius;
       const earthZ = Math.sin(earthAngle) * earthOrbitRadius;
       earth.position.set(earthX, 0, earthZ);
       
-      // Moon position (inclined orbit relative to Earth)
       const moonOffsetX = Math.cos(moonAngle) * moonOrbitRadius;
       const moonOffsetZ = Math.sin(moonAngle) * moonOrbitRadius * Math.cos(moonInclination);
       const moonOffsetY = Math.sin(moonAngle) * moonOrbitRadius * Math.sin(moonInclination);
       moon.position.set(earthX + moonOffsetX, moonOffsetY, earthZ + moonOffsetZ);
-      
       moonOrbitLine.position.copy(earth.position);
       
-      // Earth-relative directions for tide
+      // Spring/neap factor from Sun-Moon alignment
       const toSun = new THREE.Vector3().subVectors(sun.position, earth.position).normalize();
       const toMoon = new THREE.Vector3().subVectors(moon.position, earth.position).normalize();
       const cosAng = toSun.dot(toMoon);
-      const combFactor = Math.sqrt(1 + 0.46*0.46 + 2*0.46*cosAng);
+      const springFactor = 0.7 + 0.3 * cosAng; // simple modulation
       
-      // Update tide markers (relative to Earth)
+      // Update tide markers using harmonic sum
+      let maxAmp = 0;
       meshes.forEach(m => {
-        const h = m.amp * Math.cos((time * 24 / 12.42) * 2 * Math.PI - m.phase) * combFactor;
-        m.mesh.material.color.set(getColor(Math.abs(h)*1.8));
-        m.mesh.scale.setScalar(1 + Math.abs(h)*0.2);
+        const height = computeTidalHeight(m.constAmps, m.constPhases, timeHours) * springFactor;
+        const absH = Math.abs(height);
+        if (absH > maxAmp) maxAmp = absH;
+        m.mesh.material.color.set(getColor(absH, 2.2));
+        m.mesh.scale.setScalar(1 + absH * 0.2);
       });
       
-      rangeDisp.textContent = (Math.max(...amps)*combFactor).toFixed(2);
-      timeDisp.textContent = time.toFixed(1);
+      rangeDisp.textContent = maxAmp.toFixed(2);
+      timeDisp.textContent = days.toFixed(2);
       tideTypeSpan.textContent = cosAng > 0.8 ? '🌕 Spring' : (cosAng < -0.8 ? '🌓 Neap' : '↗️ Mixed');
       
       clouds.rotation.y += 0.005;
@@ -406,7 +460,10 @@
     
     function animate() {
       requestAnimationFrame(animate);
-      if (isPlaying) { time += 0.02 * speed; update(); }
+      if (isPlaying) {
+        timeHours += 0.1 * speed;
+        update();
+      }
       earthOrbitLine.visible = moonOrbitLine.visible = showOrbits.checked;
       coRangeGroup.visible = showCoRange.checked;
       sun.visible = moon.visible = showCelestial.checked;
@@ -415,8 +472,11 @@
       labelRenderer.render(scene, camera);
     }
     
-    playBtn.addEventListener('click', () => { isPlaying = !isPlaying; playBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play'; });
-    resetBtn.addEventListener('click', () => { time = 0; update(); });
+    playBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      playBtn.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+    });
+    resetBtn.addEventListener('click', () => { timeHours = 0; update(); });
     speedSlider.addEventListener('input', e => speed = parseFloat(e.target.value));
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
