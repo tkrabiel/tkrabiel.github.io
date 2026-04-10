@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🌍 Tide 6 · 3D Tidal Orrery (Fixed Bulge & Vectors)</title>
+  <title>🌍 Tide 6 · 3D Tidal Orrery (Bulge & Moon Fixed)</title>
   <style>
     body {
       margin: 0;
@@ -97,7 +97,7 @@
 </head>
 <body>
   <div id="info">
-    <h1 style="margin:0 0 5px; font-weight:500;">🌍🌙☀️ 3D Tidal Orrery · Smooth Bulge</h1>
+    <h1 style="margin:0 0 5px; font-weight:500;">🌍🌙☀️ 3D Tidal Orrery · Moon Inclined Orbit</h1>
     <div id="dynamicInfo">Spring tide · Moon & Sun aligned</div>
   </div>
   <div id="note">🖱️ Drag to rotate · Scroll to zoom</div>
@@ -110,7 +110,6 @@
       <span>⏩ Speed</span>
       <input type="range" id="speedSlider" min="0.0" max="3.0" step="0.1" value="1.0">
     </div>
-    <label><input type="checkbox" id="showVectorsCheck" checked> Show force vectors</label>
     <label><input type="checkbox" id="showOrbitsCheck" checked> Show orbits</label>
     <label><input type="checkbox" id="showBulgeCheck" checked> Show tidal bulge</label>
     <label><input type="checkbox" id="showDeclinationCheck"> Show declination axis</label>
@@ -187,7 +186,7 @@
     const stars = new THREE.Points(starsGeometry, starsMaterial);
     scene.add(stars);
     
-    // Ecliptic grid
+    // Ecliptic grid (Earth's orbital plane: XZ plane, Y=0)
     const gridHelper = new THREE.GridHelper(60, 20, 0x3a6ea5, 0x1a3a5a);
     scene.add(gridHelper);
     
@@ -206,7 +205,7 @@
     sunLabel.position.set(0, 3.5, 0);
     sun.add(sunLabel);
     
-    // Earth
+    // Earth (orbits in XZ plane)
     const earthGeo = new THREE.SphereGeometry(1.2, 48, 24);
     const textureLoader = new THREE.TextureLoader();
     const earthMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
@@ -229,7 +228,7 @@
     const clouds = new THREE.Mesh(cloudGeo, cloudMat);
     earth.add(clouds);
     
-    earth.rotation.z = -0.15; // tilt
+    earth.rotation.z = -0.41; // ~23.5° tilt
     
     const earthLabelDiv = document.createElement('div');
     earthLabelDiv.textContent = '🌍 Earth';
@@ -257,17 +256,6 @@
     const bulge = new THREE.Mesh(bulgeGeo, bulgeMat);
     earth.add(bulge);
     
-    // Vectors
-    function createArrow(color, length = 2.5) {
-      return new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), length, color, 0.8, 0.4);
-    }
-    const lunarVector = createArrow(0x3a9bdc, 3.0);
-    const solarVector = createArrow(0xf4c542, 2.5);
-    const totalVector = createArrow(0xffffff, 3.5);
-    earth.add(lunarVector);
-    earth.add(solarVector);
-    earth.add(totalVector);
-    
     // Declination axis
     const axisLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -2.2, 0), new THREE.Vector3(0, 2.2, 0)]),
@@ -279,10 +267,19 @@
     const moonOrbitPoints = [];
     const earthOrbitPoints = [];
     const segments = 128;
+    const moonOrbitRadius = 6.5;
+    const earthOrbitRadius = 16.0;
+    const moonInclination = 5.145 * Math.PI/180; // standard lunar inclination to ecliptic
+    
     for (let i = 0; i <= segments; i++) {
       const angle = (i / segments) * Math.PI * 2;
-      moonOrbitPoints.push(new THREE.Vector3(Math.cos(angle) * 6.5, 0, Math.sin(angle) * 6.5));
-      earthOrbitPoints.push(new THREE.Vector3(Math.cos(angle) * 16.0, 0, Math.sin(angle) * 16.0));
+      // Earth orbit: flat in XZ plane (Y=0)
+      earthOrbitPoints.push(new THREE.Vector3(Math.cos(angle) * earthOrbitRadius, 0, Math.sin(angle) * earthOrbitRadius));
+      // Moon orbit: inclined relative to XZ plane
+      const x = Math.cos(angle) * moonOrbitRadius;
+      const z = Math.sin(angle) * moonOrbitRadius * Math.cos(moonInclination);
+      const y = Math.sin(angle) * moonOrbitRadius * Math.sin(moonInclination);
+      moonOrbitPoints.push(new THREE.Vector3(x, y, z));
     }
     const moonOrbitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(moonOrbitPoints), new THREE.LineBasicMaterial({ color: 0x88aacc }));
     const earthOrbitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(earthOrbitPoints), new THREE.LineBasicMaterial({ color: 0xccaa88 }));
@@ -295,13 +292,11 @@
     let speed = 1.0;
     const moonPeriod = 24.84;
     const earthPeriod = 8766;
-    const moonInclination = 5.1 * Math.PI/180;
     
     // DOM
     const playPauseBtn = document.getElementById('playPauseBtn');
     const resetBtn = document.getElementById('resetBtn');
     const speedSlider = document.getElementById('speedSlider');
-    const showVectorsCheck = document.getElementById('showVectorsCheck');
     const showOrbitsCheck = document.getElementById('showOrbitsCheck');
     const showBulgeCheck = document.getElementById('showBulgeCheck');
     const showDeclinationCheck = document.getElementById('showDeclinationCheck');
@@ -313,22 +308,23 @@
       const moonAngle = (time * 2 * Math.PI / moonPeriod) % (2*Math.PI);
       const earthAngle = (time * 2 * Math.PI / earthPeriod) % (2*Math.PI);
       
-      // Earth position
+      // Earth position (in XZ plane, Y=0)
       const earthX = Math.cos(earthAngle) * 16.0;
       const earthZ = Math.sin(earthAngle) * 16.0;
       earth.position.set(earthX, 0, earthZ);
       
-      // Moon position with inclination
-      const moonOffsetX = Math.cos(moonAngle) * 6.5;
-      const moonOffsetZ = Math.sin(moonAngle) * 6.5 * Math.cos(moonInclination);
-      const moonOffsetY = Math.sin(moonAngle) * 6.5 * Math.sin(moonInclination);
+      // Moon position: inclined orbit
+      const moonOrbitRadius = 6.5;
+      const moonOffsetX = Math.cos(moonAngle) * moonOrbitRadius;
+      const moonOffsetZ = Math.sin(moonAngle) * moonOrbitRadius * Math.cos(moonInclination);
+      const moonOffsetY = Math.sin(moonAngle) * moonOrbitRadius * Math.sin(moonInclination);
       moon.position.set(earthX + moonOffsetX, moonOffsetY, earthZ + moonOffsetZ);
       
       // Earth rotation (visual only)
       earth.rotation.y += 0.005;
       clouds.rotation.y += 0.002;
       
-      // Tidal vectors
+      // Tidal bulge direction: combined gravitational pull of Moon and Sun
       const toMoon = new THREE.Vector3().subVectors(moon.position, earth.position).normalize();
       const toSun = new THREE.Vector3().subVectors(sun.position, earth.position).normalize();
       
@@ -342,25 +338,13 @@
       const angleDiff = toMoon.angleTo(toSun);
       const combinedFactor = Math.sqrt(lunarStrength*lunarStrength + solarStrength*solarStrength + 2*lunarStrength*solarStrength*Math.cos(angleDiff));
       
-      // Bulge: scale along totalDir
+      // Bulge: stretch along totalDir
       const bulgeScale = 1.2 + combinedFactor * 0.5;
       bulge.scale.set(bulgeScale, 1.0, 1.0);
       bulge.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0), totalDir);
       bulge.visible = showBulgeCheck.checked;
       
-      // Vectors
-      lunarVector.setDirection(toMoon);
-      lunarVector.setLength(2.5 + combinedFactor*0.5, 0.8, 0.4);
-      solarVector.setDirection(toSun);
-      solarVector.setLength(1.8, 0.6, 0.3);
-      totalVector.setDirection(totalDir);
-      totalVector.setLength(3.0 + combinedFactor*1.2, 1.0, 0.5);
-      
-      lunarVector.visible = showVectorsCheck.checked;
-      solarVector.visible = showVectorsCheck.checked;
-      totalVector.visible = showVectorsCheck.checked;
-      
-      // Orbits
+      // Orbits visibility and position
       moonOrbitLine.visible = showOrbitsCheck.checked;
       earthOrbitLine.visible = showOrbitsCheck.checked;
       moonOrbitLine.position.copy(earth.position);
@@ -396,7 +380,6 @@
     });
     resetBtn.addEventListener('click', resetSimulation);
     speedSlider.addEventListener('input', (e) => speed = parseFloat(e.target.value));
-    showVectorsCheck.addEventListener('change', updateScene);
     showOrbitsCheck.addEventListener('change', updateScene);
     showBulgeCheck.addEventListener('change', updateScene);
     showDeclinationCheck.addEventListener('change', updateScene);
