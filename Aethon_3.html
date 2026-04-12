@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Aethon Tides – Spaceport & Pulse Clock | Abyssal Wind</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: linear-gradient(145deg, #02121f 0%, #000a12 100%);
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            color: #c0f2ff;
+            padding: 20px;
+            margin: 0;
+        }
+        .dashboard {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.6rem;
+            letter-spacing: 2px;
+            border-left: 4px solid #0ff;
+            padding-left: 16px;
+            margin-bottom: 8px;
+        }
+        .sub {
+            color: #7aaab8;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+            padding-left: 20px;
+        }
+        .grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: rgba(5, 20, 30, 0.65);
+            backdrop-filter: blur(4px);
+            border-radius: 28px;
+            border: 1px solid #1a6f7f;
+            padding: 18px 24px;
+            flex: 1;
+            min-width: 260px;
+        }
+        .full-width {
+            width: 100%;
+        }
+        .tide-canvas-container {
+            background: #02121f;
+            border-radius: 24px;
+            padding: 12px;
+            border: 1px solid #2a8f9f;
+        }
+        canvas {
+            width: 100%;
+            background: #010a10;
+            border-radius: 16px;
+            display: block;
+        }
+        .stat {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #7df9ff;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .pulse-indicator {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 14px;
+            background: #0ff;
+            box-shadow: 0 0 8px #0ff;
+            margin-right: 8px;
+            animation: pulseGlow 2s infinite;
+        }
+        @keyframes pulseGlow {
+            0% { opacity: 0.4; transform: scale(0.8);}
+            100% { opacity: 1; transform: scale(1.2);}
+        }
+        .math-box {
+            background: #04161f;
+            border-radius: 20px;
+            padding: 14px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            border-left: 3px solid #0ff;
+            overflow-x: auto;
+        }
+        button {
+            background: #1e5a6e;
+            border: none;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-family: monospace;
+            margin-top: 8px;
+            transition: 0.1s;
+        }
+        button:hover {
+            background: #2e7f8f;
+        }
+        .slider-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 30px;
+            color: #4a7f8f;
+        }
+        @media (max-width: 700px) {
+            .stat { font-size: 1.2rem; }
+            .card { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <h1>🌊 AETHON TIDAL PREDICTOR – AEGIS PRIME SPACEPORT</h1>
+    <div class="sub">⚡ Harmonic constituents: Thalassa (14.2h) • Pelagia (62.3h) • Solar S₂ • Spring‑neap modulation</div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="stat-label">🌙 THALASSA (M₂) PHASE</div>
+            <div class="stat" id="thalPhase">0.00 rad</div>
+            <div class="stat-label">🔁 PELAGIA (P₂) MODULATION</div>
+            <div class="stat" id="pelPhase">0.00 rad</div>
+            <div class="stat-label">⏱️ LOCAL PULSE TIME</div>
+            <div class="stat" id="pulseTime">0:00</div>
+            <div class="pulse-indicator"></div>
+            <span style="font-size:0.7rem;">Thalassa heartbeat</span>
+        </div>
+        <div class="card">
+            <div class="stat-label">📈 CURRENT TIDE LEVEL (METERS)</div>
+            <div class="stat" id="tideLevel">0.00 m</div>
+            <div class="stat-label">🌊 SPRING‑NEAP INDEX</div>
+            <div class="stat" id="springNeap">0%</div>
+            <div class="stat-label">🚀 SPACEPORT TIDAL RANGE</div>
+            <div class="stat" id="tideRange">0.0 m</div>
+            <div class="slider-container">
+                <span>⏩ SPEED</span>
+                <input type="range" id="speedSlider" min="0" max="3" step="0.02" value="1.0" style="width:160px;">
+                <button id="resetBtn">⟳ RESET TIME</button>
+                <button id="pauseBtn">⏸️ PAUSE</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card full-width tide-canvas-container">
+        <div class="stat-label">📉 TIDAL ELEVATION – AEGIS PRIME (meters above geoid)</div>
+        <canvas id="tideCanvas" width="900" height="280" style="width:100%; height:auto; max-width:100%; aspect-ratio:900/280"></canvas>
+        <div class="math-box" style="margin-top:12px;">
+            <strong>⚙️ HARMONIC MODEL (Spaceport, resonant amplification factor 2.8):</strong><br>
+            η(t) = 1.20·cos(ω<sub>M₂</sub>·t + 0.0) + 0.22·cos(ω<sub>N₂</sub>·t + 0.3) + 0.30·cos(ω<sub>S₂</sub>·t + 0.7) + 0.40·cos(ω<sub>Mf</sub>·t + 0.2) <br>
+            + 0.12·cos(ω<sub>K₁</sub>·t + 1.2) &nbsp;&nbsp; (× resonant gain 2.8 for AegisPrime)
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="stat-label">🔬 CONSTITUENT BREAKDOWN</div>
+            <div id="constituentList" style="font-size:0.8rem; margin-top:8px;"></div>
+        </div>
+        <div class="card">
+            <div class="stat-label">📐 FREQUENCIES (rad/s)</div>
+            <div style="font-size:0.75rem; margin-top:8px;">
+                ω<sub>M₂</sub> = 1.227e-4 &nbsp;| ω<sub>N₂</sub> = 1.219e-4<br>
+                ω<sub>S₂</sub> = 1.454e-4 &nbsp;| ω<sub>Mf</sub> = 2.800e-5<br>
+                ω<sub>K₁</sub> = 7.292e-5
+            </div>
+        </div>
+    </div>
+    <footer>
+        ⚡ Aethon Geoid Model (AGM70) | Tidal prediction based on Thalassa + Pelagia + solar | Spaceport resonance factor applied.
+    </footer>
+</div>
+
+<script>
+    (function() {
+        // --- Physical constants & constituents (Aegis Prime spaceport) ---
+        // Amplitudes (meters) BEFORE resonance
+        const ampM2 = 1.20;      // Thalassa principal
+        const ampN2 = 0.22;      // Thalassa eccentricity
+        const ampS2 = 0.30;      // solar
+        const ampMf = 0.40;      // spring-neap modulation (Pelagia interaction)
+        const ampK1 = 0.12;      // diurnal
+
+        // Frequencies (rad/s) – based on periods
+        const omegaM2 = 2 * Math.PI / (14.2 * 3600);    // 1.227e-4 rad/s
+        const omegaN2 = 2 * Math.PI / (14.2 * 3600 * (1 - 0.009)); // slightly different due to eccentricity, approximated
+        const omegaS2 = 2 * Math.PI / (12.0 * 3600);     // 1.454e-4
+        const omegaMf = 2 * Math.PI / (62.3 * 3600);     // 2.800e-5
+        const omegaK1 = 2 * Math.PI / (23.93 * 3600);    // 7.292e-5
+
+        // Phases (radians) – arbitrary but realistic offsets
+        const phaseM2 = 0.0;
+        const phaseN2 = 0.3;
+        const phaseS2 = 0.7;
+        const phaseMf = 0.2;
+        const phaseK1 = 1.2;
+
+        // Spaceport resonance factor (amplification)
+        const RESONANCE_GAIN = 2.8;
+
+        // Helper to compute total tide elevation at time t (seconds)
+        function computeTide(t) {
+            // raw sum (meters)
+            let eta = ampM2 * Math.cos(omegaM2 * t + phaseM2) +
+                      ampN2 * Math.cos(omegaN2 * t + phaseN2) +
+                      ampS2 * Math.cos(omegaS2 * t + phaseS2) +
+                      ampMf * Math.cos(omegaMf * t + phaseMf) +
+                      ampK1 * Math.cos(omegaK1 * t + phaseK1);
+            return eta * RESONANCE_GAIN;
+        }
+
+        // Helper: spring-neap index (0-100%) based on envelope of Mf modulation
+        function computeSpringNeap(t) {
+            // envelope from the Mf term and alignment of M2 and N2
+            const mfEnv = ampMf * Math.cos(omegaMf * t + phaseMf);
+            const baseEnv = 1.2 + mfEnv * 0.6;
+            let envelope = Math.min(1.8, Math.max(0.4, baseEnv));
+            return Math.floor((envelope - 0.4) / 1.4 * 100);
+        }
+
+        // Display constituent breakdown
+        function updateConstituentList(t) {
+            const m2val = (ampM2 * RESONANCE_GAIN * Math.cos(omegaM2 * t + phaseM2)).toFixed(2);
+            const n2val = (ampN2 * RESONANCE_GAIN * Math.cos(omegaN2 * t + phaseN2)).toFixed(2);
+            const s2val = (ampS2 * RESONANCE_GAIN * Math.cos(omegaS2 * t + phaseS2)).toFixed(2);
+            const mfval = (ampMf * RESONANCE_GAIN * Math.cos(omegaMf * t + phaseMf)).toFixed(2);
+            const k1val = (ampK1 * RESONANCE_GAIN * Math.cos(omegaK1 * t + phaseK1)).toFixed(2);
+            document.getElementById('constituentList').innerHTML = `
+                M₂ (Thalassa): <strong>${m2val} m</strong> &nbsp;| N₂: ${n2val} m <br>
+                S₂ (Solar): ${s2val} m &nbsp;| Mf (spring‑neap): ${mfval} m <br>
+                K₁ (diurnal): ${k1val} m
+            `;
+        }
+
+        // Canvas setup
+        const canvas = document.getElementById('tideCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.clientWidth;
+        let height = canvas.clientHeight;
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width - 24;
+            canvas.height = 280;
+            width = canvas.width;
+            height = canvas.height;
+            drawCanvas();
+        }
+        window.addEventListener('resize', () => resizeCanvas());
+        resizeCanvas();
+
+        let simulationTime = 0;        // seconds
+        let animating = true;
+        let lastTimestamp = 0;
+        let speed = 1.0;               // time multiplier (real sec -> simulation sec)
+        const MAX_TIME = 14 * 86400;   // 14 days in seconds
+
+        // DOM elements
+        const thalPhaseSpan = document.getElementById('thalPhase');
+        const pelPhaseSpan = document.getElementById('pelPhase');
+        const pulseTimeSpan = document.getElementById('pulseTime');
+        const tideLevelSpan = document.getElementById('tideLevel');
+        const springNeapSpan = document.getElementById('springNeap');
+        const tideRangeSpan = document.getElementById('tideRange');
+        const speedSlider = document.getElementById('speedSlider');
+        const resetBtn = document.getElementById('resetBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+
+        speedSlider.addEventListener('input', (e) => { speed = parseFloat(e.target.value); });
+        resetBtn.addEventListener('click', () => { simulationTime = 0; lastTimestamp = performance.now(); drawCanvas(); updateUI(); });
+        pauseBtn.addEventListener('click', () => { animating = !animating; pauseBtn.textContent = animating ? "⏸️ PAUSE" : "▶️ PLAY"; });
+
+        // Update UI (phases, tide, pulse time)
+        function updateUI() {
+            const t = simulationTime;
+            const tide = computeTide(t);
+            // Thalassa phase (radians, based on M2 component)
+            const thalPhase = (omegaM2 * t + phaseM2) % (2*Math.PI);
+            const pelPhase = (omegaMf * t + phaseMf) % (2*Math.PI);
+            thalPhaseSpan.innerText = thalPhase.toFixed(3) + " rad";
+            pelPhaseSpan.innerText = pelPhase.toFixed(3) + " rad";
+            tideLevelSpan.innerText = tide.toFixed(2) + " m";
+            const springNeap = computeSpringNeap(t);
+            springNeapSpan.innerText = springNeap + "%";
+            // tidal range over last 6 hours approx (just for indication)
+            const tide6h = computeTide(t + 21600);
+            const range = Math.abs(tide6h - tide);
+            tideRangeSpan.innerText = range.toFixed(2) + " m";
+            
+            // Pulse time: based on Thalassa's period (14.2h = 51120 sec)
+            const pulsePeriod = 14.2 * 3600;
+            const pulseCount = Math.floor(t / pulsePeriod);
+            const pulseFraction = (t % pulsePeriod) / pulsePeriod;
+            const pulseMin = Math.floor(pulseFraction * 60);
+            const pulseSec = Math.floor((pulseFraction * 60) % 1 * 60);
+            pulseTimeSpan.innerText = `${pulseCount}:${pulseMin.toString().padStart(2,'0')}:${pulseSec.toString().padStart(2,'0')}`;
+            
+            updateConstituentList(t);
+        }
+
+        // Draw tide prediction curve (future 48 hours)
+        let animationFrameId = null;
+        function drawCanvas() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = "#010a10";
+            ctx.fillRect(0, 0, width, height);
+            
+            // Axes
+            ctx.beginPath();
+            ctx.strokeStyle = "#2a7f8f";
+            ctx.lineWidth = 1;
+            ctx.moveTo(40, height/2);
+            ctx.lineTo(width-20, height/2);
+            ctx.moveTo(40, 20);
+            ctx.lineTo(40, height-20);
+            ctx.stroke();
+            
+            // labels
+            ctx.fillStyle = "#8abfd0";
+            ctx.font = "10px monospace";
+            ctx.fillText("Time (hours)", width-80, height-8);
+            ctx.save();
+            ctx.translate(18, height/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText("Tide (m)", -10, 8);
+            ctx.restore();
+            
+            // plot tide from t (simulationTime) to t+48h
+            const startTime = simulationTime;
+            const endTime = startTime + 48 * 3600;
+            const steps = 400;
+            const stepSec = (endTime - startTime) / steps;
+            
+            // find min/max for y scaling (tide range)
+            let minY = 10, maxY = -10;
+            for (let i = 0; i <= steps; i++) {
+                const tCurr = startTime + i * stepSec;
+                const val = computeTide(tCurr);
+                if (val < minY) minY = val;
+                if (val > maxY) maxY = val;
+            }
+            const padding = 0.5;
+            minY = Math.floor(minY - padding);
+            maxY = Math.ceil(maxY + padding);
+            const yRange = maxY - minY;
+            
+            // plot line
+            ctx.beginPath();
+            ctx.strokeStyle = "#0ff";
+            ctx.lineWidth = 2;
+            let first = true;
+            for (let i = 0; i <= steps; i++) {
+                const tCurr = startTime + i * stepSec;
+                const val = computeTide(tCurr);
+                const x = 40 + (i / steps) * (width - 60);
+                const y = height/2 - ((val - minY) / yRange) * (height - 70);
+                if (first) {
+                    ctx.moveTo(x, y);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // highlight current tide marker
+            const currentVal = computeTide(simulationTime);
+            const currX = 40;
+            const currY = height/2 - ((currentVal - minY) / yRange) * (height - 70);
+            ctx.beginPath();
+            ctx.fillStyle = "#ffaa66";
+            ctx.arc(currX, currY, 5, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 10px monospace";
+            ctx.fillText(`${currentVal.toFixed(1)}m`, currX+6, currY-4);
+            
+            // grid lines
+            ctx.beginPath();
+            ctx.strokeStyle = "#2a5f6f";
+            ctx.lineWidth = 0.5;
+            for (let yLev = Math.ceil(minY); yLev <= maxY; yLev++) {
+                const y = height/2 - ((yLev - minY) / yRange) * (height - 70);
+                ctx.moveTo(40, y);
+                ctx.lineTo(width-20, y);
+                ctx.stroke();
+                ctx.fillStyle = "#6a9faf";
+                ctx.fillText(yLev.toFixed(0)+"m", 12, y+3);
+            }
+        }
+
+        // Animation loop
+        let lastFrameTime = performance.now();
+        function animate() {
+            const now = performance.now();
+            let deltaMs = Math.min(100, now - lastFrameTime);
+            if (animating && deltaMs > 0) {
+                const deltaSec = deltaMs / 1000;
+                simulationTime += deltaSec * speed;
+                if (simulationTime > MAX_TIME) simulationTime -= MAX_TIME;
+                if (simulationTime < 0) simulationTime = 0;
+                updateUI();
+                drawCanvas();
+            }
+            lastFrameTime = now;
+            requestAnimationFrame(animate);
+        }
+
+        // initial render
+        updateUI();
+        resizeCanvas();
+        drawCanvas();
+        lastFrameTime = performance.now();
+        animate();
+    })();
+</script>
+</body>
+</html>
