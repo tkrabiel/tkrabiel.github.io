@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XTF Side-Scan Viewer</title>
+    <style>
+        body { font-family: sans-serif; }
+        #container { margin: 20px; }
+        canvas { border: 1px solid #ccc; margin-top: 10px; }
+        #info { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h2>XTF Side-Scan Sonar Waterfall Viewer</h2>
+        <input type="file" id="fileInput" accept=".xtf">
+        <div id="info">Select an XTF file to begin.</div>
+        <canvas id="waterfallCanvas" style="display: none;"></canvas>
+    </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect, false);
+        const canvas = document.getElementById('waterfallCanvas');
+        const ctx = canvas.getContext('2d');
+        const infoDiv = document.getElementById('info');
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            infoDiv.textContent = `Loading ${file.name}...`;
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const arrayBuffer = e.target.result;
+                try {
+                    const waterfallImage = parseXTF(arrayBuffer);
+                    drawWaterfall(waterfallImage);
+                } catch (error) {
+                    infoDiv.textContent = `Error parsing file: ${error.message}`;
+                    console.error(error);
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseXTF(buffer) {
+            const dataView = new DataView(buffer);
+            let offset = 0;
+
+            // --- 1. Read the main file header (1024 bytes) ---
+            const magicNumber = dataView.getUint16(offset, true); // Should be 0xFACE
+            if (magicNumber !== 0xFACE) {
+                throw new Error('Invalid XTF file: Magic number mismatch.');
+            }
+            offset += 2;
+            
+            // Skip to the channel info section (offset 256)
+            offset = 256;
+            const numChannels = dataView.getUint8(offset); // Number of channels to follow
+            infoDiv.textContent += ` Found ${numChannels} channel(s).`;
+
+            // --- 2. Move past the main header to the first packet ---
+            offset = 1024; // Main header is always 1024 bytes
+            const waterfallRows = [];
+            const totalPackets = 0; // Just for info
+
+            // --- 3. Loop through packets ---
+            while (offset < buffer.byteLength) {
+                // Packet header is 256 bytes
+                if (offset + 256 > buffer.byteLength) break;
+
+                const packetMagic = dataView.getUint16(offset, true);
+                // A common magic number for a packet is 0xFACE. This can be used as a sanity check.
+                // offset += 2; // Move past magic number
+
+                // SubChannelNumber at offset 2
+                const subChannelNumber = dataView.getUint8(offset + 2);
+                
+                // NumChansToFollow at offset 3
+                const numChansToFollow = dataView.getUint16(offset + 3, true);
+                
+                // NumBytesThisRecord at offset 8 (This is a 32-bit integer)
+                const packetSize = dataView.getUint32(offset + 8, true);
+                
+                // Validate packet size to avoid reading out of bounds
+                if (packetSize < 256 || offset + packetSize > buffer.byteLength) {
+                    console.warn(`Invalid packet size at offset ${offset}, breaking.`);
+                    break;
+                }
+
+                // --- 4. Process Side-Scan Data (Packet Type 0) ---
+                // We are assuming packet type 0 for side-scan. 
+                // The exact offset for the packet type may vary. 
+                // For simplicity, this example assumes side-scan data is in the first channel.
+                if (numChansToFollow > 0) {
+                    // Calculate start of data. Packet header is 256 bytes.
+                    const dataStart = offset + 256;
+                    const dataSize = packetSize - 256; 
+                    
+                    // This is a simplification. Real XTF files can have multiple channels.
+                    // For this demo, we'll assume 8-bit samples for the first channel.
+                    const samples = new Uint8Array(buffer, dataStart, dataSize);
+                    
+                    // Add this ping's samples as a new row in the waterfall
+                    waterfallRows.push(samples);
+                }
+
+                // --- 5. Move to the next packet ---
+                offset += packetSize;
+            }
+
+            if (waterfallRows.length === 0) {
+                throw new Error('No side-scan data found in the file.');
+            }
+
+            infoDiv.textContent += ` Parsed ${waterfallRows.length} pings.`;
+            
+            // Create a 2D array for drawing
+            const maxSamples = Math.max(...waterfallRows.map(row => row.length));
+            return { rows: waterfallRows, maxSamples: maxSamples };
+        }
+
+        function drawWaterfall(waterfallData) {
+            const { rows, maxSamples } = waterfallData;
+            const pingCount = rows.length;
+            
+            // Set canvas size
+            canvas.width = maxSamples;
+            canvas.height = pingCount;
+            
+            // Create image data
+            const imageData = ctx.createImageData(canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // Fill the image data
+            for (let pingIndex = 0; pingIndex < pingCount; pingIndex++) {
+                const samples = rows[pingIndex];
+                const rowOffset = pingIndex * canvas.width * 4; // 4 bytes per pixel (RGBA)
+                
+                for (let sampleIndex = 0; sampleIndex < samples.length; sampleIndex++) {
+                    // Map 8-bit sample value (0-255) to grayscale color
+                    const pixelValue = samples[sampleIndex];
+                    const pixelOffset = rowOffset + sampleIndex * 4;
+                    
+                    data[pixelOffset] = pixelValue;     // Red
+                    data[pixelOffset + 1] = pixelValue; // Green
+                    data[pixelOffset + 2] = pixelValue; // Blue
+                    data[pixelOffset + 3] = 255;        // Alpha
+                }
+            }
+
+            // Draw the image on the canvas
+            ctx.putImageData(imageData, 0, 0);
+            canvas.style.display = 'block';
+            infoDiv.textContent += ' Waterfall image drawn.';
+        }
+    </script>
+</body>
+</html>
