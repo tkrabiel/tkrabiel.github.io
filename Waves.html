@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>🌊 NOAA Buoy Explorer · Wave Height, Period & Direction</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      background: linear-gradient(145deg, #f5faff 0%, #dae3f0 100%);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      color: #0b2b3c;
+    }
+    .card {
+      max-width: 950px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 42px;
+      padding: 26px 28px 34px;
+      box-shadow: 0 20px 40px rgba(0, 20, 40, 0.2), inset 0 1px 4px rgba(255,255,255,0.8);
+      border: 1px solid rgba(90, 156, 190, 0.25);
+    }
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 500;
+      font-size: 2.1rem;
+      letter-spacing: -0.01em;
+      color: #05455c;
+      margin-bottom: 0.1rem;
+    }
+    .sub {
+      color: #1f5e74;
+      margin-bottom: 22px;
+      font-size: 1rem;
+      font-weight: 400;
+      border-left: 4px solid #1a7a8c;
+      padding-left: 18px;
+    }
+    .selector-panel {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 15px 20px;
+      margin-bottom: 25px;
+      background: #e3eef6;
+      padding: 16px 22px;
+      border-radius: 60px;
+      backdrop-filter: blur(4px);
+      box-shadow: inset 0 1px 5px rgba(0,0,0,0.02), 0 6px 10px rgba(0,20,30,0.05);
+    }
+    .buoy-select {
+      background: white;
+      border: 1.5px solid #a0c8dd;
+      padding: 12px 22px;
+      border-radius: 48px;
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #033b4f;
+      outline: none;
+      cursor: pointer;
+      flex: 2 1 220px;
+    }
+    .custom-input {
+      display: flex;
+      flex: 2 1 200px;
+      background: white;
+      border-radius: 48px;
+      border: 1.5px solid #a0c8dd;
+      padding: 4px 4px 4px 20px;
+      align-items: center;
+    }
+    .custom-input input {
+      border: none;
+      background: transparent;
+      padding: 10px 0;
+      font-size: 1.0rem;
+      width: 100%;
+      outline: none;
+      font-family: inherit;
+    }
+    .custom-input button {
+      background: #1a7a8c;
+      border: none;
+      color: white;
+      font-weight: 600;
+      padding: 10px 24px;
+      border-radius: 40px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: 0.15s;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      white-space: nowrap;
+    }
+    .custom-input button:hover {
+      background: #0f5e6f;
+    }
+    .fetch-btn {
+      background: #05455c;
+      border: none;
+      color: white;
+      padding: 12px 28px;
+      border-radius: 48px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 6px 12px rgba(0, 30, 50, 0.1);
+      transition: all 0.15s;
+      border: 1px solid #26819b;
+    }
+    .fetch-btn:hover {
+      background: #0b5e7a;
+      transform: scale(0.98);
+    }
+
+    .data-dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px 30px;
+      margin: 20px 0 30px;
+      justify-content: space-around;
+    }
+    .metric {
+      text-align: center;
+      background: #ffffffc2;
+      padding: 12px 24px;
+      border-radius: 48px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+      border: 1px solid #ffffff;
+    }
+    .metric .label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #1a5c70;
+    }
+    .metric .value {
+      font-size: 2.6rem;
+      font-weight: 600;
+      line-height: 1.2;
+      color: #03242e;
+    }
+    .unit {
+      font-size: 1rem;
+      font-weight: 400;
+      margin-left: 5px;
+      color: #426f83;
+    }
+
+    /* wave canvas */
+    .wave-container {
+      background: #c7dde8;
+      border-radius: 48px;
+      padding: 5px;
+      margin: 15px 0 20px;
+      box-shadow: inset 0 6px 10px rgba(0,0,0,0.05), 0 10px 18px rgba(0, 20, 30, 0.08);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 40px;
+      background: #f2faff;
+    }
+
+    .pulse-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin: 18px 0 10px;
+    }
+    .pulse-box {
+      width: 70px;
+      height: 70px;
+      border-radius: 30px;
+      background: #2b6c7e;
+      box-shadow: 0 8px 0 #0e3a48;
+      transition: box-shadow 0.2s;
+    }
+    .pulse-dot {
+      width: 70px;
+      height: 70px;
+      border-radius: 30px;
+      background: #ffcf8a;
+      animation: pulseWave 5s infinite ease-in-out;
+      box-shadow: 0 0 0 rgba(255, 200, 100, 0.7);
+    }
+    @keyframes pulseWave {
+      0% { transform: scale(0.9); background: #ffd89c; box-shadow: 0 0 0 0 rgba(255, 200, 100, 0.7); }
+      50% { transform: scale(1.2); background: #ffb347; box-shadow: 0 0 20px 8px rgba(255, 180, 70, 0.3); }
+      100% { transform: scale(0.9); background: #ffd89c; box-shadow: 0 0 0 0 rgba(255, 200, 100, 0.7); }
+    }
+    .compass {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .compass-arrow {
+      font-size: 2.8rem;
+      line-height: 1;
+      transform: rotate(0deg);
+      display: inline-block;
+      transition: transform 0.2s;
+    }
+    .status {
+      font-size: 0.9rem;
+      margin-top: 10px;
+      color: #345f72;
+      text-align: right;
+    }
+    .footer-note {
+      margin-top: 25px;
+      color: #285f74;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="card">
+  <h1>🌊 Buoy Wave Lab</h1>
+  <div class="sub">Live NOAA data · wave height (m) · period (s) · direction</div>
+
+  <div class="selector-panel">
+    <select id="buoySelect" class="buoy-select">
+      <option value="42001">42001 · MID GULF (180 nm S of SW Pass, LA)</option>
+      <option value="41002">41002 · S HATTERAS (250 nm E of Charleston)</option>
+      <option value="41008">41008 · GRAYS REEF (40 nm SE of Savannah)</option>
+      <option value="41009">41009 · CANAVERAL EAST (120 nm E of Cape Canaveral)</option>
+      <option value="41010">41010 · CANAVERAL NE (120 nm ENE of Cape Canaveral)</option>
+      <option value="42002">42002 · W GULF (200 nm S of Galveston)</option>
+      <option value="42003">42003 · E GULF (230 nm S of Mobile)</option>
+      <option value="44008" selected>44008 · NANTUCKET S (54 nm SE of Nantucket)</option>
+      <option value="46035">46035 · BERING SEA (310 nm SW of St Paul, AK)</option>
+      <option value="51001">51001 · NW HAWAII (185 nm NW of Kauai)</option>
+    </select>
+    <div class="custom-input">
+      <input type="text" id="customBuoy" placeholder="Or enter buoy ID (e.g., 41001)" value="">
+      <button id="customBtn">🔍 Go</button>
+    </div>
+    <button class="fetch-btn" id="refreshBtn">⟳ Fetch live</button>
+  </div>
+
+  <div id="statusMessage" style="min-height:24px; padding-left:12px; font-weight:500; color:#1e6479;"></div>
+
+  <div class="data-dashboard">
+    <div class="metric"><div class="label">Wave height</div><div class="value"><span id="waveHeight">—</span><span class="unit">m</span></div></div>
+    <div class="metric"><div class="label">Dominant period</div><div class="value"><span id="wavePeriod">—</span><span class="unit">s</span></div></div>
+    <div class="metric"><div class="label">Mean direction</div><div class="value"><span id="waveDir">—</span><span class="unit">°</span></div></div>
+  </div>
+
+  <div class="wave-container">
+    <canvas id="waveCanvas" width="800" height="180"></canvas>
+  </div>
+
+  <div class="pulse-row">
+    <div id="pulseTarget" style="width:70px; height:70px;">
+      <div id="pulseDot" class="pulse-dot"></div>
+    </div>
+    <div class="compass">
+      <span class="compass-arrow" id="compassArrow">⬆️</span>
+      <span style="font-weight:500;">Direction indicator</span>
+      <span style="margin-left:auto; opacity:0.7;" id="buoyNameDisplay">—</span>
+    </div>
+  </div>
+  <div class="status" id="lastUpdate">Last update: —</div>
+  <div class="footer-note">
+    ⚡ NOAA NDBC realtime2 data · 10 major buoys + custom · height animated · period pulse
+  </div>
+</div>
+
+<script>
+  (function(){
+    "use strict";
+
+    // ---------- DOM elements ----------
+    const buoySelect = document.getElementById('buoySelect');
+    const customBuoyInput = document.getElementById('customBuoy');
+    const customBtn = document.getElementById('customBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const waveHeightSpan = document.getElementById('waveHeight');
+    const wavePeriodSpan = document.getElementById('wavePeriod');
+    const waveDirSpan = document.getElementById('waveDir');
+    const statusMsg = document.getElementById('statusMessage');
+    const lastUpdateSpan = document.getElementById('lastUpdate');
+    const buoyNameDisplay = document.getElementById('buoyNameDisplay');
+    const compassArrow = document.getElementById('compassArrow');
+    const pulseDot = document.getElementById('pulseDot');
+
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // ---------- State ----------
+    let currentBuoy = buoySelect.value;   // default 44008
+    let currentWaveHeight = 0.0;          // meters
+    let currentPeriod = 5.0;              // default 5s if missing
+    let animationFrame = null;
+    let phase = 0;
+    const waveSpeed = 0.12;               // smooth animation speed
+
+    // ---------- Helper: fetch latest realtime2 data ----------
+    async function fetchBuoyData(buoyId) {
+      const proxy = 'https://corsproxy.io/?';
+      const url = `https://www.ndbc.noaa.gov/data/realtime2/${buoyId}.txt`;
+      const proxyUrl = proxy + encodeURIComponent(url);
+
+      try {
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error(`Buoy ${buoyId} not reachable`);
+
+        const text = await response.text();
+        const lines = text.trim().split('\n');
+        if (lines.length < 3) throw new Error('No data rows');
+
+        // Find header line (starts with #YY)
+        let headerIdx = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].startsWith('#YY')) { headerIdx = i; break; }
+        }
+        if (headerIdx === -1) throw new Error('Header missing');
+
+        const header = lines[headerIdx].replace('#', '').trim().split(/\s+/);
+        const wvhtIdx = header.indexOf('WVHT');
+        const dpdIdx = header.indexOf('DPD');
+        const mwdIdx = header.indexOf('MWD');
+
+        // Find the most recent row with valid WVHT (not 'MM')
+        let latestHeight = null, latestPeriod = null, latestDir = null;
+        for (let i = lines.length - 1; i > headerIdx; i--) {
+          const row = lines[i].trim();
+          if (row === '' || row.startsWith('#')) continue;
+          const cols = row.split(/\s+/);
+          if (cols.length < Math.max(wvhtIdx, dpdIdx, mwdIdx) + 1) continue;
+
+          const wvhtVal = (wvhtIdx !== -1) ? cols[wvhtIdx] : 'MM';
+          if (wvhtVal !== 'MM') {
+            latestHeight = parseFloat(wvhtVal);
+            latestPeriod = (dpdIdx !== -1 && cols[dpdIdx] !== 'MM') ? parseFloat(cols[dpdIdx]) : 0.0;
+            latestDir = (mwdIdx !== -1 && cols[mwdIdx] !== 'MM') ? parseFloat(cols[mwdIdx]) : null;
+            break;
+          }
+        }
+
+        if (latestHeight === null) throw new Error('No wave height data');
+        return { height: latestHeight, period: latestPeriod || 5.0, direction: latestDir };
+
+      } catch (error) {
+        console.warn(error);
+        throw error;
+      }
+    }
+
+    // ---------- Update UI with data ----------
+    function updateDisplay(data, buoyId) {
+      currentWaveHeight = data.height;
+      currentPeriod = data.period || 5.0;
+      const dir = data.direction;
+
+      waveHeightSpan.textContent = data.height.toFixed(2);
+      wavePeriodSpan.textContent = currentPeriod.toFixed(1);
+      waveDirSpan.textContent = (dir !== null) ? dir.toFixed(0) : '—';
+
+      // Compass rotation
+      if (dir !== null) {
+        compassArrow.style.transform = `rotate(${dir}deg)`;
+      } else {
+        compassArrow.style.transform = `rotate(0deg)`;
+      }
+
+      // Update pulse animation speed (period in seconds)
+      if (currentPeriod > 0.5) {
+        pulseDot.style.animation = 'none';
+        pulseDot.offsetHeight; // reflow
+        pulseDot.style.animation = `pulseWave ${currentPeriod}s infinite ease-in-out`;
+      } else {
+        pulseDot.style.animation = `pulseWave 5s infinite ease-in-out`;
+      }
+
+      // Set buoy name
+      const selectedOption = buoySelect.options[buoySelect.selectedIndex];
+      let displayName = '';
+      if (buoySelect.value === buoyId) {
+        displayName = selectedOption ? selectedOption.text.split('·')[1]?.trim() || buoyId : buoyId;
+      } else {
+        displayName = `Buoy ${buoyId}`;
+      }
+      buoyNameDisplay.textContent = displayName;
+
+      const now = new Date();
+      lastUpdateSpan.textContent = `Last update: ${now.toLocaleTimeString()} (GMT data)`;
+      statusMsg.textContent = `✅ Buoy ${buoyId} · ${data.height.toFixed(2)} m, ${currentPeriod.toFixed(1)} s`;
+    }
+
+    // ---------- Load buoy data ----------
+    async function loadBuoy(buoyId) {
+      statusMsg.textContent = `⏳ Fetching buoy ${buoyId}...`;
+      try {
+        const data = await fetchBuoyData(buoyId);
+        updateDisplay(data, buoyId);
+        currentBuoy = buoyId;
+        if (!buoySelect.value === buoyId) {
+          // if custom, keep select maybe
+        }
+      } catch (err) {
+        statusMsg.textContent = `⚠️ ${err.message}`;
+        waveHeightSpan.textContent = '—';
+        wavePeriodSpan.textContent = '—';
+        waveDirSpan.textContent = '—';
+        buoyNameDisplay.textContent = `Buoy ${buoyId} (error)`;
+      }
+    }
+
+    // ---------- Canvas wave animation (height influenced) ----------
+    function drawWave() {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Amplitude scale: max ~8m to visible amplitude (20-40px)
+      const ampScale = Math.min(38, 12 + currentWaveHeight * 5.5);
+      const baseY = h / 2;
+      const frequency = 0.018;
+
+      // Draw multiple layers for "water" feel
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 2) {
+        const y1 = baseY + Math.sin(x * frequency + phase) * ampScale * 0.9;
+        const y2 = baseY + Math.cos(x * 0.025 + phase * 1.3) * ampScale * 0.5;
+        const y = (y1 + y2) / 2;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      const gradient = ctx.createLinearGradient(0, baseY - 30, 0, h);
+      gradient.addColorStop(0, '#1f8a9c');
+      gradient.addColorStop(0.7, '#145f70');
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 2) {
+        const y1 = baseY + Math.sin(x * frequency + phase + 2.1) * ampScale * 0.7;
+        const y2 = baseY + Math.cos(x * 0.018 + phase * 0.7) * ampScale * 0.3;
+        const y = (y1 + y2) / 2;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#f9f3e0';
+      ctx.lineWidth = 3.5;
+      ctx.shadowColor = '#b3e2f0';
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    function animateWave() {
+      phase += waveSpeed;
+      drawWave();
+      animationFrame = requestAnimationFrame(animateWave);
+    }
+
+    // ---------- Event listeners ----------
+    refreshBtn.addEventListener('click', () => {
+      const selected = buoySelect.value;
+      customBuoyInput.value = '';
+      loadBuoy(selected);
+    });
+
+    customBtn.addEventListener('click', () => {
+      const customId = customBuoyInput.value.trim().toUpperCase();
+      if (customId.length < 5) {
+        alert('Please enter a valid 5‑character buoy ID (e.g., 41001)');
+        return;
+      }
+      // update select visual (no exact match, but fine)
+      buoySelect.value = ''; // deselect
+      loadBuoy(customId);
+    });
+
+    buoySelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      customBuoyInput.value = '';
+      loadBuoy(val);
+    });
+
+    // Allow typing custom and pressing Enter
+    customBuoyInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        customBtn.click();
+      }
+    });
+
+    // Initialize
+    (function init() {
+      // set default wave animation
+      animateWave();
+      // fetch default buoy (44008)
+      loadBuoy(buoySelect.value);
+    })();
+
+    // Cleanup animation (optional)
+    window.addEventListener('beforeunload', () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    });
+
+  })();
+</script>
+</body>
+</html>
