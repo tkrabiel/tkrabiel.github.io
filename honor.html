@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Honorverse Map - Debug Version</title>
-    <!-- Attempt to load Leaflet from primary CDN -->
+    <title>Honorverse Map - Fixed Version</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body {
@@ -73,6 +72,15 @@
             border-bottom: 1px solid #3a5a7a;
             padding-bottom: 4px;
         }
+        .system-label {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #d0e8f0;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px black;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -90,16 +98,13 @@
         <div id="systemDetails">Click on a star system to view details and connections.</div>
     </div>
 
-    <!-- Fallback check: If Leaflet fails to load from CDN, we'll try a local alternative -->
     <script>
         window.leafletLoadError = function() {
             document.getElementById('status').style.display = 'block';
             document.getElementById('errorMsg').innerText = 'Failed to load Leaflet library. Please check your internet connection or firewall.';
         };
     </script>
-    <!-- Primary CDN -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="leafletLoadError()"></script>
-    <!-- Backup CDN (in case unpkg is blocked) -->
     <script>
         if (typeof L === 'undefined') {
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" onerror="leafletLoadError()"><\/script>');
@@ -107,7 +112,6 @@
     </script>
 
     <script>
-        // Wait for Leaflet to be available
         (function checkLeaflet() {
             if (typeof L !== 'undefined') {
                 initMap();
@@ -118,10 +122,9 @@
 
         function initMap() {
             try {
-                // Hide status message if visible
                 document.getElementById('status').style.display = 'none';
 
-                // --- 1. Initialize Map ---
+                // --- Map Initialization ---
                 const map = L.map('map', {
                     crs: L.CRS.Simple,
                     minZoom: -2,
@@ -130,10 +133,9 @@
                     zoomDelta: 0.25,
                     attributionControl: false
                 });
-
                 map.setView([0, 0], 0);
 
-                // Grid Layer (simplified for debugging)
+                // --- Grid Background ---
                 const gridLayer = L.gridLayer({ opacity: 0.15, tileSize: 200 });
                 gridLayer.createTile = function(coords) {
                     const tile = document.createElement('canvas');
@@ -159,7 +161,7 @@
                 };
                 gridLayer.addTo(map);
 
-                // --- 2. Star Systems Data (same as before) ---
+                // --- Data ---
                 const starSystems = [
                     [0, 0, 'Manticore', 'binary', 'Manticoran', 'Capital of the Star Empire'],
                     [120, -80, 'Gryphon', 'planet', 'Manticoran', 'Manticore Binary System'],
@@ -193,7 +195,7 @@
                     [11, 19, 'wormhole'], [4, 5, 'wormhole'], [13, 20, 'hyper']
                 ];
 
-                // Render connections
+                // --- Layers for Connections ---
                 const wormholeGroup = L.layerGroup().addTo(map);
                 const hyperGroup = L.layerGroup().addTo(map);
                 connections.forEach(conn => {
@@ -209,7 +211,7 @@
                     (conn[2] === 'wormhole' ? wormholeGroup : hyperGroup).addLayer(line);
                 });
 
-                // Marker group
+                // --- Star Markers ---
                 const markerGroup = L.layerGroup().addTo(map);
                 function getFactionColor(faction) {
                     const colors = { 'Manticoran': '#4da6ff', 'Havenite': '#ff6666', 'Andermani': '#9fc5e8', 'Silesian': '#d5a6bd', 'Grayson': '#93c47d', 'Mesan': '#b45f06', 'Solarian': '#c9a0dc', 'Independent': '#f1c232' };
@@ -224,7 +226,8 @@
                         color: '#ffffff',
                         weight: 1.5,
                         fillOpacity: 0.9
-                    }).bindTooltip(sys[2], { permanent: false, className: 'system-label' });
+                    });
+                    marker.bindTooltip(sys[2], { permanent: false, className: 'system-label' });
                     
                     marker.on('click', () => {
                         let connList = '';
@@ -244,24 +247,39 @@
                     markerGroup.addLayer(marker);
                 });
 
-                // Layer control
-                L.control.layers({}, { "Wormhole Network": wormholeGroup, "Hyper Routes": hyperGroup, "Star Systems": markerGroup }, { collapsed: false }).addTo(map);
-                
-                // Legend
-                L.control({position: 'bottomleft'}).onAdd = function() {
-                    const div = L.DomUtil.create('div', 'info');
+                // --- Layer Control ---
+                L.control.layers({}, {
+                    "Wormhole Network": wormholeGroup,
+                    "Hyper Routes": hyperGroup,
+                    "Star Systems": markerGroup
+                }, { collapsed: false }).addTo(map);
+
+                // --- Legend (FIXED) ---
+                const legend = L.control({ position: 'bottomleft' });
+                legend.onAdd = function(map) {
+                    const div = L.DomUtil.create('div', 'info legend');
                     div.style.background = 'rgba(10,20,40,0.8)';
-                    div.style.padding = '8px';
+                    div.style.padding = '8px 12px';
                     div.style.color = '#ccc';
-                    div.innerHTML = '<strong>Factions</strong><br>' +
-                        '<span style="color:#4da6ff;">●</span> Manticore<br>' +
-                        '<span style="color:#ff6666;">●</span> Haven<br>' +
-                        '<span style="color:#9fc5e8;">●</span> Andermani<br>' +
-                        '<span style="color:#d5a6bd;">●</span> Silesia<br>' +
-                        '<span style="color:#ffaa00;">⸻</span> Wormhole<br>' +
-                        '<span style="color:#6b9ac4;">━</span> Hyper';
+                    div.style.borderRadius = '6px';
+                    div.style.fontSize = '12px';
+                    div.style.border = '1px solid #2a4a6a';
+                    div.style.backdropFilter = 'blur(4px)';
+                    div.style.pointerEvents = 'none';
+                    div.innerHTML = `
+                        <strong>Factions</strong><br>
+                        <span style="color:#4da6ff;">●</span> Manticore<br>
+                        <span style="color:#ff6666;">●</span> Haven<br>
+                        <span style="color:#9fc5e8;">●</span> Andermani<br>
+                        <span style="color:#d5a6bd;">●</span> Silesia<br>
+                        <span style="color:#93c47d;">●</span> Grayson<br>
+                        <hr style="margin:5px 0; border-color:#3a5a7a;">
+                        <span style="color:#ffaa00;">⸻⸻</span> Wormhole<br>
+                        <span style="color:#6b9ac4;">━━━</span> Hyper Route
+                    `;
                     return div;
-                }.addTo(map);
+                };
+                legend.addTo(map);
 
             } catch (e) {
                 document.getElementById('status').style.display = 'block';
