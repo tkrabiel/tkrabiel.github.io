@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Honorverse Interactive Astrogation Map</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0f1e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #header {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(10, 20, 40, 0.8);
+            color: #b8e2f2;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border-left: 4px solid #4a9ebe;
+            backdrop-filter: blur(5px);
+            pointer-events: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+            background-color: #050a14;
+        }
+        .leaflet-container {
+            background: #050a14;
+        }
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(10, 20, 40, 0.9);
+            color: #e0e0e0;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border: 1px solid #2a4a6a;
+            backdrop-filter: blur(5px);
+            pointer-events: none;
+            font-size: 14px;
+            max-width: 280px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+        }
+        .info-panel h3 {
+            margin: 0 0 8px 0;
+            color: #7ec8e0;
+            border-bottom: 1px solid #3a5a7a;
+            padding-bottom: 4px;
+        }
+        .star-manticore { color: #ffd966; }
+        .star-haven { color: #e06666; }
+        .star-grayson { color: #93c47d; }
+        .star-andermani { color: #9fc5e8; }
+        .star-silesia { color: #d5a6bd; }
+        .wormhole-line {
+            stroke: #ffaa00;
+            stroke-width: 2;
+            stroke-dasharray: 6, 4;
+            opacity: 0.7;
+        }
+        .normal-route {
+            stroke: #6b9ac4;
+            stroke-width: 1.5;
+            opacity: 0.5;
+        }
+        .system-label {
+            background: none;
+            border: none;
+            box-shadow: none;
+            color: #d0e8f0;
+            font-weight: bold;
+            text-shadow: 1px 1px 3px black;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .leaflet-tooltip-pane .system-label {
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1 style="margin:0; font-weight:400;">⚓ Honorverse Astrogation · Manticore Binary System Era</h1>
+    </div>
+    <div id="map"></div>
+    <div class="info-panel" id="infoPanel">
+        <h3>📡 NAVIGATION REFERENCE</h3>
+        <div id="systemDetails">Click on a star system to view details and connections.</div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        (function() {
+            // --- 1. Initialize Map (Non-geographic, custom coordinate grid) ---
+            // We'll use a custom CRS to treat our coordinates as a flat 2D plane.
+            // Bounds roughly: X: -1200 to 1200, Y: -800 to 800 (Light-years scale)
+            const map = L.map('map', {
+                crs: L.CRS.Simple,
+                minZoom: -2,
+                maxZoom: 3,
+                zoomSnap: 0.25,
+                zoomDelta: 0.25,
+                attributionControl: false
+            });
+
+            // Set initial view centered on Manticore
+            map.setView([0, 0], 0);
+
+            // Add a subtle grid background
+            const gridLayer = L.gridLayer({
+                opacity: 0.15,
+                tileSize: 200,
+                updateInterval: 50
+            });
+            gridLayer.createTile = function(coords) {
+                const tile = document.createElement('canvas');
+                const size = this.getTileSize();
+                tile.width = size.x;
+                tile.height = size.y;
+                const ctx = tile.getContext('2d');
+                
+                // Calculate world bounds for this tile
+                const nw = coords.scale(this._tileZoom);
+                const worldPos = nw.multiplyBy(size.x);
+                
+                ctx.strokeStyle = '#3a6a9f';
+                ctx.lineWidth = 1;
+                
+                // Draw grid lines every 100 units (approx 100 LY)
+                const step = 100;
+                const startX = Math.floor(worldPos.x / step) * step;
+                const startY = Math.floor(worldPos.y / step) * step;
+                
+                for (let x = startX; x < worldPos.x + size.x; x += step) {
+                    const tx = x - worldPos.x;
+                    ctx.beginPath();
+                    ctx.moveTo(tx, 0);
+                    ctx.lineTo(tx, size.y);
+                    ctx.strokeStyle = '#2a4a6a';
+                    ctx.stroke();
+                }
+                for (let y = startY; y < worldPos.y + size.y; y += step) {
+                    const ty = y - worldPos.y;
+                    ctx.beginPath();
+                    ctx.moveTo(0, ty);
+                    ctx.lineTo(size.x, ty);
+                    ctx.strokeStyle = '#2a4a6a';
+                    ctx.stroke();
+                }
+                
+                // Add coordinate text in corner
+                ctx.font = '10px monospace';
+                ctx.fillStyle = '#5a8ab0';
+                ctx.fillText(`X:${Math.round(worldPos.x)} Y:${Math.round(worldPos.y)}`, 5, 15);
+                
+                return tile;
+            };
+            gridLayer.addTo(map);
+
+            // --- 2. Define Star Systems (Coordinates roughly based on Honorverse maps) ---
+            // Format: [x, y, name, type, faction, notes]
+            const starSystems = [
+                // Core Manticoran Alliance
+                [0, 0, 'Manticore', 'binary', 'Manticoran', 'Capital of the Star Empire'],
+                [120, -80, 'Gryphon', 'planet', 'Manticoran', 'Manticore Binary System'],
+                [-130, 90, 'Sphinx', 'planet', 'Manticoran', 'Manticore Binary System'],
+                [60, 150, 'Basilisk', 'system', 'Manticoran', 'Wormhole Junction Terminal'],
+                [250, -20, 'Trevor\'s Star', 'system', 'Manticoran', 'Former Havenite, key junction'],
+                
+                // Republic of Haven
+                [480, 320, 'Haven', 'system', 'Havenite', 'Capital of the Republic'],
+                [550, 380, 'Barnett', 'system', 'Havenite', 'Major fleet base'],
+                [420, 450, 'Lovat', 'system', 'Havenite', 'Industrial world'],
+                [620, 260, 'Marsh', 'system', 'Havenite', 'Important junction'],
+                
+                // Andermani Empire
+                [-680, 440, 'New Berlin', 'system', 'Andermani', 'Imperial Capital'],
+                [-750, 380, 'Tomāto', 'system', 'Andermani', 'Major system'],
+                [-600, 520, 'Potsdam', 'system', 'Andermani', 'Wormhole terminus'],
+                
+                // Silesian Confederacy (Independent/Contested)
+                [350, -520, 'Silesia', 'system', 'Silesian', 'Central Silesia'],
+                [480, -600, 'Mesa', 'system', 'Mesan', 'Hidden alignment?'],
+                [260, -450, 'Rembrandt', 'system', 'Silesian', 'Major trade hub'],
+                
+                // Grayson / Yeltsin
+                [-200, -350, 'Grayson', 'system', 'Grayson', 'Protectorate of Manticore'],
+                [-280, -420, 'Yeltsin\'s Star', 'system', 'Grayson', 'Original capital'],
+                
+                // Additional Junction connections
+                [-120, 240, 'Erewhon', 'system', 'Independent', 'Wormhole junction member'],
+                [310, 80, 'Zanzibar', 'system', 'Manticoran', 'Junction system'],
+                
+                // Solarian League fringe
+                [-900, -200, 'Beowulf', 'system', 'Solarian', 'Old Earth colony, key wormhole'],
+                [800, -400, 'Meyers', 'system', 'Solarian', 'League frontier'],
+            ];
+
+            // --- 3. Define Connections (Wormholes and major hyper routes) ---
+            // Format: [fromIndex, toIndex, type] where type = 'wormhole' or 'hyper'
+            const connections = [
+                // Manticore Wormhole Junction (central hub)
+                [0, 3, 'wormhole'],   // Manticore <-> Basilisk
+                [0, 4, 'wormhole'],   // Manticore <-> Trevor's Star
+                [0, 16, 'wormhole'],  // Manticore <-> Erewhon
+                [0, 17, 'wormhole'],  // Manticore <-> Zanzibar
+                [0, 12, 'wormhole'],  // Manticore <-> Grayson (via junction)
+                [0, 19, 'wormhole'],  // Manticore <-> Beowulf
+                
+                // Havenite connections
+                [5, 6, 'hyper'],      // Haven <-> Barnett
+                [5, 7, 'hyper'],      // Haven <-> Lovat
+                [6, 8, 'hyper'],      // Barnett <-> Marsh
+                
+                // Andermani connections
+                [9, 10, 'hyper'],     // New Berlin <-> Tomāto
+                [9, 11, 'wormhole'],  // New Berlin <-> Potsdam (wormhole)
+                
+                // Silesian routes
+                [12, 13, 'hyper'],    // Silesia <-> Mesa
+                [12, 14, 'hyper'],    // Silesia <-> Rembrandt
+                
+                // Grayson routes
+                [15, 16, 'hyper'],    // Grayson <-> Yeltsin's Star
+                
+                // Cross-space wormholes
+                [11, 19, 'wormhole'], // Potsdam <-> Beowulf (Andermani-Solarian link)
+                [4, 5, 'wormhole'],   // Trevor's Star <-> Haven (key captured route)
+                [13, 20, 'hyper'],    // Mesa <-> Meyers (Solarian fringe)
+            ];
+
+            // --- 4. Render Connections (Lines) ---
+            // We'll use Leaflet Polyline with custom styling
+            const wormholeGroup = L.layerGroup().addTo(map);
+            const hyperGroup = L.layerGroup().addTo(map);
+            
+            connections.forEach(conn => {
+                const fromIdx = conn[0];
+                const toIdx = conn[1];
+                const type = conn[2];
+                
+                const fromCoords = L.latLng(starSystems[fromIdx][1], starSystems[fromIdx][0]);
+                const toCoords = L.latLng(starSystems[toIdx][1], starSystems[toIdx][0]);
+                
+                const options = {
+                    color: type === 'wormhole' ? '#ffaa00' : '#6b9ac4',
+                    weight: type === 'wormhole' ? 2.5 : 1.5,
+                    opacity: type === 'wormhole' ? 0.8 : 0.5,
+                    dashArray: type === 'wormhole' ? '6, 6' : null,
+                    smoothFactor: 1,
+                    interactive: false
+                };
+                
+                const line = L.polyline([fromCoords, toCoords], options);
+                if (type === 'wormhole') {
+                    line.addTo(wormholeGroup);
+                } else {
+                    line.addTo(hyperGroup);
+                }
+            });
+
+            // --- 5. Add Star System Markers and Labels ---
+            const markerGroup = L.layerGroup().addTo(map);
+            
+            // Helper to get faction color
+            function getFactionColor(faction) {
+                const mapColor = {
+                    'Manticoran': '#4da6ff',
+                    'Havenite': '#ff6666',
+                    'Andermani': '#9fc5e8',
+                    'Silesian': '#d5a6bd',
+                    'Grayson': '#93c47d',
+                    'Mesan': '#b45f06',
+                    'Solarian': '#c9a0dc',
+                    'Independent': '#f1c232'
+                };
+                return mapColor[faction] || '#aaaaaa';
+            }
+
+            starSystems.forEach((sys, index) => {
+                const x = sys[0];
+                const y = sys[1];
+                const name = sys[2];
+                const type = sys[3];
+                const faction = sys[4];
+                const notes = sys[5];
+                
+                const color = getFactionColor(faction);
+                
+                // Create marker
+                const marker = L.circleMarker([y, x], {
+                    radius: type === 'binary' ? 8 : 6,
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 1.5,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                });
+                
+                // Add tooltip with name
+                marker.bindTooltip(name, {
+                    permanent: false,
+                    direction: 'top',
+                    className: 'system-label',
+                    offset: [0, -10]
+                });
+                
+                // On click, show details in info panel
+                marker.on('click', function(e) {
+                    L.DomEvent.stopPropagation(e);
+                    
+                    // Find connections for this system
+                    const connectedSystems = [];
+                    connections.forEach(conn => {
+                        if (conn[0] === index) connectedSystems.push({idx: conn[1], type: conn[2]});
+                        if (conn[1] === index) connectedSystems.push({idx: conn[0], type: conn[2]});
+                    });
+                    
+                    let connHtml = '';
+                    if (connectedSystems.length > 0) {
+                        connHtml = '<strong>Connections:</strong><ul style="margin:4px 0; padding-left:20px;">';
+                        connectedSystems.forEach(c => {
+                            const targetSys = starSystems[c.idx];
+                            connHtml += `<li>${targetSys[2]} (${c.type})</li>`;
+                        });
+                        connHtml += '</ul>';
+                    } else {
+                        connHtml = '<em>No major recorded routes.</em>';
+                    }
+                    
+                    document.getElementById('systemDetails').innerHTML = `
+                        <div style="border-left: 3px solid ${color}; padding-left: 8px;">
+                            <h4 style="margin:0 0 4px 0; color:${color};">${name}</h4>
+                            <div style="font-size:13px;">Faction: ${faction}</div>
+                            <div style="font-size:13px;">Type: ${type}</div>
+                            <div style="font-size:12px; margin-top:5px;">${notes}</div>
+                            <div style="margin-top:8px;">${connHtml}</div>
+                        </div>
+                    `;
+                });
+                
+                marker.addTo(markerGroup);
+            });
+
+            // --- 6. Add Faction Territory Layers (Optional, semi-transparent polygons) ---
+            // This gives a better visual of space controlled.
+            const territoryGroup = L.layerGroup().addTo(map);
+            
+            // Very approximate polygons
+            const territories = [
+                { name: 'Star Empire of Manticore', coords: [[-200, -150], [300, -150], [350, 200], [-150, 300]], color: '#4da6ff', fillOpacity: 0.08 },
+                { name: 'Republic of Haven', coords: [[400, 200], [700, 200], [700, 500], [400, 500]], color: '#ff6666', fillOpacity: 0.08 },
+                { name: 'Andermani Empire', coords: [[-800, 300], [-550, 300], [-550, 600], [-800, 600]], color: '#9fc5e8', fillOpacity: 0.08 },
+                { name: 'Silesian Confederacy', coords: [[200, -700], [600, -700], [600, -400], [200, -400]], color: '#d5a6bd', fillOpacity: 0.08 },
+                { name: 'Grayson Protectorate', coords: [[-350, -500], [-150, -500], [-150, -300], [-350, -300]], color: '#93c47d', fillOpacity: 0.08 },
+            ];
+            
+            territories.forEach(ter => {
+                const latLngs = ter.coords.map(c => L.latLng(c[1], c[0]));
+                L.polygon(latLngs, {
+                    color: ter.color,
+                    weight: 1,
+                    opacity: 0.3,
+                    fillColor: ter.color,
+                    fillOpacity: ter.fillOpacity,
+                    interactive: false
+                }).addTo(territoryGroup);
+            });
+
+            // --- 7. Add Layer Control ---
+            const baseMaps = {
+                "Dark Space": L.featureGroup([]) // dummy
+            };
+            const overlayMaps = {
+                "Wormhole Network": wormholeGroup,
+                "Hyper Routes": hyperGroup,
+                "Faction Territories": territoryGroup,
+                "Star Systems": markerGroup
+            };
+            
+            L.control.layers(baseMaps, overlayMaps, {
+                position: 'topright',
+                collapsed: false
+            }).addTo(map);
+
+            // Add scale indicator (approximate light-years)
+            L.control.scale({
+                metric: false,
+                imperial: false,
+                maxWidth: 200,
+                position: 'bottomleft',
+                updateWhenIdle: true
+            }).addTo(map).updateScale = function() {
+                // Custom scale text
+                this._container.innerHTML = 'Scale: ~10 LY / grid square';
+            };
+            
+            // Force initial scale text
+            setTimeout(() => {
+                document.querySelector('.leaflet-control-scale-line').innerHTML = '≈ 100 Light-years';
+            }, 100);
+
+            // --- 8. Add Legend ---
+            const legend = L.control({position: 'bottomleft'});
+            legend.onAdd = function(map) {
+                const div = L.DomUtil.create('div', 'info legend');
+                div.style.background = 'rgba(10, 20, 40, 0.8)';
+                div.style.color = '#ccc';
+                div.style.padding = '8px 12px';
+                div.style.borderRadius = '6px';
+                div.style.fontSize = '12px';
+                div.style.border = '1px solid #2a4a6a';
+                div.style.backdropFilter = 'blur(4px)';
+                div.style.pointerEvents = 'none';
+                
+                const factions = [
+                    {color: '#4da6ff', name: 'Manticore'},
+                    {color: '#ff6666', name: 'Haven'},
+                    {color: '#9fc5e8', name: 'Andermani'},
+                    {color: '#d5a6bd', name: 'Silesia'},
+                    {color: '#93c47d', name: 'Grayson'},
+                    {color: '#b45f06', name: 'Mesa'},
+                    {color: '#c9a0dc', name: 'Solarian'},
+                ];
+                
+                let html = '<strong>Factions</strong><br>';
+                factions.forEach(f => {
+                    html += `<i style="background:${f.color}; width:10px; height:10px; display:inline-block; border-radius:50%; margin-right:5px;"></i> ${f.name}<br>`;
+                });
+                html += '<hr style="margin:5px 0; border-color:#3a5a7a;">';
+                html += '<span style="color:#ffaa00;">⸻⸻</span> Wormhole<br>';
+                html += '<span style="color:#6b9ac4;">━━━</span> Hyper Route';
+                
+                div.innerHTML = html;
+                return div;
+            };
+            legend.addTo(map);
+
+            // Initial click message
+            document.getElementById('systemDetails').innerHTML = 'Select a star system to view astrogation data.';
+        })();
+    </script>
+</body>
+</html>
