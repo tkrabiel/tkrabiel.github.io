@@ -1,10 +1,14 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Honorverse Map - Fixed Version</title>
+    <title>Honorverse Astrogation · Dynamic Map</title>
+    <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             margin: 0;
@@ -12,33 +16,7 @@
             background-color: #0a0f1e;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: white;
-        }
-        #status {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2000;
-            background: rgba(0,0,0,0.7);
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid #ffaa00;
-            display: none;
-            text-align: center;
-        }
-        #header {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            background: rgba(10, 20, 40, 0.8);
-            color: #b8e2f2;
-            padding: 8px 16px;
-            border-radius: 20px;
-            border-left: 4px solid #4a9ebe;
-            backdrop-filter: blur(5px);
-            pointer-events: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            overflow: hidden;
         }
         #map {
             position: absolute;
@@ -47,9 +25,88 @@
             width: 100%;
             background-color: #050a14;
         }
-        .leaflet-container {
-            background: #050a14;
+        /* Header */
+        #header {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(10, 20, 40, 0.85);
+            color: #b8e2f2;
+            padding: 8px 16px;
+            border-radius: 30px;
+            border-left: 4px solid #4a9ebe;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            pointer-events: none;
         }
+        /* Search Panel */
+        #search-panel {
+            position: absolute;
+            top: 70px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(10, 20, 40, 0.85);
+            backdrop-filter: blur(5px);
+            padding: 10px 15px;
+            border-radius: 30px;
+            border: 1px solid #2a4a6a;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            display: flex;
+            gap: 8px;
+            pointer-events: auto;
+        }
+        #search-input {
+            background: #1a2a4a;
+            border: 1px solid #4a9ebe;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            width: 220px;
+            font-size: 14px;
+            outline: none;
+        }
+        #search-input::placeholder {
+            color: #8ab0c0;
+        }
+        #search-btn {
+            background: #2a4a6a;
+            border: none;
+            color: white;
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        #search-btn:hover {
+            background: #3a6a9a;
+        }
+        #search-results {
+            position: absolute;
+            top: 110px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(10, 20, 40, 0.9);
+            backdrop-filter: blur(5px);
+            border-radius: 10px;
+            border: 1px solid #2a4a6a;
+            max-height: 250px;
+            overflow-y: auto;
+            width: 280px;
+            display: none;
+            pointer-events: auto;
+        }
+        .search-result-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #2a4a6a;
+            cursor: pointer;
+            color: #d0e8f0;
+        }
+        .search-result-item:hover {
+            background: #2a4a6a;
+        }
+        /* Info Panel */
         .info-panel {
             position: absolute;
             bottom: 20px;
@@ -57,21 +114,84 @@
             z-index: 1000;
             background: rgba(10, 20, 40, 0.9);
             color: #e0e0e0;
-            padding: 12px 18px;
-            border-radius: 8px;
+            padding: 15px 20px;
+            border-radius: 12px;
             border: 1px solid #2a4a6a;
             backdrop-filter: blur(5px);
-            pointer-events: none;
             font-size: 14px;
-            max-width: 280px;
+            max-width: 320px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+            pointer-events: none;
         }
         .info-panel h3 {
-            margin: 0 0 8px 0;
+            margin: 0 0 10px 0;
             color: #7ec8e0;
             border-bottom: 1px solid #3a5a7a;
-            padding-bottom: 4px;
+            padding-bottom: 6px;
         }
+        #systemDetails {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        /* Travel Calculator */
+        #travel-calc {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(10, 20, 40, 0.9);
+            backdrop-filter: blur(5px);
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid #2a4a6a;
+            color: #e0e0e0;
+            font-size: 13px;
+            width: 240px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+            pointer-events: auto;
+        }
+        #travel-calc h4 {
+            margin: 0 0 8px 0;
+            color: #7ec8e0;
+        }
+        #travel-from, #travel-to {
+            background: #1a2a4a;
+            border: 1px solid #3a6a9a;
+            color: white;
+            padding: 5px;
+            margin-bottom: 8px;
+            width: 100%;
+            border-radius: 5px;
+        }
+        #travel-result {
+            margin-top: 8px;
+            font-weight: bold;
+            color: #ffd966;
+        }
+        .btn-small {
+            background: #2a4a6a;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        /* Legend */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 290px;
+            z-index: 1000;
+            background: rgba(10,20,40,0.8);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #2a4a6a;
+            backdrop-filter: blur(4px);
+            color: #ccc;
+            font-size: 12px;
+            pointer-events: none;
+        }
+        /* Tooltip styling */
         .system-label {
             background: transparent !important;
             border: none !important;
@@ -81,212 +201,373 @@
             text-shadow: 1px 1px 3px black;
             font-size: 12px;
         }
+        /* Loading indicator */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            background: rgba(0,0,0,0.7);
+            padding: 20px 40px;
+            border-radius: 40px;
+            color: white;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div id="header">
-        <h1 style="margin:0; font-weight:400;">⚓ Honorverse Astrogation · Manticore Binary System Era</h1>
+        <h1 style="margin:0; font-weight:400;">⚓ Honorverse Astrogation · Dynamic Data</h1>
     </div>
     <div id="map"></div>
-    <div id="status">
-        <h2>⚠️ Map Initialization Error</h2>
-        <p id="errorMsg">Check browser console (F12) for details.</p>
-        <p><small>Try refreshing or check your internet connection.</small></p>
+    <div id="loading"><i class="fas fa-spinner fa-spin"></i> Loading star systems...</div>
+
+    <!-- Search UI -->
+    <div id="search-panel">
+        <input type="text" id="search-input" placeholder="Search system..." autocomplete="off">
+        <button id="search-btn"><i class="fas fa-search"></i> Find</button>
     </div>
+    <div id="search-results"></div>
+
+    <!-- Info Panel -->
     <div class="info-panel" id="infoPanel">
         <h3>📡 NAVIGATION REFERENCE</h3>
-        <div id="systemDetails">Click on a star system to view details and connections.</div>
+        <div id="systemDetails">Click on a star system to view details.</div>
     </div>
 
-    <script>
-        window.leafletLoadError = function() {
-            document.getElementById('status').style.display = 'block';
-            document.getElementById('errorMsg').innerText = 'Failed to load Leaflet library. Please check your internet connection or firewall.';
-        };
-    </script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" onerror="leafletLoadError()"></script>
-    <script>
-        if (typeof L === 'undefined') {
-            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" onerror="leafletLoadError()"><\/script>');
-        }
-    </script>
+    <!-- Travel Calculator -->
+    <div id="travel-calc">
+        <h4><i class="fas fa-clock"></i> Travel Estimator</h4>
+        <label>From:</label>
+        <select id="travel-from"></select>
+        <label>To:</label>
+        <select id="travel-to"></select>
+        <button class="btn-small" id="calc-travel">Calculate</button>
+        <div id="travel-result"></div>
+        <small style="color:#8ab0c0;">Based on hyper limit + wormholes</small>
+    </div>
 
-    <script>
-        (function checkLeaflet() {
-            if (typeof L !== 'undefined') {
-                initMap();
-            } else {
-                setTimeout(checkLeaflet, 100);
-            }
-        })();
+    <!-- Legend (static) -->
+    <div class="legend">
+        <strong>Factions</strong><br>
+        <span style="color:#4da6ff;">●</span> Manticore<br>
+        <span style="color:#ff6666;">●</span> Haven<br>
+        <span style="color:#9fc5e8;">●</span> Andermani<br>
+        <span style="color:#d5a6bd;">●</span> Silesia<br>
+        <span style="color:#93c47d;">●</span> Grayson<br>
+        <span style="color:#b45f06;">●</span> Mesa<br>
+        <span style="color:#c9a0dc;">●</span> Solarian<br>
+        <hr style="margin:5px 0; border-color:#3a5a7a;">
+        <span style="color:#ffaa00;">⸻⸻</span> Wormhole<br>
+        <span style="color:#6b9ac4;">━━━</span> Hyper Route
+    </div>
 
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Global variables
+        let map;
+        let markerGroup;
+        let wormholeGroup;
+        let hyperGroup;
+        let systemsData = [];
+        let markersMap = new Map(); // system id -> marker
+
+        // Initialize map
         function initMap() {
-            try {
-                document.getElementById('status').style.display = 'none';
+            map = L.map('map', {
+                crs: L.CRS.Simple,
+                minZoom: -2,
+                maxZoom: 3,
+                zoomSnap: 0.25,
+                zoomDelta: 0.25,
+                attributionControl: false
+            }).setView([0, 0], 0);
 
-                // --- Map Initialization ---
-                const map = L.map('map', {
-                    crs: L.CRS.Simple,
-                    minZoom: -2,
-                    maxZoom: 3,
-                    zoomSnap: 0.25,
-                    zoomDelta: 0.25,
-                    attributionControl: false
-                });
-                map.setView([0, 0], 0);
-
-                // --- Grid Background ---
-                const gridLayer = L.gridLayer({ opacity: 0.15, tileSize: 200 });
-                gridLayer.createTile = function(coords) {
-                    const tile = document.createElement('canvas');
-                    const size = this.getTileSize();
-                    tile.width = size.x;
-                    tile.height = size.y;
-                    const ctx = tile.getContext('2d');
-                    ctx.strokeStyle = '#3a6a9f';
-                    ctx.lineWidth = 1;
-                    for (let i = 0; i <= size.x; i += 100) {
-                        ctx.beginPath();
-                        ctx.moveTo(i, 0);
-                        ctx.lineTo(i, size.y);
-                        ctx.stroke();
-                    }
-                    for (let i = 0; i <= size.y; i += 100) {
-                        ctx.beginPath();
-                        ctx.moveTo(0, i);
-                        ctx.lineTo(size.x, i);
-                        ctx.stroke();
-                    }
-                    return tile;
-                };
-                gridLayer.addTo(map);
-
-                // --- Data ---
-                const starSystems = [
-                    [0, 0, 'Manticore', 'binary', 'Manticoran', 'Capital of the Star Empire'],
-                    [120, -80, 'Gryphon', 'planet', 'Manticoran', 'Manticore Binary System'],
-                    [-130, 90, 'Sphinx', 'planet', 'Manticoran', 'Manticore Binary System'],
-                    [60, 150, 'Basilisk', 'system', 'Manticoran', 'Wormhole Junction Terminal'],
-                    [250, -20, 'Trevor\'s Star', 'system', 'Manticoran', 'Former Havenite, key junction'],
-                    [480, 320, 'Haven', 'system', 'Havenite', 'Capital of the Republic'],
-                    [550, 380, 'Barnett', 'system', 'Havenite', 'Major fleet base'],
-                    [420, 450, 'Lovat', 'system', 'Havenite', 'Industrial world'],
-                    [620, 260, 'Marsh', 'system', 'Havenite', 'Important junction'],
-                    [-680, 440, 'New Berlin', 'system', 'Andermani', 'Imperial Capital'],
-                    [-750, 380, 'Tomāto', 'system', 'Andermani', 'Major system'],
-                    [-600, 520, 'Potsdam', 'system', 'Andermani', 'Wormhole terminus'],
-                    [350, -520, 'Silesia', 'system', 'Silesian', 'Central Silesia'],
-                    [480, -600, 'Mesa', 'system', 'Mesan', 'Hidden alignment?'],
-                    [260, -450, 'Rembrandt', 'system', 'Silesian', 'Major trade hub'],
-                    [-200, -350, 'Grayson', 'system', 'Grayson', 'Protectorate of Manticore'],
-                    [-280, -420, 'Yeltsin\'s Star', 'system', 'Grayson', 'Original capital'],
-                    [-120, 240, 'Erewhon', 'system', 'Independent', 'Wormhole junction member'],
-                    [310, 80, 'Zanzibar', 'system', 'Manticoran', 'Junction system'],
-                    [-900, -200, 'Beowulf', 'system', 'Solarian', 'Old Earth colony, key wormhole'],
-                    [800, -400, 'Meyers', 'system', 'Solarian', 'League frontier']
-                ];
-
-                const connections = [
-                    [0, 3, 'wormhole'], [0, 4, 'wormhole'], [0, 16, 'wormhole'], [0, 17, 'wormhole'], [0, 12, 'wormhole'], [0, 19, 'wormhole'],
-                    [5, 6, 'hyper'], [5, 7, 'hyper'], [6, 8, 'hyper'],
-                    [9, 10, 'hyper'], [9, 11, 'wormhole'],
-                    [12, 13, 'hyper'], [12, 14, 'hyper'],
-                    [15, 16, 'hyper'],
-                    [11, 19, 'wormhole'], [4, 5, 'wormhole'], [13, 20, 'hyper']
-                ];
-
-                // --- Layers for Connections ---
-                const wormholeGroup = L.layerGroup().addTo(map);
-                const hyperGroup = L.layerGroup().addTo(map);
-                connections.forEach(conn => {
-                    const fromCoords = L.latLng(starSystems[conn[0]][1], starSystems[conn[0]][0]);
-                    const toCoords = L.latLng(starSystems[conn[1]][1], starSystems[conn[1]][0]);
-                    const options = {
-                        color: conn[2] === 'wormhole' ? '#ffaa00' : '#6b9ac4',
-                        weight: conn[2] === 'wormhole' ? 2.5 : 1.5,
-                        opacity: conn[2] === 'wormhole' ? 0.8 : 0.5,
-                        dashArray: conn[2] === 'wormhole' ? '6, 6' : null
-                    };
-                    const line = L.polyline([fromCoords, toCoords], options);
-                    (conn[2] === 'wormhole' ? wormholeGroup : hyperGroup).addLayer(line);
-                });
-
-                // --- Star Markers ---
-                const markerGroup = L.layerGroup().addTo(map);
-                function getFactionColor(faction) {
-                    const colors = { 'Manticoran': '#4da6ff', 'Havenite': '#ff6666', 'Andermani': '#9fc5e8', 'Silesian': '#d5a6bd', 'Grayson': '#93c47d', 'Mesan': '#b45f06', 'Solarian': '#c9a0dc', 'Independent': '#f1c232' };
-                    return colors[faction] || '#aaaaaa';
+            // Grid background
+            const gridLayer = L.gridLayer({ opacity: 0.15, tileSize: 200 });
+            gridLayer.createTile = function(coords) {
+                const tile = document.createElement('canvas');
+                const size = this.getTileSize();
+                tile.width = size.x;
+                tile.height = size.y;
+                const ctx = tile.getContext('2d');
+                ctx.strokeStyle = '#3a6a9f';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= size.x; i += 100) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, size.y);
+                    ctx.stroke();
                 }
+                for (let i = 0; i <= size.y; i += 100) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(size.x, i);
+                    ctx.stroke();
+                }
+                return tile;
+            };
+            gridLayer.addTo(map);
 
-                starSystems.forEach((sys, idx) => {
-                    const color = getFactionColor(sys[4]);
-                    const marker = L.circleMarker([sys[1], sys[0]], {
-                        radius: sys[3] === 'binary' ? 8 : 6,
-                        fillColor: color,
-                        color: '#ffffff',
-                        weight: 1.5,
-                        fillOpacity: 0.9
-                    });
-                    marker.bindTooltip(sys[2], { permanent: false, className: 'system-label' });
-                    
-                    marker.on('click', () => {
-                        let connList = '';
-                        connections.forEach(conn => {
-                            if (conn[0] === idx) connList += `<li>${starSystems[conn[1]][2]} (${conn[2]})</li>`;
-                            if (conn[1] === idx) connList += `<li>${starSystems[conn[0]][2]} (${conn[2]})</li>`;
-                        });
-                        document.getElementById('systemDetails').innerHTML = `
-                            <div style="border-left:3px solid ${color}; padding-left:8px;">
-                                <h4 style="margin:0; color:${color};">${sys[2]}</h4>
-                                <div>Faction: ${sys[4]}</div>
-                                <div>${sys[5]}</div>
-                                ${connList ? '<ul style="margin-top:5px;">'+connList+'</ul>' : '<em>No connections</em>'}
-                            </div>
-                        `;
-                    });
-                    markerGroup.addLayer(marker);
-                });
+            // Initialize layer groups
+            wormholeGroup = L.layerGroup().addTo(map);
+            hyperGroup = L.layerGroup().addTo(map);
+            markerGroup = L.layerGroup().addTo(map);
 
-                // --- Layer Control ---
-                L.control.layers({}, {
-                    "Wormhole Network": wormholeGroup,
-                    "Hyper Routes": hyperGroup,
-                    "Star Systems": markerGroup
-                }, { collapsed: false }).addTo(map);
+            // Layer control
+            L.control.layers({}, {
+                "Wormhole Network": wormholeGroup,
+                "Hyper Routes": hyperGroup,
+                "Star Systems": markerGroup
+            }, { collapsed: false }).addTo(map);
+        }
 
-                // --- Legend (FIXED) ---
-                const legend = L.control({ position: 'bottomleft' });
-                legend.onAdd = function(map) {
-                    const div = L.DomUtil.create('div', 'info legend');
-                    div.style.background = 'rgba(10,20,40,0.8)';
-                    div.style.padding = '8px 12px';
-                    div.style.color = '#ccc';
-                    div.style.borderRadius = '6px';
-                    div.style.fontSize = '12px';
-                    div.style.border = '1px solid #2a4a6a';
-                    div.style.backdropFilter = 'blur(4px)';
-                    div.style.pointerEvents = 'none';
-                    div.innerHTML = `
-                        <strong>Factions</strong><br>
-                        <span style="color:#4da6ff;">●</span> Manticore<br>
-                        <span style="color:#ff6666;">●</span> Haven<br>
-                        <span style="color:#9fc5e8;">●</span> Andermani<br>
-                        <span style="color:#d5a6bd;">●</span> Silesia<br>
-                        <span style="color:#93c47d;">●</span> Grayson<br>
-                        <hr style="margin:5px 0; border-color:#3a5a7a;">
-                        <span style="color:#ffaa00;">⸻⸻</span> Wormhole<br>
-                        <span style="color:#6b9ac4;">━━━</span> Hyper Route
-                    `;
-                    return div;
-                };
-                legend.addTo(map);
-
-            } catch (e) {
-                document.getElementById('status').style.display = 'block';
-                document.getElementById('errorMsg').innerText = 'JavaScript Error: ' + e.message;
-                console.error(e);
+        // Load systems from JSON
+        async function loadSystems() {
+            document.getElementById('loading').style.display = 'block';
+            try {
+                const response = await fetch('systems.json');
+                if (!response.ok) throw new Error('Failed to load systems.json');
+                systemsData = await response.json();
+                renderSystems();
+                populateTravelSelects();
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error(error);
+                alert('Error loading star data. Make sure systems.json exists.');
+                document.getElementById('loading').style.display = 'none';
             }
         }
+
+        // Render markers and connections
+        function renderSystems() {
+            // Clear existing
+            markerGroup.clearLayers();
+            wormholeGroup.clearLayers();
+            hyperGroup.clearLayers();
+            markersMap.clear();
+
+            const factionColors = {
+                'Manticoran': '#4da6ff', 'Havenite': '#ff6666', 'Andermani': '#9fc5e8',
+                'Silesian': '#d5a6bd', 'Grayson': '#93c47d', 'Mesan': '#b45f06',
+                'Solarian': '#c9a0dc', 'Independent': '#f1c232'
+            };
+
+            // Create markers
+            systemsData.forEach(system => {
+                const color = factionColors[system.faction] || '#aaaaaa';
+                const marker = L.circleMarker([system.y, system.x], {
+                    radius: system.type === 'binary' ? 8 : 6,
+                    fillColor: color,
+                    color: '#ffffff',
+                    weight: 1.5,
+                    fillOpacity: 0.9
+                });
+                marker.bindTooltip(system.name, { permanent: false, className: 'system-label' });
+                
+                marker.on('click', () => showSystemDetails(system));
+                markerGroup.addLayer(marker);
+                markersMap.set(system.id, marker);
+            });
+
+            // Draw connections (wormholes and hyper routes)
+            systemsData.forEach(system => {
+                if (system.connections) {
+                    system.connections.forEach(conn => {
+                        const targetSystem = systemsData.find(s => s.id === conn.targetId);
+                        if (!targetSystem) return;
+                        
+                        const from = L.latLng(system.y, system.x);
+                        const to = L.latLng(targetSystem.y, targetSystem.x);
+                        const options = {
+                            color: conn.type === 'wormhole' ? '#ffaa00' : '#6b9ac4',
+                            weight: conn.type === 'wormhole' ? 2.5 : 1.5,
+                            opacity: conn.type === 'wormhole' ? 0.8 : 0.5,
+                            dashArray: conn.type === 'wormhole' ? '6, 6' : null
+                        };
+                        const line = L.polyline([from, to], options);
+                        (conn.type === 'wormhole' ? wormholeGroup : hyperGroup).addLayer(line);
+                    });
+                }
+            });
+        }
+
+        // Show details in panel
+        function showSystemDetails(system) {
+            let connectionsHtml = '';
+            if (system.connections && system.connections.length) {
+                connectionsHtml = '<strong>Connections:</strong><ul style="margin:5px 0 0 20px;">';
+                system.connections.forEach(conn => {
+                    const target = systemsData.find(s => s.id === conn.targetId);
+                    if (target) connectionsHtml += `<li>${target.name} (${conn.type})</li>`;
+                });
+                connectionsHtml += '</ul>';
+            } else {
+                connectionsHtml = '<em>No known connections</em>';
+            }
+
+            const color = {
+                'Manticoran': '#4da6ff', 'Havenite': '#ff6666', 'Andermani': '#9fc5e8',
+                'Silesian': '#d5a6bd', 'Grayson': '#93c47d', 'Mesan': '#b45f06',
+                'Solarian': '#c9a0dc', 'Independent': '#f1c232'
+            }[system.faction] || '#aaa';
+
+            document.getElementById('systemDetails').innerHTML = `
+                <div style="border-left:3px solid ${color}; padding-left:10px;">
+                    <h4 style="margin:0 0 5px; color:${color};">${system.name}</h4>
+                    <div>Faction: ${system.faction}</div>
+                    <div>Type: ${system.type || 'system'}</div>
+                    <div style="margin-top:5px;">${system.notes || ''}</div>
+                    ${connectionsHtml}
+                </div>
+            `;
+        }
+
+        // Populate travel calculator dropdowns
+        function populateTravelSelects() {
+            const fromSelect = document.getElementById('travel-from');
+            const toSelect = document.getElementById('travel-to');
+            fromSelect.innerHTML = '<option value="">Select start...</option>';
+            toSelect.innerHTML = '<option value="">Select destination...</option>';
+            
+            systemsData.sort((a,b) => a.name.localeCompare(b.name)).forEach(system => {
+                const opt1 = document.createElement('option');
+                opt1.value = system.id;
+                opt1.textContent = system.name;
+                fromSelect.appendChild(opt1);
+                
+                const opt2 = document.createElement('option');
+                opt2.value = system.id;
+                opt2.textContent = system.name;
+                toSelect.appendChild(opt2);
+            });
+        }
+
+        // Simple travel time calculation (distance in LY / speed factor)
+        function calculateTravelTime(fromId, toId) {
+            const from = systemsData.find(s => s.id == fromId);
+            const to = systemsData.find(s => s.id == toId);
+            if (!from || !to) return null;
+            
+            // Euclidean distance
+            const dx = to.x - from.x;
+            const dy = to.y - from.y;
+            const distanceLY = Math.sqrt(dx*dx + dy*dy);
+            
+            // Hyperdrive speed: ~3000c for military, assume 2500c average
+            const speedC = 2500;
+            const hours = distanceLY / speedC * 8760; // 8760 hours per year
+            const days = hours / 24;
+            
+            // Check for direct wormhole connection
+            const hasWormhole = from.connections?.some(c => c.targetId == toId && c.type === 'wormhole') || false;
+            
+            return { distanceLY, days, hasWormhole };
+        }
+
+        // Search functionality
+        function searchSystems(query) {
+            if (!query) return [];
+            query = query.toLowerCase();
+            return systemsData.filter(s => s.name.toLowerCase().includes(query));
+        }
+
+        // Zoom to system
+        function zoomToSystem(systemId) {
+            const system = systemsData.find(s => s.id == systemId);
+            if (system) {
+                map.setView([system.y, system.x], 1.5);
+                showSystemDetails(system);
+                // Highlight marker temporarily
+                const marker = markersMap.get(system.id);
+                if (marker) {
+                    marker.setStyle({ radius: 10, fillOpacity: 1 });
+                    setTimeout(() => marker.setStyle({ radius: system.type==='binary'?8:6, fillOpacity:0.9 }), 2000);
+                }
+            }
+        }
+
+        // Event listeners setup
+        function setupEvents() {
+            // Search
+            const searchInput = document.getElementById('search-input');
+            const searchBtn = document.getElementById('search-btn');
+            const resultsDiv = document.getElementById('search-results');
+            
+            function performSearch() {
+                const query = searchInput.value.trim();
+                const results = searchSystems(query);
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = '<div style="padding:8px;">No systems found</div>';
+                } else {
+                    resultsDiv.innerHTML = results.map(s => 
+                        `<div class="search-result-item" data-id="${s.id}">${s.name} (${s.faction})</div>`
+                    ).join('');
+                }
+                resultsDiv.style.display = 'block';
+            }
+            
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') performSearch();
+                else if (e.key === 'Escape') resultsDiv.style.display = 'none';
+            });
+            
+            resultsDiv.addEventListener('click', (e) => {
+                const item = e.target.closest('.search-result-item');
+                if (item) {
+                    const id = parseInt(item.dataset.id);
+                    zoomToSystem(id);
+                    resultsDiv.style.display = 'none';
+                    searchInput.value = '';
+                }
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!searchPanel.contains(e.target) && !resultsDiv.contains(e.target)) {
+                    resultsDiv.style.display = 'none';
+                }
+            });
+            
+                    // Travel calculator
+            document.getElementById('calc-travel').addEventListener('click', () => {
+                const fromId = document.getElementById('travel-from').value;
+                const toId = document.getElementById('travel-to').value;
+                const resultDiv = document.getElementById('travel-result');
+                
+                if (!fromId || !toId) {
+                    resultDiv.textContent = 'Select both systems.';
+                    return;
+                }
+                if (fromId === toId) {
+                    resultDiv.textContent = 'Same system.';
+                    return;
+                }
+                
+                const travel = calculateTravelTime(fromId, toId);
+                if (!travel) {
+                    resultDiv.textContent = 'Error.';
+                    return;
+                }
+                
+                let message = `Distance: ${travel.distanceLY.toFixed(1)} LY · `;
+                if (travel.hasWormhole) {
+                    message += `Wormhole transit (near instantaneous)`;
+                } else {
+                    message += `~${travel.days.toFixed(1)} days at 2500c`;
+                }
+                resultDiv.textContent = message;
+            });
+        }
+
+        // Initialize everything
+        window.onload = async () => {
+            initMap();
+            await loadSystems();
+            setupEvents();
+        };
     </script>
 </body>
 </html>
