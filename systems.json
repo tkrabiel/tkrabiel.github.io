@@ -1,0 +1,239 @@
+[
+  {
+    "id": 1,
+    "name": "Manticore",
+    "x": 0,
+    "y": 0,
+    "faction": "Manticoran",
+    "type": "binary",
+    "notes": "Capital of the Star Empire of Manticore. Home of the Manticore Binary System.",
+    "connections": [
+      { "targetId": 4, "type": "wormhole" },
+      { "targetId": 5, "type": "wormhole" },
+      { "targetId": 17, "type": "wormhole" },
+      { "targetId": 18, "type": "wormhole" },
+      { "targetId": 20, "type": "wormhole" }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Gryphon",
+    "x": 120,
+    "y": -80,
+    "faction": "Manticoran",
+    "type": "planet",
+    "notes": "Second planet of the Manticore Binary System."
+  },
+  {
+    "id": 3,
+    "name": "Sphinx",
+    "x": -130,
+    "y": 90,
+    "faction": "Manticoran",
+    "type": "planet",
+    "notes": "Third planet of the Manticore Binary System."
+  },
+  {
+    "id": 4,
+    "name": "Basilisk",
+    "x": 60,
+    "y": 150,
+    "faction": "Manticoran",
+    "type": "system",
+    "notes": "Wormhole junction terminus. Site of the Battle of Basilisk.",
+    "connections": [
+      { "targetId": 1, "type": "wormhole" }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Trevor's Star",
+    "x": 250,
+    "y": -20,
+    "faction": "Manticoran",
+    "type": "system",
+    "notes": "Formerly Havenite. Captured by Manticore. Key junction terminal.",
+    "connections": [
+      { "targetId": 1, "type": "wormhole" },
+      { "targetId": 6, "type": "wormhole" }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Haven",
+    "x": 480,
+    "y": 320,
+    "faction": "Havenite",
+    "type": "system",
+    "notes": "Capital of the Republic of Haven.",
+    "connections": [
+      { "targetId": 7, "type": "hyper" },
+      { "targetId": 8, "type": "hyper" },
+      { "targetId": 5, "type": "wormhole" }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Barnett",
+    "x": 550,
+    "y": 380,
+    "faction": "Havenite",
+    "type": "system",
+    "notes": "Major Havenite fleet base.",
+    "connections": [
+      { "targetId": 6, "type": "hyper" },
+      { "targetId": 9, "type": "hyper" }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Lovat",
+    "x": 420,
+    "y": 450,
+    "faction": "Havenite",
+    "type": "system",
+    "notes": "Industrial world of the Republic."
+  },
+  {
+    "id": 9,
+    "name": "Marsh",
+    "x": 620,
+    "y": 260,
+    "faction": "Havenite",
+    "type": "system",
+    "notes": "Important junction in Havenite space."
+  },
+  {
+    "id": 10,
+    "name": "New Berlin",
+    "x": -680,
+    "y": 440,
+    "faction": "Andermani",
+    "type": "system",
+    "notes": "Imperial capital of the Andermani Empire.",
+    "connections": [
+      { "targetId": 11, "type": "hyper" },
+      { "targetId": 12, "type": "wormhole" }
+    ]
+  },
+  {
+    "id": 11,
+    "name": "Tomāto",
+    "x": -750,
+    "y": 380,
+    "faction": "Andermani",
+    "type": "system",
+    "notes": "Major Andermani system."
+  },
+  {
+    "id": 12,
+    "name": "Potsdam",
+    "x": -600,
+    "y": 520,
+    "faction": "Andermani",
+    "type": "system",
+    "notes": "Wormhole terminus connecting to Beowulf.",
+    "connections": [
+      { "targetId": 10, "type": "wormhole" },
+      { "targetId": 20, "type": "wormhole" }
+    ]
+  },
+  {
+    "id": 13,
+    "name": "Silesia",
+    "x": 350,
+    "y": -520,
+    "faction": "Silesian",
+    "type": "system",
+    "notes": "Central system of the Silesian Confederacy.",
+    "connections": [
+      { "targetId": 14, "type": "hyper" },
+      { "targetId": 15, "type": "hyper" }
+    ]
+  },
+  {
+    "id": 14,
+    "name": "Mesa",
+    "x": 480,
+    "y": -600,
+    "faction": "Mesan",
+    "type": "system",
+    "notes": "Home of Manpower Inc. and the Mesan Alignment.",
+    "connections": [
+      { "targetId": 21, "type": "hyper" }
+    ]
+  },
+  {
+    "id": 15,
+    "name": "Rembrandt",
+    "x": 260,
+    "y": -450,
+    "faction": "Silesian",
+    "type": "system",
+    "notes": "Major Silesian trade hub."
+  },
+  {
+    "id": 16,
+    "name": "Grayson",
+    "x": -200,
+    "y": -350,
+    "faction": "Grayson",
+    "type": "system",
+    "notes": "Capital of the Protectorate of Grayson. Ally of Manticore.",
+    "connections": [
+      { "targetId": 17, "type": "hyper" }
+    ]
+  },
+  {
+    "id": 17,
+    "name": "Yeltsin's Star",
+    "x": -280,
+    "y": -420,
+    "faction": "Grayson",
+    "type": "system",
+    "notes": "Original Grayson capital, devastated in the Civil War."
+  },
+  {
+    "id": 18,
+    "name": "Erewhon",
+    "x": -120,
+    "y": 240,
+    "faction": "Independent",
+    "type": "system",
+    "notes": "Wormhole junction member. Known for genetic slavery.",
+    "connections": [
+      { "targetId": 1, "type": "wormhole" }
+    ]
+  },
+  {
+    "id": 19,
+    "name": "Zanzibar",
+    "x": 310,
+    "y": 80,
+    "faction": "Manticoran",
+    "type": "system",
+    "notes": "Manticoran junction system."
+  },
+  {
+    "id": 20,
+    "name": "Beowulf",
+    "x": -900,
+    "y": -200,
+    "faction": "Solarian",
+    "type": "system",
+    "notes": "Old Earth colony. Key wormhole nexus connecting to Manticore and Andermani.",
+    "connections": [
+      { "targetId": 1, "type": "wormhole" },
+      { "targetId": 12, "type": "wormhole" }
+    ]
+  },
+  {
+    "id": 21,
+    "name": "Meyers",
+    "x": 800,
+    "y": -400,
+    "faction": "Solarian",
+    "type": "system",
+    "notes": "Solarian League frontier system."
+  }
+]
