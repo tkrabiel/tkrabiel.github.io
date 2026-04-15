@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>CARIS · feeling tracker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+    }
+
+    body {
+      background: linear-gradient(145deg, #0b1a2a 0%, #1a2f3f 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .tracker-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 48px;
+      padding: 32px 28px 40px;
+      max-width: 700px;
+      width: 100%;
+      box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 180, 255, 0.1) inset;
+      transition: box-shadow 0.2s;
+      text-align: center;
+    }
+
+    /* CARIS branding — simple logo feel */
+    .caris-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .caris-logo-symbol {
+      background: #00a6c0;
+      width: 48px;
+      height: 48px;
+      border-radius: 16px 4px 16px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 14px rgba(0, 200, 255, 0.3);
+      transform: rotate(2deg);
+    }
+
+    .caris-logo-symbol span {
+      font-weight: 800;
+      font-size: 26px;
+      letter-spacing: 1px;
+      color: #031016;
+      text-shadow: 0 2px 4px rgba(255,255,255,0.2);
+    }
+
+    .caris-title {
+      font-size: 2.1rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #c2e9ff 0%, #7fd4ff 80%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 2px 5px rgba(0,160,200,0.3);
+    }
+
+    .sub-line {
+      color: #a0c8e0;
+      margin-top: -8px;
+      margin-bottom: 20px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 6px;
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+
+    /* big face container */
+    .face-stage {
+      margin: 15px 0 5px;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mega-face {
+      font-size: 11rem;
+      line-height: 1.2;
+      filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.4));
+      transition: transform 0.15s ease;
+      margin: 10px 0 0;
+    }
+
+    .rating-number {
+      font-size: 3.2rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #f0f9ff, #d4edff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-top: -10px;
+      letter-spacing: 2px;
+    }
+
+    .mood-label {
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: #b4dfff;
+      text-transform: uppercase;
+      background: rgba(0, 40, 60, 0.5);
+      display: inline-block;
+      padding: 6px 22px;
+      border-radius: 40px;
+      backdrop-filter: blur(4px);
+      margin-top: 4px;
+      border: 1px solid rgba(120, 200, 255, 0.25);
+    }
+
+    /* slider — the line with dot */
+    .slider-block {
+      margin: 35px 0 25px;
+      padding: 0 8px;
+    }
+
+    .slider-label-row {
+      display: flex;
+      justify-content: space-between;
+      color: #8eb9d4;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 0 4px 8px;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      background: linear-gradient(90deg, #b02c2c 0%, #c94f4f 20%, #a58e3a 40%, #5f9ea0 50%, #6fbf6f 60%, #4aa34a 80%, #e6b800 100%);
+      border-radius: 20px;
+      outline: none;
+      box-shadow: 0 0 10px rgba(0, 200, 255, 0.3), inset 0 1px 3px #00000055;
+    }
+
+    /* the dot (thumb) */
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 32px;
+      height: 32px;
+      background: #ffffff;
+      border-radius: 50%;
+      border: 3px solid #00d4ff;
+      box-shadow: 0 4px 12px #00b4ffaa, 0 0 0 4px rgba(0, 180, 255, 0.2);
+      cursor: grab;
+      transition: 0.1s;
+      margin-top: -11px;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 32px;
+      height: 32px;
+      background: #ffffff;
+      border-radius: 50%;
+      border: 3px solid #00d4ff;
+      box-shadow: 0 4px 12px #00b4ffaa, 0 0 0 4px rgba(0, 180, 255, 0.2);
+      cursor: grab;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 10px;
+      border-radius: 20px;
+    }
+
+    input[type=range]::-moz-range-track {
+      height: 10px;
+      border-radius: 20px;
+      background: linear-gradient(90deg, #b02c2c, #c94f4f, #a58e3a, #5f9ea0, #6fbf6f, #4aa34a, #e6b800);
+    }
+
+    /* value indicator dots */
+    .tick-marks {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 8px 0;
+      color: #7aa9c4;
+      font-weight: 500;
+      font-size: 0.75rem;
+    }
+
+    /* file control area */
+    .file-control {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .file-badge {
+      background: #102a36;
+      border-radius: 60px;
+      padding: 8px 18px;
+      border: 1px solid #2f6a7a;
+      color: #b3e2ff;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-badge code {
+      background: #04131c;
+      padding: 3px 8px;
+      border-radius: 24px;
+      color: #aae0ff;
+    }
+
+    .btn {
+      background: #1d495b;
+      border: none;
+      color: white;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 60px;
+      font-size: 0.9rem;
+      backdrop-filter: blur(5px);
+      border: 1px solid #3c8dad;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .btn:hover {
+      background: #1f6c85;
+      border-color: #6cc3e0;
+      box-shadow: 0 0 12px #0088b3;
+      transform: scale(1.02);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: #7099ad;
+      font-size: 0.8rem;
+      font-style: italic;
+    }
+
+    .footnote a {
+      color: #9fd3ff;
+    }
+  </style>
+</head>
+<body>
+<div class="tracker-card">
+  
+  <!-- CARIS LOGO / HEADER (as requested) -->
+  <div class="caris-header">
+    <div class="caris-logo-symbol">
+      <span>C⟡</span>
+    </div>
+    <div class="caris-title">CARIS FEELING TRACKER</div>
+  </div>
+  <div class="sub-line">hydrographic mood</div>
+
+  <!-- BIG FACE & RATING -->
+  <div class="face-stage">
+    <div class="mega-face" id="faceEmoji">😐</div>
+    <div class="rating-number" id="ratingValue">0</div>
+    <div class="mood-label" id="moodDescription">neutral</div>
+  </div>
+
+  <!-- THE LINE WITH DOT (slider -10 to 10) -->
+  <div class="slider-block">
+    <div class="slider-label-row">
+      <span>💢 -10</span>
+      <span>⚖️ 0</span>
+      <span>🥳 +10</span>
+    </div>
+    <input type="range" id="moodSlider" min="-10" max="10" value="0" step="1" aria-label="CARIS mood slider, -10 to 10">
+    <div class="tick-marks">
+      <span>-10</span><span>-8</span><span>-6</span><span>-4</span><span>-2</span><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span>
+    </div>
+  </div>
+
+  <!-- SEPARATE DOCUMENT CONTROL (references external file) -->
+  <div class="file-control">
+    <div class="file-badge">
+      <span>📄 external doc:</span>
+      <code>mood.json</code>
+    </div>
+    <button class="btn" id="fetchMoodBtn">⟳ Sync from file</button>
+  </div>
+  <div class="footnote">
+    ⚡ number controlled by <strong>mood.json</strong> (separate document).<br>
+    <span style="opacity:0.7">Edit the file → click sync. Slider also works manually.</span>
+  </div>
+</div>
+
+<script>
+  (function() {
+    "use strict";
+
+    // ----- DOM elements -----
+    const slider = document.getElementById('moodSlider');
+    const faceEmoji = document.getElementById('faceEmoji');
+    const ratingSpan = document.getElementById('ratingValue');
+    const moodDesc = document.getElementById('moodDescription');
+    const fetchBtn = document.getElementById('fetchMoodBtn');
+
+    // ----- Face mapping exactly as requested -----
+    // -10..-8 : exploding anger face
+    // -7..-4  : angry face (red)
+    // -3..-1  : sad face
+    // 0       : neutral
+    // 1..3    : slight smile
+    // 4..7    : smile with teeth
+    // 8..10   : smile with party hat + happy happy happy
+    function getMoodFromValue(val) {
+      // ensure integer
+      const v = Math.round(val);
+      
+      if (v >= -10 && v <= -8) {
+        return {
+          emoji: '🤯💥',        // exploding anger combo (exploding head + collision)
+          label: 'EXPLODING ANGER',
+          desc: '🤯 -10 to -8'
+        };
+      } else if (v >= -7 && v <= -4) {
+        return {
+          emoji: '😡',           // red angry face
+          label: 'ANGRY (RED)',
+          desc: '😡 -7 to -4'
+        };
+      } else if (v >= -3 && v <= -1) {
+        return {
+          emoji: '😞',           // sad face
+          label: 'SAD',
+          desc: '😞 -3 to -1'
+        };
+      } else if (v === 0) {
+        return {
+          emoji: '😐',
+          label: 'NEUTRAL',
+          desc: '😐 0'
+        };
+      } else if (v >= 1 && v <= 3) {
+        return {
+          emoji: '🙂',           // slight smile
+          label: 'SLIGHT SMILE',
+          desc: '🙂 1 to 3'
+        };
+      } else if (v >= 4 && v <= 7) {
+        return {
+          emoji: '😁',           // smile with teeth
+          label: 'SMILE WITH TEETH',
+          desc: '😁 4 to 7'
+        };
+      } else if (v >= 8 && v <= 10) {
+        return {
+          emoji: '🥳🎉',         // party hat + happy
+          label: 'PARTY HAT · HAPPY HAPPY',
+          desc: '🥳 8 to 10'
+        };
+      } else {
+        // fallback (should never happen)
+        return { emoji: '❓', label: 'UNKNOWN', desc: '' };
+      }
+    }
+
+    // ----- Update UI based on slider value -----
+    function updateUIFromValue(value) {
+      const numeric = Number(value);
+      const mood = getMoodFromValue(numeric);
+      
+      faceEmoji.textContent = mood.emoji;
+      ratingSpan.textContent = numeric;
+      moodDesc.textContent = mood.label;
+      
+      // optional small style changes for extreme moods
+      if (numeric <= -8) {
+        faceEmoji.style.transform = 'scale(1.05) rotate(-1deg)';
+      } else {
+        faceEmoji.style.transform = 'scale(1)';
+      }
+    }
+
+    // ----- Slider event: user moves the dot -----
+    function handleSliderChange() {
+      const val = parseInt(slider.value, 10);
+      updateUIFromValue(val);
+    }
+
+    slider.addEventListener('input', handleSliderChange);
+
+    // ----- Function to fetch mood from separate document (mood.json) -----
+    async function fetchMoodFromFile() {
+      try {
+        // Attempt to fetch the separate document. Relative path './mood.json'
+        const response = await fetch('./mood.json', { 
+          cache: 'no-store'  // ensure fresh reads if file changes
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Expecting structure like { "value": 5 } or just a number? We'll handle both.
+        let newValue;
+        if (typeof data === 'number') {
+          newValue = data;
+        } else if (data && typeof data.value === 'number') {
+          newValue = data.value;
+        } else if (data && typeof data.rating === 'number') {
+          newValue = data.rating;
+        } else {
+          throw new Error('mood.json must contain a number or { "value": number }');
+        }
+        
+        // Clamp to valid range -10..10
+        newValue = Math.min(10, Math.max(-10, Math.round(newValue)));
+        
+        // Update slider and UI
+        slider.value = newValue;
+        updateUIFromValue(newValue);
+        
+        // Visual feedback: briefly highlight
+        faceEmoji.style.transition = 'transform 0.1s';
+        faceEmoji.style.transform = 'scale(1.08)';
+        setTimeout(() => faceEmoji.style.transform = '', 150);
+        
+        console.log(`✅ Mood synced from file: ${newValue}`);
+        return true;
+      } catch (error) {
+        console.warn('⚠️ Could not load mood.json, using default/current. ' + error.message);
+        // If fetch fails, we keep current value. Also we can display a subtle note.
+        // Show a temporary message? We'll just keep existing.
+        // But we can update a small status (not required but nice)
+        const fileBadge = document.querySelector('.file-badge');
+        const originalText = fileBadge.innerHTML;
+        fileBadge.innerHTML = `<span>📄 using local</span><code>mood.json (not found)</code>`;
+        setTimeout(() => {
+          fileBadge.innerHTML = `<span>📄 external doc:</span><code>mood.json</code>`;
+        }, 2000);
+        return false;
+      }
+    }
+
+    // ----- Initialize: first try to load from separate document, fallback to default 0 -----
+    async function initializeTracker() {
+      // Set default neutral face first (in case fetch takes time)
+      slider.value = 0;
+      updateUIFromValue(0);
+      
+      // Try to read from external document (mood.json)
+      const success = await fetchMoodFromFile();
+      
+      if (!success) {
+        // If file not available, keep 0 but also we could load from localStorage? Not required.
+        // Keep default.
+      }
+    }
+
+    // Attach fetch button
+    fetchBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      fetchBtn.textContent = '⏳ Syncing...';
+      await fetchMoodFromFile();
+      fetchBtn.textContent = '⟳ Sync from file';
+    });
+
+    // Start everything
+    initializeTracker();
+
+    // (Optional) Auto-refresh every 30 seconds? Not requested, but can be added.
+    // We'll keep it manual + on load, per "separate document" reference.
+    // Also if user wants to see changes without clicking, they can click sync.
+
+    // Additional: allow double-click on face to re-fetch? Just for fun, not needed.
+    faceEmoji.addEventListener('dblclick', () => {
+      fetchMoodFromFile();
+    });
+
+    // ensure that if slider moves, any external file indication is not misleading.
+    // That's fine.
+    
+    // To match "CARIS LOGO or CARIS FEELING TRACKER" we have both logo-like element and title.
+    // The separate document is referenced. All good.
+  })();
+</script>
+
+<!-- 
+  ==========  SEPARATE DOCUMENT (mood.json) EXAMPLE ==========
+  Create a file named "mood.json" in the same folder as this HTML.
+  Content should be like:
+  
+  { "value": 7 }
+  
+  or just a number:
+  
+  5
+  
+  The page will read it on load and when you click "Sync from file".
+  The number controls the slider and the big face.
+-->
+</body>
+</html>
