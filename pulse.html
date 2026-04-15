@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>🌊 Buoy Pulse · wave period flasher</title>
+  <title>🌊 Buoy Pulse · wave period flasher (fixed)</title>
   <style>
     * {
       box-sizing: border-box;
@@ -125,6 +125,7 @@
     #status {
       color: #9ac7d9;
       font-size: 0.9rem;
+      max-width: 220px;
     }
 
     /* Flashing area – 85% of viewport */
@@ -132,7 +133,7 @@
       flex: 1;
       min-height: 0;
       background-color: #0a0f14;
-      transition: background-color 0.05s ease;
+      transition: background-color 0.04s ease;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -156,10 +157,6 @@
       margin-top: 10px;
       font-size: 1rem;
     }
-
-    /* utility */
-    .flex-center { display: flex; align-items: center; }
-    .text-glow { text-shadow: 0 0 8px #8dd0e0; }
   </style>
 </head>
 <body>
@@ -218,54 +215,64 @@
     const messageLine = document.getElementById('messageLine');
 
     // State
-    let currentBuoyId = '44008';      // default Nantucket
-    let currentPeriodSec = 5.0;       // fallback
+    let currentBuoyId = '44008';
+    let currentPeriodSec = 6.0;       // fallback
     let flashInterval = null;
     let isLight = true;
-    let lastValidPeriod = 5.0;
     let fetchInProgress = false;
 
-    // CORS proxy (public)
-    const CORS_PROXY = 'https://corsproxy.io/?';
+    // Use a reliable CORS proxy (allorigins)
+    const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 
-    // ----- Helper: parse NDBC realtime2 file -----
+    // ----- Robust fetch with retry & fallback -----
     async function fetchBuoyPeriod(buoyId) {
       const url = `https://www.ndbc.noaa.gov/data/realtime2/${buoyId}.txt`;
       const proxyUrl = CORS_PROXY + encodeURIComponent(url);
       
-      const response = await fetch(proxyUrl);
-      if (!response.ok) throw new Error(`Buoy ${buoyId} not reachable (${response.status})`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       
-      const text = await response.text();
-      const lines = text.trim().split('\n');
-      if (lines.length < 3) throw new Error('Empty or invalid data');
-
-      // Find header (#YY)
-      let headerIdx = -1;
-      for (let i=0; i<lines.length; i++) {
-        if (lines[i].startsWith('#YY')) { headerIdx = i; break; }
-      }
-      if (headerIdx === -1) throw new Error('Header missing');
-
-      const header = lines[headerIdx].replace('#', '').trim().split(/\s+/);
-      const dpdIdx = header.indexOf('DPD');
-      if (dpdIdx === -1) throw new Error('DPD column not found');
-
-      // Search latest row with valid DPD (not MM)
-      for (let i = lines.length-1; i > headerIdx; i--) {
-        const row = lines[i].trim();
-        if (row === '' || row.startsWith('#')) continue;
-        const cols = row.split(/\s+/);
-        if (cols.length <= dpdIdx) continue;
-        const dpdVal = cols[dpdIdx];
-        if (dpdVal !== 'MM') {
-          const period = parseFloat(dpdVal);
-          if (!isNaN(period) && period > 0.5) {
-            return period;
+      try {
+        const response = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const text = await response.text();
+        
+        // Parse NDBC realtime2 format
+        const lines = text.split('\n');
+        let headerIdx = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].startsWith('#YY')) {
+            headerIdx = i;
+            break;
           }
         }
+        if (headerIdx === -1) throw new Error('Header missing');
+        
+        const header = lines[headerIdx].replace('#', '').trim().split(/\s+/);
+        const dpdIdx = header.indexOf('DPD');
+        if (dpdIdx === -1) throw new Error('DPD column missing');
+        
+        // Search from bottom for first valid DPD
+        for (let i = lines.length - 1; i > headerIdx; i--) {
+          const row = lines[i].trim();
+          if (row === '' || row.startsWith('#')) continue;
+          const cols = row.split(/\s+/);
+          if (cols.length <= dpdIdx) continue;
+          const dpdVal = cols[dpdIdx];
+          if (dpdVal && dpdVal !== 'MM') {
+            const period = parseFloat(dpdVal);
+            if (!isNaN(period) && period > 0.5 && period < 30) {
+              return period;
+            }
+          }
+        }
+        throw new Error('No valid DPD value');
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
       }
-      throw new Error('No valid DPD found');
     }
 
     // ----- Flash control -----
@@ -280,11 +287,9 @@
       stopFlashing();
       if (periodSec <= 0.3) periodSec = 1.0;
       
-      // Toggle background between dark and white
       const darkColor = '#0a1017';
       const lightColor = '#f5faff';
       
-      // Set initial state
       flashZone.style.backgroundColor = darkColor;
       isLight = false;
       
@@ -293,7 +298,6 @@
       flashInterval = setInterval(() => {
         isLight = !isLight;
         flashZone.style.backgroundColor = isLight ? lightColor : darkColor;
-        // Adjust text color for readability
         const overlayDiv = document.querySelector('.flash-overlay');
         if (overlayDiv) {
           overlayDiv.style.color = isLight ? '#0b2b3c' : 'rgba(255,255,255,0.8)';
@@ -303,23 +307,34 @@
       messageLine.textContent = `flashing every ${periodSec.toFixed(1)}s (half period)`;
     }
 
-    // ----- Update UI with new period -----
-    function updatePeriodDisplay(period, buoyId, stationName = null) {
+    // ----- Update UI -----
+    function updatePeriodDisplay(period, buoyId, customName = null) {
       currentPeriodSec = period;
-      lastValidPeriod = period;
       periodDisplay.textContent = period.toFixed(1);
       
-      let displayName = stationName || `Buoy ${buoyId}`;
-      if (!stationName) {
+      let displayName = customName || '';
+      if (!displayName) {
         const selectedOpt = buoySelect.options[buoySelect.selectedIndex];
         if (selectedOpt && selectedOpt.value === buoyId) {
           displayName = selectedOpt.text.split('·')[1]?.trim() || buoyId;
+        } else {
+          displayName = `Buoy ${buoyId}`;
         }
       }
       buoyNameFlash.textContent = `${displayName} · DPD ${period.toFixed(1)} s`;
-      
       startFlashing(period);
       statusDiv.innerHTML = `✅ Live · ${period.toFixed(1)}s period`;
+    }
+
+    // Fallback if fetch fails
+    function useFallbackPeriod(buoyId, reason) {
+      const fallback = 7.0; // typical ocean swell
+      currentPeriodSec = fallback;
+      periodDisplay.textContent = fallback.toFixed(1);
+      const displayName = `Buoy ${buoyId}`;
+      buoyNameFlash.textContent = `${displayName} · fallback ${fallback}s (${reason})`;
+      startFlashing(fallback);
+      statusDiv.innerHTML = `⚠️ using fallback (${reason})`;
     }
 
     // ----- Main fetch routine -----
@@ -334,16 +349,10 @@
         currentBuoyId = buoyId;
       } catch (error) {
         console.warn(error);
-        statusDiv.innerHTML = `⚠️ ${error.message}`;
-        periodDisplay.textContent = '—';
-        buoyNameFlash.textContent = `Buoy ${buoyId} · error`;
-        // keep old flashing or fallback
-        if (lastValidPeriod) {
-          startFlashing(lastValidPeriod);
-        } else {
-          startFlashing(5.0);
-        }
-        messageLine.textContent = `using fallback period (${lastValidPeriod.toFixed(1)}s)`;
+        let reason = error.message;
+        if (reason.includes('abort')) reason = 'timeout';
+        else if (reason.includes('DPD')) reason = 'no DPD data';
+        useFallbackPeriod(buoyId, reason);
       } finally {
         fetchInProgress = false;
       }
@@ -368,10 +377,9 @@
 
     // ----- Initialize -----
     function init() {
-      // set default buoy
+      // start with default buoy
       loadBuoyPeriod(buoySelect.value);
       
-      // Attach listeners
       refreshBtn.addEventListener('click', handleRefresh);
       customBtn.addEventListener('click', handleCustom);
       buoySelect.addEventListener('change', (e) => {
@@ -387,7 +395,6 @@
 
     init();
 
-    // Cleanup on page unload (optional)
     window.addEventListener('beforeunload', () => {
       if (flashInterval) clearInterval(flashInterval);
     });
