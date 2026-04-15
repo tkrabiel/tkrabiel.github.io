@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>🌊 Buoy Pulse · wave period flasher</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+      background: #0b1a26;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: #e6f0f5;
+    }
+    .top-bar {
+      background: #132c3b;
+      padding: 18px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 15px 20px;
+      border-bottom: 2px solid #2a6b7e;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+    h1 {
+      font-weight: 400;
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+      color: #c0e4f0;
+      margin-right: 10px;
+    }
+    .selector-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+    select {
+      background: #1e3f4f;
+      border: 1px solid #2f8faa;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 48px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      min-width: 260px;
+    }
+    .custom-wrapper {
+      display: flex;
+      background: #1e3f4f;
+      border-radius: 48px;
+      border: 1px solid #2f8faa;
+      padding: 4px 4px 4px 20px;
+      align-items: center;
+    }
+    .custom-wrapper input {
+      background: transparent;
+      border: none;
+      padding: 10px 0;
+      color: white;
+      font-size: 1rem;
+      width: 140px;
+      outline: none;
+      font-family: inherit;
+    }
+    .custom-wrapper input::placeholder {
+      color: #9bbdcc;
+    }
+    .custom-wrapper button {
+      background: #2a9d8f;
+      border: none;
+      color: white;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 40px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: 0.15s;
+      margin-left: 5px;
+    }
+    .custom-wrapper button:hover {
+      background: #1f7a6f;
+    }
+    .fetch-btn {
+      background: #0a3f50;
+      border: 1.5px solid #2a9d8f;
+      color: white;
+      padding: 12px 26px;
+      border-radius: 48px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: 0.15s;
+    }
+    .fetch-btn:hover {
+      background: #1a5f70;
+    }
+    .info-panel {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 25px;
+    }
+    .period-indicator {
+      background: #0e2a36;
+      padding: 8px 20px;
+      border-radius: 48px;
+      border-left: 4px solid #2a9d8f;
+    }
+    .period-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-right: 5px;
+    }
+    #status {
+      color: #9ac7d9;
+      font-size: 0.9rem;
+    }
+
+    /* Flashing area – 85% of viewport */
+    .flash-zone {
+      flex: 1;
+      min-height: 0;
+      background-color: #0a0f14;
+      transition: background-color 0.05s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-top: 1px solid #1e5263;
+    }
+    .flash-overlay {
+      text-align: center;
+      color: rgba(255,255,255,0.7);
+      font-size: 1.8rem;
+      font-weight: 300;
+      text-shadow: 0 0 20px rgba(0,0,0,0.5);
+      pointer-events: none;
+      backdrop-filter: blur(2px);
+      padding: 20px;
+    }
+    .wave-emoji {
+      font-size: 4rem;
+      opacity: 0.6;
+    }
+    .small-note {
+      margin-top: 10px;
+      font-size: 1rem;
+    }
+
+    /* utility */
+    .flex-center { display: flex; align-items: center; }
+    .text-glow { text-shadow: 0 0 8px #8dd0e0; }
+  </style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>🌊 BuoyPulse</h1>
+  <div class="selector-group">
+    <select id="buoySelect">
+      <option value="41002">41002 · S HATTERAS</option>
+      <option value="41008">41008 · GRAYS REEF</option>
+      <option value="41009">41009 · CANAVERAL EAST</option>
+      <option value="41010">41010 · CANAVERAL NE</option>
+      <option value="42001">42001 · MID GULF</option>
+      <option value="42002">42002 · W GULF</option>
+      <option value="42003">42003 · E GULF</option>
+      <option value="44008" selected>44008 · NANTUCKET S</option>
+      <option value="46035">46035 · BERING SEA</option>
+      <option value="51001">51001 · NW HAWAII</option>
+    </select>
+    <div class="custom-wrapper">
+      <input type="text" id="customBuoy" placeholder="Custom ID (e.g., 41001)" maxlength="6">
+      <button id="customBtn">🔍 Go</button>
+    </div>
+    <button class="fetch-btn" id="refreshBtn">⟳ Fetch & flash</button>
+  </div>
+  <div class="info-panel">
+    <div class="period-indicator">
+      <span style="opacity:0.8;">⏱️ DPD</span>
+      <span class="period-value" id="periodDisplay">—</span> s
+    </div>
+    <div id="status">⚡ ready</div>
+  </div>
+</div>
+
+<!-- FLASHING AREA (85% height) -->
+<div class="flash-zone" id="flashZone">
+  <div class="flash-overlay">
+    <div class="wave-emoji">🌊🌊🌊</div>
+    <div id="messageLine">wave period flashing</div>
+    <div class="small-note" id="buoyNameFlash">—</div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    "use strict";
+
+    // DOM elements
+    const buoySelect = document.getElementById('buoySelect');
+    const customBuoyInput = document.getElementById('customBuoy');
+    const customBtn = document.getElementById('customBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const periodDisplay = document.getElementById('periodDisplay');
+    const statusDiv = document.getElementById('status');
+    const flashZone = document.getElementById('flashZone');
+    const buoyNameFlash = document.getElementById('buoyNameFlash');
+    const messageLine = document.getElementById('messageLine');
+
+    // State
+    let currentBuoyId = '44008';      // default Nantucket
+    let currentPeriodSec = 5.0;       // fallback
+    let flashInterval = null;
+    let isLight = true;
+    let lastValidPeriod = 5.0;
+    let fetchInProgress = false;
+
+    // CORS proxy (public)
+    const CORS_PROXY = 'https://corsproxy.io/?';
+
+    // ----- Helper: parse NDBC realtime2 file -----
+    async function fetchBuoyPeriod(buoyId) {
+      const url = `https://www.ndbc.noaa.gov/data/realtime2/${buoyId}.txt`;
+      const proxyUrl = CORS_PROXY + encodeURIComponent(url);
+      
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error(`Buoy ${buoyId} not reachable (${response.status})`);
+      
+      const text = await response.text();
+      const lines = text.trim().split('\n');
+      if (lines.length < 3) throw new Error('Empty or invalid data');
+
+      // Find header (#YY)
+      let headerIdx = -1;
+      for (let i=0; i<lines.length; i++) {
+        if (lines[i].startsWith('#YY')) { headerIdx = i; break; }
+      }
+      if (headerIdx === -1) throw new Error('Header missing');
+
+      const header = lines[headerIdx].replace('#', '').trim().split(/\s+/);
+      const dpdIdx = header.indexOf('DPD');
+      if (dpdIdx === -1) throw new Error('DPD column not found');
+
+      // Search latest row with valid DPD (not MM)
+      for (let i = lines.length-1; i > headerIdx; i--) {
+        const row = lines[i].trim();
+        if (row === '' || row.startsWith('#')) continue;
+        const cols = row.split(/\s+/);
+        if (cols.length <= dpdIdx) continue;
+        const dpdVal = cols[dpdIdx];
+        if (dpdVal !== 'MM') {
+          const period = parseFloat(dpdVal);
+          if (!isNaN(period) && period > 0.5) {
+            return period;
+          }
+        }
+      }
+      throw new Error('No valid DPD found');
+    }
+
+    // ----- Flash control -----
+    function stopFlashing() {
+      if (flashInterval) {
+        clearInterval(flashInterval);
+        flashInterval = null;
+      }
+    }
+
+    function startFlashing(periodSec) {
+      stopFlashing();
+      if (periodSec <= 0.3) periodSec = 1.0;
+      
+      // Toggle background between dark and white
+      const darkColor = '#0a1017';
+      const lightColor = '#f5faff';
+      
+      // Set initial state
+      flashZone.style.backgroundColor = darkColor;
+      isLight = false;
+      
+      const halfPeriodMs = (periodSec * 1000) / 2;
+      
+      flashInterval = setInterval(() => {
+        isLight = !isLight;
+        flashZone.style.backgroundColor = isLight ? lightColor : darkColor;
+        // Adjust text color for readability
+        const overlayDiv = document.querySelector('.flash-overlay');
+        if (overlayDiv) {
+          overlayDiv.style.color = isLight ? '#0b2b3c' : 'rgba(255,255,255,0.8)';
+        }
+      }, halfPeriodMs);
+      
+      messageLine.textContent = `flashing every ${periodSec.toFixed(1)}s (half period)`;
+    }
+
+    // ----- Update UI with new period -----
+    function updatePeriodDisplay(period, buoyId, stationName = null) {
+      currentPeriodSec = period;
+      lastValidPeriod = period;
+      periodDisplay.textContent = period.toFixed(1);
+      
+      let displayName = stationName || `Buoy ${buoyId}`;
+      if (!stationName) {
+        const selectedOpt = buoySelect.options[buoySelect.selectedIndex];
+        if (selectedOpt && selectedOpt.value === buoyId) {
+          displayName = selectedOpt.text.split('·')[1]?.trim() || buoyId;
+        }
+      }
+      buoyNameFlash.textContent = `${displayName} · DPD ${period.toFixed(1)} s`;
+      
+      startFlashing(period);
+      statusDiv.innerHTML = `✅ Live · ${period.toFixed(1)}s period`;
+    }
+
+    // ----- Main fetch routine -----
+    async function loadBuoyPeriod(buoyId, customName = null) {
+      if (fetchInProgress) return;
+      fetchInProgress = true;
+      statusDiv.innerHTML = `⏳ fetching ${buoyId}...`;
+      
+      try {
+        const period = await fetchBuoyPeriod(buoyId);
+        updatePeriodDisplay(period, buoyId, customName);
+        currentBuoyId = buoyId;
+      } catch (error) {
+        console.warn(error);
+        statusDiv.innerHTML = `⚠️ ${error.message}`;
+        periodDisplay.textContent = '—';
+        buoyNameFlash.textContent = `Buoy ${buoyId} · error`;
+        // keep old flashing or fallback
+        if (lastValidPeriod) {
+          startFlashing(lastValidPeriod);
+        } else {
+          startFlashing(5.0);
+        }
+        messageLine.textContent = `using fallback period (${lastValidPeriod.toFixed(1)}s)`;
+      } finally {
+        fetchInProgress = false;
+      }
+    }
+
+    // ----- Event handlers -----
+    function handleRefresh() {
+      const selected = buoySelect.value;
+      customBuoyInput.value = '';
+      loadBuoyPeriod(selected);
+    }
+
+    function handleCustom() {
+      const customId = customBuoyInput.value.trim().toUpperCase();
+      if (customId.length < 5) {
+        alert('Please enter a 5‑character buoy ID (e.g., 41001)');
+        return;
+      }
+      buoySelect.value = ''; // deselect
+      loadBuoyPeriod(customId);
+    }
+
+    // ----- Initialize -----
+    function init() {
+      // set default buoy
+      loadBuoyPeriod(buoySelect.value);
+      
+      // Attach listeners
+      refreshBtn.addEventListener('click', handleRefresh);
+      customBtn.addEventListener('click', handleCustom);
+      buoySelect.addEventListener('change', (e) => {
+        customBuoyInput.value = '';
+        loadBuoyPeriod(e.target.value);
+      });
+      customBuoyInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          customBtn.click();
+        }
+      });
+    }
+
+    init();
+
+    // Cleanup on page unload (optional)
+    window.addEventListener('beforeunload', () => {
+      if (flashInterval) clearInterval(flashInterval);
+    });
+
+  })();
+</script>
+</body>
+</html>
