@@ -3,13 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>🌊 Buoy Pulse · wave period flasher (fixed)</title>
+  <title>🌊 Buoy Pulse · wave period flasher (robust)</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
       background: #0b1a26;
@@ -73,9 +69,7 @@
       outline: none;
       font-family: inherit;
     }
-    .custom-wrapper input::placeholder {
-      color: #9bbdcc;
-    }
+    .custom-wrapper input::placeholder { color: #9bbdcc; }
     .custom-wrapper button {
       background: #2a9d8f;
       border: none;
@@ -88,9 +82,7 @@
       transition: 0.15s;
       margin-left: 5px;
     }
-    .custom-wrapper button:hover {
-      background: #1f7a6f;
-    }
+    .custom-wrapper button:hover { background: #1f7a6f; }
     .fetch-btn {
       background: #0a3f50;
       border: 1.5px solid #2a9d8f;
@@ -100,11 +92,8 @@
       font-weight: 600;
       cursor: pointer;
       font-size: 1rem;
-      transition: 0.15s;
     }
-    .fetch-btn:hover {
-      background: #1a5f70;
-    }
+    .fetch-btn:hover { background: #1a5f70; }
     .info-panel {
       margin-left: auto;
       display: flex;
@@ -127,13 +116,11 @@
       font-size: 0.9rem;
       max-width: 220px;
     }
-
-    /* Flashing area – 85% of viewport */
     .flash-zone {
       flex: 1;
       min-height: 0;
       background-color: #0a0f14;
-      transition: background-color 0.04s ease;
+      transition: background-color 0.05s ease;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -149,14 +136,8 @@
       backdrop-filter: blur(2px);
       padding: 20px;
     }
-    .wave-emoji {
-      font-size: 4rem;
-      opacity: 0.6;
-    }
-    .small-note {
-      margin-top: 10px;
-      font-size: 1rem;
-    }
+    .wave-emoji { font-size: 4rem; opacity: 0.6; }
+    .small-note { margin-top: 10px; font-size: 1rem; }
   </style>
 </head>
 <body>
@@ -190,7 +171,6 @@
   </div>
 </div>
 
-<!-- FLASHING AREA (85% height) -->
 <div class="flash-zone" id="flashZone">
   <div class="flash-overlay">
     <div class="wave-emoji">🌊🌊🌊</div>
@@ -203,7 +183,6 @@
   (function() {
     "use strict";
 
-    // DOM elements
     const buoySelect = document.getElementById('buoySelect');
     const customBuoyInput = document.getElementById('customBuoy');
     const customBtn = document.getElementById('customBtn');
@@ -214,68 +193,67 @@
     const buoyNameFlash = document.getElementById('buoyNameFlash');
     const messageLine = document.getElementById('messageLine');
 
-    // State
-    let currentBuoyId = '44008';
-    let currentPeriodSec = 6.0;       // fallback
+    let currentPeriodSec = 6.0;
     let flashInterval = null;
     let isLight = true;
     let fetchInProgress = false;
 
-    // Use a reliable CORS proxy (allorigins)
-    const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-
-    // ----- Robust fetch with retry & fallback -----
-    async function fetchBuoyPeriod(buoyId) {
+    // Multiple CORS proxies to try
+    const PROXIES = [
+      'https://corsproxy.io/?',
+      'https://api.allorigins.win/raw?url=',
+      'https://cors-anywhere.herokuapp.com/'
+    ];
+    
+    async function fetchWithProxy(buoyId, proxyIndex = 0) {
+      if (proxyIndex >= PROXIES.length) throw new Error('All proxies failed');
       const url = `https://www.ndbc.noaa.gov/data/realtime2/${buoyId}.txt`;
-      const proxyUrl = CORS_PROXY + encodeURIComponent(url);
+      const proxyUrl = PROXIES[proxyIndex] + encodeURIComponent(url);
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
       
       try {
         const response = await fetch(proxyUrl, { signal: controller.signal });
         clearTimeout(timeoutId);
-        
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const text = await response.text();
-        
-        // Parse NDBC realtime2 format
-        const lines = text.split('\n');
-        let headerIdx = -1;
-        for (let i = 0; i < lines.length; i++) {
-          if (lines[i].startsWith('#YY')) {
-            headerIdx = i;
-            break;
-          }
-        }
-        if (headerIdx === -1) throw new Error('Header missing');
-        
-        const header = lines[headerIdx].replace('#', '').trim().split(/\s+/);
-        const dpdIdx = header.indexOf('DPD');
-        if (dpdIdx === -1) throw new Error('DPD column missing');
-        
-        // Search from bottom for first valid DPD
-        for (let i = lines.length - 1; i > headerIdx; i--) {
-          const row = lines[i].trim();
-          if (row === '' || row.startsWith('#')) continue;
-          const cols = row.split(/\s+/);
-          if (cols.length <= dpdIdx) continue;
-          const dpdVal = cols[dpdIdx];
-          if (dpdVal && dpdVal !== 'MM') {
-            const period = parseFloat(dpdVal);
-            if (!isNaN(period) && period > 0.5 && period < 30) {
-              return period;
-            }
-          }
-        }
-        throw new Error('No valid DPD value');
-      } catch (error) {
+        return text;
+      } catch (e) {
         clearTimeout(timeoutId);
-        throw error;
+        // Try next proxy
+        return fetchWithProxy(buoyId, proxyIndex + 1);
       }
     }
 
-    // ----- Flash control -----
+    async function fetchBuoyPeriod(buoyId) {
+      const text = await fetchWithProxy(buoyId);
+      const lines = text.split('\n');
+      
+      let headerIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].startsWith('#YY')) { headerIdx = i; break; }
+      }
+      if (headerIdx === -1) throw new Error('Header missing');
+      
+      const header = lines[headerIdx].replace('#', '').trim().split(/\s+/);
+      const dpdIdx = header.indexOf('DPD');
+      if (dpdIdx === -1) throw new Error('DPD column missing');
+      
+      for (let i = lines.length - 1; i > headerIdx; i--) {
+        const row = lines[i].trim();
+        if (row === '' || row.startsWith('#')) continue;
+        const cols = row.split(/\s+/);
+        if (cols.length <= dpdIdx) continue;
+        const dpdVal = cols[dpdIdx];
+        if (dpdVal && dpdVal !== 'MM') {
+          const period = parseFloat(dpdVal);
+          if (!isNaN(period) && period > 0.5 && period < 30) return period;
+        }
+      }
+      throw new Error('No valid DPD');
+    }
+
     function stopFlashing() {
       if (flashInterval) {
         clearInterval(flashInterval);
@@ -307,7 +285,6 @@
       messageLine.textContent = `flashing every ${periodSec.toFixed(1)}s (half period)`;
     }
 
-    // ----- Update UI -----
     function updatePeriodDisplay(period, buoyId, customName = null) {
       currentPeriodSec = period;
       periodDisplay.textContent = period.toFixed(1);
@@ -323,21 +300,18 @@
       }
       buoyNameFlash.textContent = `${displayName} · DPD ${period.toFixed(1)} s`;
       startFlashing(period);
-      statusDiv.innerHTML = `✅ Live · ${period.toFixed(1)}s period`;
+      statusDiv.innerHTML = `✅ Live · ${period.toFixed(1)}s`;
     }
 
-    // Fallback if fetch fails
     function useFallbackPeriod(buoyId, reason) {
-      const fallback = 7.0; // typical ocean swell
-      currentPeriodSec = fallback;
+      const fallback = currentPeriodSec || 6.0;
       periodDisplay.textContent = fallback.toFixed(1);
       const displayName = `Buoy ${buoyId}`;
       buoyNameFlash.textContent = `${displayName} · fallback ${fallback}s (${reason})`;
       startFlashing(fallback);
-      statusDiv.innerHTML = `⚠️ using fallback (${reason})`;
+      statusDiv.innerHTML = `⚠️ fallback (${reason})`;
     }
 
-    // ----- Main fetch routine -----
     async function loadBuoyPeriod(buoyId, customName = null) {
       if (fetchInProgress) return;
       fetchInProgress = true;
@@ -346,19 +320,18 @@
       try {
         const period = await fetchBuoyPeriod(buoyId);
         updatePeriodDisplay(period, buoyId, customName);
-        currentBuoyId = buoyId;
       } catch (error) {
         console.warn(error);
         let reason = error.message;
         if (reason.includes('abort')) reason = 'timeout';
         else if (reason.includes('DPD')) reason = 'no DPD data';
+        else if (reason.includes('fetch')) reason = 'network';
         useFallbackPeriod(buoyId, reason);
       } finally {
         fetchInProgress = false;
       }
     }
 
-    // ----- Event handlers -----
     function handleRefresh() {
       const selected = buoySelect.value;
       customBuoyInput.value = '';
@@ -371,15 +344,12 @@
         alert('Please enter a 5‑character buoy ID (e.g., 41001)');
         return;
       }
-      buoySelect.value = ''; // deselect
+      buoySelect.value = '';
       loadBuoyPeriod(customId);
     }
 
-    // ----- Initialize -----
     function init() {
-      // start with default buoy
       loadBuoyPeriod(buoySelect.value);
-      
       refreshBtn.addEventListener('click', handleRefresh);
       customBtn.addEventListener('click', handleCustom);
       buoySelect.addEventListener('change', (e) => {
@@ -387,9 +357,7 @@
         loadBuoyPeriod(e.target.value);
       });
       customBuoyInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          customBtn.click();
-        }
+        if (e.key === 'Enter') customBtn.click();
       });
     }
 
@@ -398,7 +366,6 @@
     window.addEventListener('beforeunload', () => {
       if (flashInterval) clearInterval(flashInterval);
     });
-
   })();
 </script>
 </body>
