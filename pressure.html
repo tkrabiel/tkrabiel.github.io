@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pressure – Card Game of the Deepborn | Aethon</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: radial-gradient(circle at 20% 30%, #02121f, #00050a);
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            color: #d0f4ff;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .game-container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #1e7f8f;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+        .pressure-card-area {
+            background: #0a2a36;
+            padding: 8px 18px;
+            border-radius: 40px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .card-slot {
+            background: #faf0cf;
+            width: 70px;
+            height: 94px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1f3e48;
+        }
+        .variant-badge {
+            font-weight: bold;
+            background: #1e4a5e;
+            padding: 4px 12px;
+            border-radius: 30px;
+        }
+        .scores {
+            display: flex;
+            justify-content: space-between;
+            background: #051a22cc;
+            border-radius: 40px;
+            padding: 12px 25px;
+            margin-bottom: 25px;
+        }
+        .score-box {
+            text-align: center;
+            width: 45%;
+        }
+        .score-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .game-area {
+            background: #0b222a;
+            border-radius: 30px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .hand-area {
+            background: #102b33;
+            border-radius: 24px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .hand-title {
+            margin-bottom: 12px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .card {
+            background: #fff5e6;
+            width: 80px;
+            height: 110px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.05s linear;
+            box-shadow: 2px 4px 8px black;
+            color: #1f2e2c;
+            border: 1px solid #cfb27c;
+        }
+        .card.selected {
+            background: #ffde9c;
+            box-shadow: 0 0 0 3px #f3b33d;
+            transform: scale(1.02);
+        }
+        .card.disabled, .ai-card {
+            background: #2c4e5a;
+            color: #c0dfec;
+            cursor: default;
+            box-shadow: inset 0 0 0 1px #6b9eac;
+            justify-content: center;
+        }
+        .deep-card {
+            background: #3a6a6e;
+            color: #ffecb3;
+            border: 2px solid #ffaa44;
+        }
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 15px;
+            background: #04161e;
+            border-radius: 40px;
+            padding: 10px 20px;
+        }
+        button {
+            background: #2e5f6b;
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-family: monospace;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        button:hover:not(:disabled) {
+            background: #408e9e;
+            transform: scale(0.98);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #021016b3;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 0.8rem;
+            max-height: 120px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        @media (max-width: 700px) {
+            .card { width: 65px; height: 90px; font-size: 1.3rem; }
+            .card-slot { width: 55px; height: 80px; font-size: 1.5rem; }
+        }
+        .flex-btns {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .phase-status {
+            background: #00000066;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div class="header">
+        <h1>⚓ PRESSURE – CARD GAME OF THE DEEPBORN</h1>
+        <div class="pressure-card-area">
+            <span>PRESSURE CARD</span>
+            <div id="pressureCardDisplay" class="card-slot">--</div>
+            <div id="variantDisplay" class="variant-badge">⚫ HIGH</div>
+        </div>
+    </div>
+
+    <div class="scores">
+        <div class="score-box"><span>🧭 YOU</span><br><span id="playerGames" class="score-number">0</span></div>
+        <div class="score-box"><span>🤖 AI (Kaelen)</span><br><span id="aiGames" class="score-number">0</span></div>
+    </div>
+
+    <div class="game-area">
+        <div class="hand-area">
+            <div class="hand-title">🌊 YOUR HAND (click to choose Deep / Recycle / Play) <span id="phaseLabel" class="phase-status">Select Deep Card</span></div>
+            <div id="playerCards" class="cards"></div>
+            <div style="margin-top: 10px; font-size:0.8rem;">💠 <strong>Deep card</strong> (hidden, used in sudden death)</div>
+        </div>
+
+        <div class="hand-area ai-hand">
+            <div class="hand-title">⚙️ AI OPPONENT</div>
+            <div id="aiCards" class="cards"></div>
+        </div>
+
+        <div class="info-panel">
+            <span>🎲 ROUND: <strong id="roundNumber">1</strong> (Shallow)</span>
+            <span>🏆 POINTS: You <span id="playerPoints">0</span> — AI <span id="aiPoints">0</span></span>
+            <span>📌 STATUS: <span id="gameStatus">Choose Deep Card</span></span>
+        </div>
+
+        <div class="flex-btns">
+            <button id="resetGameBtn">🔄 NEW MATCH</button>
+            <button id="playRoundBtn" disabled>▶ PLAY ROUND</button>
+        </div>
+    </div>
+    <div id="gameLog" class="log">🃏 Pressure game started. Build 20-card deck, choose Deep Card to begin.</div>
+</div>
+
+<script>
+    // ---------- CARD MODEL ----------
+    const SUITS = ['♠', '♥', '♦', '♣'];
+    const RANKS = ['A','K','Q','J','10','9','8','7','6','5','4','3','2'];
+    const RANK_VALUES = { 'A':14, 'K':13, 'Q':12, 'J':11, '10':10, '9':9, '8':8, '7':7, '6':6, '5':5, '4':4, '3':3, '2':2 };
+
+    class Card {
+        constructor(rank, suit) {
+            this.rank = rank;
+            this.suit = suit;
+            this.value = RANK_VALUES[rank];
+        }
+        toString() { return this.rank + this.suit; }
+    }
+
+    // Helper: create full 52-card deck
+    function fullDeck() {
+        let deck = [];
+        for (let s of SUITS) {
+            for (let r of RANKS) {
+                deck.push(new Card(r, s));
+            }
+        }
+        return deck;
+    }
+
+    // Build 20-card game deck: cut into 4 piles, take bottom 5 of each (simulated)
+    function buildGameDeck() {
+        let full = fullDeck();
+        // Fisher-Yates shuffle
+        for (let i = full.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [full[i], full[j]] = [full[j], full[i]];
+        }
+        // Split into 4 piles
+        let piles = [[],[],[],[]];
+        for (let i = 0; i < full.length; i++) piles[i%4].push(full[i]);
+        let gameDeck = [];
+        for (let p of piles) {
+            let take = p.slice(-5);  // bottom 5 cards
+            gameDeck.push(...take);
+        }
+        // remaining cards (32) – top card becomes Pressure Card
+        let remaining = [];
+        for (let p of piles) {
+            remaining.push(...p.slice(0, p.length-5));
+        }
+        let pressureCard = remaining[0];
+        return { gameDeck: gameDeck.sort(() => Math.random() - 0.5), pressureCard };
+    }
+
+    // Compare two cards (winner of a round)
+    // isSuddenDeath: false for normal rounds, true for Deep Card face-off
+    // variantHigh: true = High Pressure (sudden death reversed), false = Low (same ranking)
+    function compareCards(cardA, cardB, trumpSuit, isSuddenDeath, variantHigh) {
+        let aTrump = cardA.suit === trumpSuit;
+        let bTrump = cardB.suit === trumpSuit;
+        if (aTrump && !bTrump) return 1;
+        if (!aTrump && bTrump) return -1;
+        // both trump or both non-trump
+        let valA = cardA.value;
+        let valB = cardB.value;
+        if (isSuddenDeath && variantHigh) {
+            // High Pressure: reversed ranking in sudden death (2 highest, Ace lowest)
+            valA = 15 - valA;
+            valB = 15 - valB;
+        }
+        if (valA > valB) return 1;
+        if (valA < valB) return -1;
+        return 0; // tie (rare)
+    }
+
+    // AI decision helpers
+    function aiChooseDeep(hand, trumpSuit) {
+        // keep highest value card (prefer trump for sudden death)
+        let sorted = [...hand].sort((a,b)=> b.value - a.value);
+        return sorted[0];
+    }
+
+    function aiChooseRecycleAndPlay(hand, roundValue, trumpSuit) {
+        // heuristic: for high value rounds (3) play best card, recycle worst.
+        // for mid (2) play second best, recycle worst.
+        // for low (1) play worst, recycle best (sacrifice)
+        let sorted = [...hand].sort((a,b)=> b.value - a.value);
+        let playIdx, recycleIdx;
+        if (roundValue === 3) {
+            playIdx = hand.indexOf(sorted[0]);
+            recycleIdx = hand.indexOf(sorted[2]);
+        } else if (roundValue === 2) {
+            playIdx = hand.indexOf(sorted[1]);
+            recycleIdx = hand.indexOf(sorted[2]);
+        } else {
+            playIdx = hand.indexOf(sorted[2]);
+            recycleIdx = hand.indexOf(sorted[0]);
+        }
+        return { recycleIdx, playIdx };
+    }
+
+    // Game state
+    let gameState = {
+        playerGames: 0,
+        aiGames: 0,
+        currentHand: null,   // { playerHand, aiHand, playerDeep, aiDeep, roundIndex, playerPoints, aiPoints, trumpSuit, variantHigh, gameDeck, pressureCard }
+        phase: 'deep_select', // deep_select, round_play
+        selectedRecycle: null,
+        selectedPlay: null,
+        roundInProgress: false,
+        currentRound: 1,
+        playerRoundPoints: 0,
+        aiRoundPoints: 0
+    };
+
+    let dom = {
+        playerCardsDiv: document.getElementById('playerCards'),
+        aiCardsDiv: document.getElementById('aiCards'),
+        pressureCardDisplay: document.getElementById('pressureCardDisplay'),
+        variantDisplay: document.getElementById('variantDisplay'),
+        playerGamesSpan: document.getElementById('playerGames'),
+        aiGamesSpan: document.getElementById('aiGames'),
+        roundNumberSpan: document.getElementById('roundNumber'),
+        playerPointsSpan: document.getElementById('playerPoints'),
+        aiPointsSpan: document.getElementById('aiPoints'),
+        gameStatusSpan: document.getElementById('gameStatus'),
+        playRoundBtn: document.getElementById('playRoundBtn'),
+        resetGameBtn: document.getElementById('resetGameBtn'),
+        logDiv: document.getElementById('gameLog')
+    };
+
+    function addLog(msg) {
+        let p = document.createElement('div');
+        p.innerText = msg;
+        dom.logDiv.appendChild(p);
+        dom.logDiv.scrollTop = dom.logDiv.scrollHeight;
+        while(dom.logDiv.children.length > 12) dom.logDiv.removeChild(dom.logDiv.firstChild);
+    }
+
+    function renderUI() {
+        dom.playerGamesSpan.innerText = gameState.playerGames;
+        dom.aiGamesSpan.innerText = gameState.aiGames;
+        dom.roundNumberSpan.innerText = gameState.currentRound + (gameState.currentRound===1?' (Shallow)':gameState.currentRound===2?' (Mid)':' (Deep)');
+        dom.playerPointsSpan.innerText = gameState.playerRoundPoints;
+        dom.aiPointsSpan.innerText = gameState.aiRoundPoints;
+        if (gameState.currentHand) {
+            let pc = gameState.currentHand.pressureCard;
+            dom.pressureCardDisplay.innerHTML = pc.toString();
+            let variantHigh = gameState.currentHand.variantHigh;
+            dom.variantDisplay.innerHTML = variantHigh ? '⚫ HIGH PRESSURE' : '🔴 LOW PRESSURE';
+        }
+        // player hand rendering
+        if (gameState.currentHand && gameState.currentHand.playerHand) {
+            let hand = gameState.currentHand.playerHand;
+            dom.playerCardsDiv.innerHTML = hand.map((card, idx) => {
+                let isSelectedRecycle = (gameState.selectedRecycle === idx);
+                let isSelectedPlay = (gameState.selectedPlay === idx);
+                let cls = 'card';
+                if (isSelectedRecycle || isSelectedPlay) cls += ' selected';
+                return `<div class="${cls}" data-idx="${idx}">${card.toString()}</div>`;
+            }).join('');
+        } else {
+            dom.playerCardsDiv.innerHTML = '<div class="card disabled">???</div>';
+        }
+        // AI hand backs
+        if (gameState.currentHand && gameState.currentHand.aiHand) {
+            let count = gameState.currentHand.aiHand.length;
+            dom.aiCardsDiv.innerHTML = Array(count).fill(0).map(()=> `<div class="card ai-card">⬤⬤</div>`).join('');
+        } else {
+            dom.aiCardsDiv.innerHTML = '<div class="card ai-card">⬤⬤</div>';
+        }
+
+        if (gameState.phase === 'deep_select') {
+            dom.playRoundBtn.disabled = true;
+            dom.gameStatusSpan.innerText = 'Choose your Deep Card (click a card)';
+        } else if (gameState.phase === 'round_play') {
+            dom.playRoundBtn.disabled = false;
+            dom.gameStatusSpan.innerText = `Round ${gameState.currentRound}: select RECYCLE (orange) and PLAY (green) different cards`;
+        } else {
+            dom.playRoundBtn.disabled = true;
+        }
+    }
+
+    async function startNewHand() {
+        gameState.phase = 'deep_select';
+        gameState.currentRound = 1;
+        gameState.playerRoundPoints = 0;
+        gameState.aiRoundPoints = 0;
+        gameState.selectedRecycle = null;
+        gameState.selectedPlay = null;
+        gameState.roundInProgress = true;
+        // build game deck
+        let { gameDeck, pressureCard } = buildGameDeck();
+        let shuffled = [...gameDeck];
+        for (let i=shuffled.length-1;i>0;i--) {
+            let j=Math.floor(Math.random()*(i+1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        let playerHand = shuffled.slice(0,4);
+        let aiHand = shuffled.slice(4,8);
+        let trumpSuit = pressureCard.suit;
+        let variantHigh = (pressureCard.suit === '♠' || pressureCard.suit === '♣');
+        gameState.currentHand = {
+            playerHand: playerHand,
+            aiHand: aiHand,
+            playerDeep: null,
+            aiDeep: null,
+            trumpSuit: trumpSuit,
+            variantHigh: variantHigh,
+            pressureCard: pressureCard,
+            gameDeck: shuffled
+        };
+        addLog(`🃏 New hand. Pressure: ${pressureCard.toString()} | ${variantHigh ? 'HIGH PRESSURE' : 'LOW PRESSURE'}`);
+        renderUI();
+    }
+
+    function chooseDeepCard(selectedIdx) {
+        if (gameState.phase !== 'deep_select') return false;
+        let hand = gameState.currentHand.playerHand;
+        if (selectedIdx < 0 || selectedIdx >= hand.length) return false;
+        let deepCard = hand[selectedIdx];
+        let remaining = hand.filter((_,i)=> i !== selectedIdx);
+        gameState.currentHand.playerDeep = deepCard;
+        gameState.currentHand.playerHand = remaining;
+        // AI choose deep
+        let aiDeep = aiChooseDeep(gameState.currentHand.aiHand, gameState.currentHand.trumpSuit);
+        let aiIdx = gameState.currentHand.aiHand.findIndex(c=> c===aiDeep);
+        gameState.currentHand.aiDeep = aiDeep;
+        gameState.currentHand.aiHand = gameState.currentHand.aiHand.filter((_,i)=> i !== aiIdx);
+        gameState.phase = 'round_play';
+        addLog(`💎 You set Deep Card (${deepCard.toString()}), AI sets Deep Card. Round 1 begins.`);
+        renderUI();
+        return true;
+    }
+
+    function resolveRound() {
+        if (gameState.phase !== 'round_play') return;
+        let round = gameState.currentRound;
+        let handPlayer = gameState.currentHand.playerHand;  // 3 cards
+        let handAI = gameState.currentHand.aiHand;
+        let recycleIdxP = gameState.selectedRecycle;
+        let playIdxP = gameState.selectedPlay;
+        if (recycleIdxP === null || playIdxP === null || recycleIdxP === playIdxP) {
+            addLog("❌ You must select one card to recycle and a different card to play.");
+            return;
+        }
+        let recycleCardP = handPlayer[recycleIdxP];
+        let playCardP = handPlayer[playIdxP];
+        // AI decision
+        let roundVal = round === 1 ? 1 : round === 2 ? 2 : 3;
+        let aiChoice = aiChooseRecycleAndPlay(handAI, roundVal, gameState.currentHand.trumpSuit);
+        let recycleCardAI = handAI[aiChoice.recycleIdx];
+        let playCardAI = handAI[aiChoice.playIdx];
+        let winner = compareCards(playCardP, playCardAI, gameState.currentHand.trumpSuit, false, gameState.currentHand.variantHigh) > 0 ? 'player' : 'ai';
+        let points = roundVal;
+        if (winner === 'player') gameState.playerRoundPoints += points;
+        else gameState.aiRoundPoints += points;
+        addLog(`🌊 Round ${round}: You recycle ${recycleCardP.toString()}, play ${playCardP.toString()}. AI recycles ?, plays ${playCardAI.toString()}. ${winner==='player'?'You win':'AI wins'} +${points}pts.`);
+                // Update hands: remove played and recycled, then return recycled
+        let newPlayerHand = handPlayer.filter((_,i)=> i !== recycleIdxP && i !== playIdxP);
+        newPlayerHand.push(recycleCardP);
+        let newAIHand = handAI.filter((_,i)=> i !== aiChoice.recycleIdx && i !== aiChoice.playIdx);
+        newAIHand.push(recycleCardAI);
+        gameState.currentHand.playerHand = newPlayerHand;
+        gameState.currentHand.aiHand = newAIHand;
+        gameState.selectedRecycle = null;
+        gameState.selectedPlay = null;
+
+        if (round === 3) {
+            // end of hand
+            gameState.phase = 'hand_end';
+            if (gameState.playerRoundPoints === gameState.aiRoundPoints) {
+                addLog(`⚡ TIE after 3 rounds! Sudden death with Deep Cards.`);
+                let pDeep = gameState.currentHand.playerDeep;
+                let aiDeep = gameState.currentHand.aiDeep;
+                let winnerSD = compareCards(pDeep, aiDeep, gameState.currentHand.trumpSuit, true, gameState.currentHand.variantHigh);
+                let winnerName = winnerSD > 0 ? 'player' : (winnerSD < 0 ? 'ai' : 'tie');
+                if (winnerSD > 0) {
+                    addLog(`💀 Sudden death: Your Deep (${pDeep.toString()}) beats AI Deep (${aiDeep.toString()}). You win the hand!`);
+                    gameState.playerGames++;
+                } else if (winnerSD < 0) {
+                    addLog(`💀 Sudden death: AI Deep (${aiDeep.toString()}) beats your Deep (${pDeep.toString()}). AI wins the hand.`);
+                    gameState.aiGames++;
+                } else {
+                    addLog(`💀 Sudden death tie! Both Deep Cards equal. Hand is a draw.`);
+                }
+            } else if (gameState.playerRoundPoints > gameState.aiRoundPoints) {
+                addLog(`🏆 You win the hand! (${gameState.playerRoundPoints} - ${gameState.aiRoundPoints})`);
+                gameState.playerGames++;
+            } else {
+                addLog(`🔧 AI wins the hand! (${gameState.aiRoundPoints} - ${gameState.playerRoundPoints})`);
+                gameState.aiGames++;
+            }
+            // check match win (best of 5? but just continue)
+            addLog(`⟳ Starting new hand.`);
+            startNewHand();
+            renderUI();
+            return;
+        }
+        gameState.currentRound++;
+        renderUI();
+        addLog(`➡️ Proceed to Round ${gameState.currentRound}`);
+    }
+
+    // Event handling for card clicks
+    dom.playerCardsDiv.addEventListener('click', (e) => {
+        let div = e.target.closest('.card');
+        if (!div || !div.dataset.idx) return;
+        let idx = parseInt(div.dataset.idx);
+        if (gameState.phase === 'deep_select') {
+            chooseDeepCard(idx);
+            renderUI();
+            return;
+        }
+        if (gameState.phase === 'round_play') {
+            let handSize = gameState.currentHand.playerHand.length;
+            if (idx >= handSize) return;
+            if (gameState.selectedRecycle === null) {
+                gameState.selectedRecycle = idx;
+                addLog(`🔁 Card ${gameState.currentHand.playerHand[idx].toString()} selected to RECYCLE. Now select PLAY card.`);
+                renderUI();
+            } else if (gameState.selectedPlay === null && gameState.selectedRecycle !== idx) {
+                gameState.selectedPlay = idx;
+                addLog(`🎴 Card ${gameState.currentHand.playerHand[idx].toString()} selected to PLAY. Press PLAY ROUND.`);
+                renderUI();
+            } else {
+                // reset selection
+                gameState.selectedRecycle = null;
+                gameState.selectedPlay = null;
+                addLog(`Selection reset. Choose recycle and play again.`);
+                renderUI();
+            }
+        }
+    });
+
+    dom.playRoundBtn.addEventListener('click', () => {
+        if (gameState.phase === 'round_play') {
+            resolveRound();
+            renderUI();
+        }
+    });
+
+    dom.resetGameBtn.addEventListener('click', () => {
+        gameState.playerGames = 0;
+        gameState.aiGames = 0;
+        startNewHand();
+        renderUI();
+    });
+
+    // initial start
+    startNewHand();
+</script>
+</body>
+</html>
