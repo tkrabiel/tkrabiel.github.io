@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,7 +55,7 @@
       display: block;
       width: 100% !important;
       height: 100% !important;
-      image-rendering: crisp-edges; /* pixelated style */
+      image-rendering: crisp-edges;
       touch-action: none;
     }
     #ui-panel {
@@ -183,7 +182,6 @@
       text-transform: uppercase;
     }
     .hidden { display: none !important; }
-    #peyton-fallback { display: none; }
   </style>
 </head>
 <body>
@@ -202,7 +200,7 @@
     <div class="ui-stat">💧 SCORE: <span id="scoreDisplay">000000</span></div>
     <div class="ui-stat">🌊 WAVE: <span id="waveDisplay">1</span></div>
     <div class="ui-stat">❤️ LIVES: <span id="livesDisplay">20</span></div>
-    <div class="ui-stat">💰 $<span id="moneyDisplay">500</span></div>
+    <div class="ui-stat">💰 $<span id="moneyDisplay">700</span></div>
   </div>
 
   <div id="tower-shop">
@@ -213,31 +211,29 @@
   </div>
 </div>
 
-<!-- START SCREEN -->
+<!-- START SCREEN (with real peyton-suit.jpg) -->
 <div id="startScreen" class="overlay-screen">
   <h1>⚓ PEYTON BENSON'S<br>HYDRO DEFENSE</h1>
   <div style="font-size:24px; color:#aaffdd; margin:10px; text-align:center;">Hydrography vs Space Nazis</div>
-  <img class="hero-img" id="peytonStartImg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='40' r='30' fill='%23224466'/%3E%3Ccircle cx='50' cy='40' r='25' fill='%23336699'/%3E%3Crect x='38' y='20' width='24' height='15' fill='%23aaccff'/%3E%3Ccircle cx='40' cy='30' r='4' fill='white'/%3E%3Ccircle cx='60' cy='30' r='4' fill='white'/%3E%3Ccircle cx='42' cy='32' r='2' fill='black'/%3E%3Ccircle cx='58' cy='32' r='2' fill='black'/%3E%3Cpath d='M40 48 L60 48 L55 70 L45 70 Z' fill='%23ccbb88'/%3E%3Ctext x='20' y='90' font-size='14' fill='%23ffff00' font-family='monospace'%3EPEYTON%3C/text%3E%3C/svg%3E"
-       alt="PEYTON" onclick="startNewGame()">
+  <img class="hero-img" id="peytonStartImg" src="peyton-suit.jpg" alt="PEYTON" onclick="startNewGame()">
   <p style="color:#88ffaa; font-size:22px; margin-top:12px;">⚡ TAP PEYTON TO START ⚡</p>
   <p style="color:#aaccff;">Build towers · Defend 20 lives · Reach Wave 12</p>
+  <p style="color:#ffaa88; font-weight:bold;">⭐ EASY MODE: more money, weaker enemies ⭐</p>
 </div>
 
-<!-- WIN SCREEN -->
+<!-- WIN SCREEN (with real image) -->
 <div id="winScreen" class="overlay-screen hidden">
   <h1 style="color:#aaff88;">✨ EMILY IS SAVED! ✨</h1>
   <div style="font-size:32px; color: gold; text-shadow:0 0 20px cyan;">PEYTON BENSON — HYDRO HERO</div>
-  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='40' r='28' fill='%23224477'/%3E%3Crect x='38' y='18' width='24' height='18' fill='%23ffddbb'/%3E%3Ccircle cx='42' cy='30' r='5' fill='white'/%3E%3Ccircle cx='58' cy='30' r='5' fill='white'/%3E%3Cpath d='M40 48 L60 48 L53 72 L47 72 Z' fill='%23ddbb99'/%3E%3Ctext x='10' y='90' fill='%23ffffaa' font-size='16'%3EVICTORY%3C/text%3E%3C/svg%3E"
-       style="width:180px; border:6px solid #00ffaa; border-radius:30px; margin:15px;">
+  <img src="peyton-suit.jpg" style="width:180px; border:6px solid #00ffaa; border-radius:30px; margin:15px;">
   <div class="big-text">FINAL SCORE: <span id="winFinalScore">0</span></div>
   <div class="restart-btn" onclick="resetAndStart()">PLAY AGAIN</div>
 </div>
 
-<!-- GAME OVER SCREEN -->
+<!-- GAME OVER SCREEN (with real image) -->
 <div id="gameOverScreen" class="overlay-screen hidden">
   <h1 style="color:#ff5555;">💀 GAME OVER 💀</h1>
-  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='45' r='28' fill='%23552222'/%3E%3Crect x='36' y='22' width='28' height='16' fill='%23bb6644'/%3E%3Ccircle cx='42' cy='35' r='5' fill='%23ffaaaa'/%3E%3Ccircle cx='58' cy='35' r='5' fill='%23ffaaaa'/%3E%3Cpath d='M40 50 L60 50 L53 75 L47 75 Z' fill='%23997755'/%3E%3Ctext x='25' y='90' fill='%23ff8888' font-size='14'%3ERETRY%3C/text%3E%3C/svg%3E"
-       style="width:180px; border:6px solid red; border-radius:30px;">
+  <img src="peyton-suit.jpg" style="width:180px; border:6px solid red; border-radius:30px;">
   <div class="big-text">SCORE: <span id="overFinalScore">0</span></div>
   <div class="restart-btn" onclick="resetAndStart()">DEFEND AGAIN</div>
 </div>
@@ -246,30 +242,32 @@
   (function(){
     "use strict";
 
+    // ---------- LOAD PEYTON IMAGE FOR TOWERS ----------
+    const peytonImg = new Image();
+    peytonImg.src = "peyton-suit.jpg";
+
     // ---------- CANVAS ----------
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     let W = 900, H = 550;
     canvas.width = W; canvas.height = H;
 
-    // ---------- GAME STATE ----------
+    // ---------- GAME STATE (EASY MODE) ----------
     let gameActive = false;
     let animationFrame = null;
     
     let score = 0;
     let lives = 20;
-    let money = 500;
+    let money = 700;            // more starting cash
     let wave = 1;
     const MAX_WAVE = 12;
     
     let towers = [];
     let enemies = [];
     let bullets = [];
-    let particles = [];
     
-    let selectedTowerType = -1; // -1 = none
+    let selectedTowerType = -1;
     
-    // UI elements
     const scoreEl = document.getElementById('scoreDisplay');
     const waveEl = document.getElementById('waveDisplay');
     const livesEl = document.getElementById('livesDisplay');
@@ -281,24 +279,23 @@
     const winFinalScore = document.getElementById('winFinalScore');
     const overFinalScore = document.getElementById('overFinalScore');
     
-    // Tower buttons
     const towerBtns = document.querySelectorAll('[data-type]');
     const cancelBtn = document.getElementById('cancel-select');
     
-    // ---------- PATH (fixed) ----------
+    // ---------- PATH ----------
     const pathPoints = [
       {x:0, y:170}, {x:170, y:170}, {x:170, y:350}, {x:440, y:350},
       {x:440, y:120}, {x:700, y:120}, {x:700, y:440}, {x:900, y:440}
     ];
     
-    // ---------- TOWER DATA ----------
+    // ---------- TOWER DATA (BUFFED FOR EASY MODE) ----------
     const towerTypes = [
-      { name:'HYDRO LASER', cost:150, range:150, damage:28, cooldown:700, color:'#00ffff', bulletSpeed:10 },
-      { name:'SPREAD SONAR', cost:250, range:120, damage:20, cooldown:450, color:'#ff66ff', bulletSpeed:12 },
-      { name:'CTD BEAM', cost:300, range:190, damage:45, cooldown:1100, color:'#ffff44', bulletSpeed:14 }
+      { name:'HYDRO LASER', cost:150, range:165, damage:34, cooldown:650, color:'#00ffff', bulletSpeed:11 },
+      { name:'SPREAD SONAR', cost:250, range:130, damage:26, cooldown:430, color:'#ff66ff', bulletSpeed:13 },
+      { name:'CTD BEAM', cost:300, range:200, damage:52, cooldown:1050, color:'#ffff44', bulletSpeed:15 }
     ];
     
-    // ---------- HELPER: get enemy position ----------
+    // ---------- HELPER: enemy position ----------
     function getEnemyPos(enemy) {
       const idx = Math.floor(enemy.pathIndex);
       const nextIdx = Math.min(idx+1, pathPoints.length-1);
@@ -311,22 +308,21 @@
       };
     }
     
-    // ---------- ENEMY CLASS ----------
+    // ---------- ENEMY (NERFED) ----------
     class Enemy {
       constructor(waveMulti) {
         this.pathIndex = 0;
-        this.speed = 0.9 + Math.random() * 0.9 + (waveMulti * 0.07);
-        this.hp = 70 + wave * 18;
+        this.speed = 0.75 + Math.random() * 0.7 + (waveMulti * 0.04);
+        this.hp = 45 + wave * 12;
         this.maxHp = this.hp;
         this.size = 22;
       }
       update() {
-        this.pathIndex += this.speed * 0.016; // frame independent approx
+        this.pathIndex += this.speed * 0.016;
         return (this.pathIndex >= pathPoints.length - 1);
       }
       draw() {
         const pos = getEnemyPos(this);
-        // Space Nazi saucer
         ctx.shadowColor = '#ff0000aa';
         ctx.shadowBlur = 18;
         ctx.fillStyle = '#aa2222';
@@ -337,12 +333,10 @@
         ctx.beginPath();
         ctx.ellipse(pos.x, pos.y-6, 16, 8, 0, 0, Math.PI*2);
         ctx.fill();
-        // cross emblem
         ctx.fillStyle = '#111';
         ctx.fillRect(pos.x-8, pos.y-10, 16, 4);
         ctx.fillRect(pos.x-2, pos.y-16, 4, 16);
         ctx.shadowBlur = 0;
-        // health bar
         const hpPercent = this.hp / this.maxHp;
         ctx.fillStyle = '#222';
         ctx.fillRect(pos.x-22, pos.y-28, 44, 6);
@@ -351,7 +345,7 @@
       }
     }
     
-    // ---------- TOWER CLASS ----------
+    // ---------- TOWER (draws actual peyton-suit.jpg) ----------
     class Tower {
       constructor(x, y, typeIndex) {
         this.x = x; this.y = y;
@@ -361,29 +355,17 @@
         this.range = this.data.range;
       }
       draw() {
-        // draw tower (hydro device)
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = this.data.color;
-        // base
-        ctx.fillStyle = '#1a3a5c';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 22, 0, 2*Math.PI);
-        ctx.fill();
-        ctx.strokeStyle = this.data.color;
-        ctx.lineWidth = 4;
-        ctx.stroke();
-        // hydro core
-        ctx.fillStyle = '#aaf0ff';
-        ctx.beginPath();
-        ctx.arc(this.x-4, this.y-4, 8, 0, 2*Math.PI);
-        ctx.fill();
-        // peyton icon
-        ctx.font = "bold 20px 'Courier New'";
-        ctx.fillStyle = '#ffffaa';
-        ctx.shadowBlur = 15;
-        ctx.fillText("⚡", this.x-12, this.y+8);
-        ctx.shadowBlur = 0;
-        // range indicator (if selected or hover)
+        // Draw Peyton image as tower
+        if (peytonImg.complete && peytonImg.naturalWidth > 0) {
+          ctx.drawImage(peytonImg, this.x-28, this.y-28, 56, 56);
+        } else {
+          // fallback
+          ctx.fillStyle = '#1a3a5c';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 22, 0, 2*Math.PI);
+          ctx.fill();
+        }
+        // Range circle (only when tower selected)
         if (selectedTowerType !== -1) {
           ctx.beginPath();
           ctx.arc(this.x, this.y, this.range, 0, Math.PI*2);
@@ -391,14 +373,19 @@
           ctx.lineWidth = 2;
           ctx.stroke();
         }
+        // Tower type indicator
+        ctx.font = "bold 14px 'Courier New'";
+        ctx.fillStyle = this.data.color;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.data.color;
+        ctx.fillText(this.data.name.split(' ')[0], this.x-30, this.y-35);
+        ctx.shadowBlur = 0;
       }
     }
     
-    // ---------- BULLET ----------
     function addBullet(from, targetEnemy, damage, speed) {
-      const start = {x: from.x, y: from.y};
       bullets.push({
-        x: start.x, y: start.y,
+        x: from.x, y: from.y,
         target: targetEnemy,
         damage: damage,
         speed: speed,
@@ -406,17 +393,15 @@
       });
     }
     
-    // ---------- SPAWN WAVE ----------
     function spawnWave() {
       const count = 5 + wave * 2;
       for (let i=0; i<count; i++) {
         setTimeout(() => {
           if (gameActive) enemies.push(new Enemy(wave));
-        }, i * 280);
+        }, i * 260);
       }
     }
     
-    // ---------- UPDATE UI ----------
     function updateUI() {
       scoreEl.textContent = String(Math.min(999999, score)).padStart(6,'0');
       waveEl.textContent = wave;
@@ -424,7 +409,6 @@
       moneyEl.textContent = money;
     }
     
-    // ---------- CHECK WIN/LOSE ----------
     function checkGameOver() {
       if (lives <= 0) {
         gameActive = false;
@@ -447,15 +431,13 @@
       return false;
     }
     
-    // ---------- RESET GAME ----------
     function resetGameState() {
       towers = [];
       enemies = [];
       bullets = [];
-      particles = [];
       score = 0;
       lives = 20;
-      money = 500;
+      money = 700;
       wave = 1;
       selectedTowerType = -1;
       updateUI();
@@ -479,26 +461,6 @@
     window.startNewGame = startNewGame;
     window.resetAndStart = resetAndStart;
     
-    // ---------- TOWER PLACEMENT ----------
-    function tryPlaceTower(clickX, clickY) {
-      if (selectedTowerType === -1) return false;
-      const typeIdx = selectedTowerType;
-      const cost = towerTypes[typeIdx].cost;
-      if (money < cost) return false;
-      
-      // prevent placing on path
-      for (let i=0; i<pathPoints.length-1; i++) {
-        const p1 = pathPoints[i], p2 = pathPoints[i+1];
-        const dist = distancePointSegment(clickX, clickY, p1.x, p1.y, p2.x, p2.y);
-        if (dist < 35) return false; // too close to path
-      }
-      
-      towers.push(new Tower(clickX, clickY, typeIdx));
-      money -= cost;
-      updateUI();
-      return true;
-    }
-    
     function distancePointSegment(px, py, x1, y1, x2, y2) {
       const vx = x2 - x1, vy = y2 - y1;
       const dx = px - x1, dy = py - y1;
@@ -509,20 +471,33 @@
       return Math.hypot(px - projx, py - projy);
     }
     
-    // ---------- BUTTON UI ----------
+    function tryPlaceTower(clickX, clickY) {
+      if (selectedTowerType === -1) return false;
+      const cost = towerTypes[selectedTowerType].cost;
+      if (money < cost) return false;
+      
+      for (let i=0; i<pathPoints.length-1; i++) {
+        const p1 = pathPoints[i], p2 = pathPoints[i+1];
+        if (distancePointSegment(clickX, clickY, p1.x, p1.y, p2.x, p2.y) < 35) return false;
+      }
+      
+      towers.push(new Tower(clickX, clickY, selectedTowerType));
+      money -= cost;
+      updateUI();
+      return true;
+    }
+    
     function updateButtonActive() {
       towerBtns.forEach(btn => {
         const type = parseInt(btn.dataset.type);
-        if (type === selectedTowerType) btn.classList.add('active');
-        else btn.classList.remove('active');
+        btn.classList.toggle('active', type === selectedTowerType);
       });
     }
     
     towerBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', () => {
         if (!gameActive) return;
-        const type = parseInt(btn.dataset.type);
-        selectedTowerType = type;
+        selectedTowerType = parseInt(btn.dataset.type);
         updateButtonActive();
       });
     });
@@ -532,7 +507,6 @@
       updateButtonActive();
     });
     
-    // Canvas click / touch
     function handleCanvasInteraction(clientX, clientY) {
       if (!gameActive) return;
       const rect = canvas.getBoundingClientRect();
@@ -555,8 +529,6 @@
       if (!gameActive) return;
       
       ctx.clearRect(0, 0, W, H);
-      
-      // draw starfield
       ctx.fillStyle = '#0b1428';
       ctx.fillRect(0,0,W,H);
       for (let i=0; i<60; i++) {
@@ -566,8 +538,7 @@
         ctx.fill();
       }
       
-            
-      // draw path
+      // Draw path
       ctx.shadowBlur = 25;
       ctx.shadowColor = '#0ff';
       ctx.beginPath();
@@ -581,16 +552,14 @@
       ctx.lineWidth = 8;
       ctx.stroke();
       
-      // Towers update & shoot
       const now = Date.now();
+      // Towers update & shoot
       for (let t of towers) {
         t.draw();
         if (now - t.lastShot > t.data.cooldown) {
-          // find enemy in range
           for (let e of enemies) {
             const pos = getEnemyPos(e);
-            const dist = Math.hypot(t.x - pos.x, t.y - pos.y);
-            if (dist <= t.range) {
+            if (Math.hypot(t.x - pos.x, t.y - pos.y) <= t.range) {
               addBullet({x: t.x, y: t.y}, e, t.data.damage, t.data.bulletSpeed);
               t.lastShot = now;
               break;
@@ -602,8 +571,7 @@
       // Enemies
       for (let i=enemies.length-1; i>=0; i--) {
         const e = enemies[i];
-        const reachedEnd = e.update();
-        if (reachedEnd) {
+        if (e.update()) {
           lives = Math.max(0, lives-1);
           enemies.splice(i,1);
           if (checkGameOver()) { updateUI(); return; }
@@ -620,21 +588,19 @@
         const dx = targetPos.x - b.x, dy = targetPos.y - b.y;
         const dist = Math.hypot(dx, dy);
         if (dist < 20) {
-          // hit
           b.target.hp -= b.damage;
           if (b.target.hp <= 0) {
             const idx = enemies.indexOf(b.target);
             if (idx !== -1) {
               enemies.splice(idx,1);
-              score += 120;
-              money += 60;  // 💰 earn cash
+              score += 130;
+              money += 75;
             }
           }
           bullets.splice(i,1);
         } else {
           b.x += (dx/dist) * b.speed;
           b.y += (dy/dist) * b.speed;
-          // draw bullet
           ctx.fillStyle = '#ffff88';
           ctx.shadowBlur = 14;
           ctx.beginPath();
@@ -644,7 +610,6 @@
       }
       ctx.shadowBlur = 0;
       
-      // Next wave trigger
       if (enemies.length === 0 && gameActive) {
         if (wave < MAX_WAVE) {
           wave++;
@@ -660,14 +625,9 @@
       }
     }
     
-    // Initialize display
     updateUI();
-    // Show start screen
     startScreen.classList.remove('hidden');
-    // Prevent context menu
     canvas.addEventListener('contextmenu', e => e.preventDefault());
-    
-    // fallback images already SVG
   })();
 </script>
 </body>
