@@ -1,278 +1,674 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PEYTON BENSON'S HYDRO DEFENSE</title>
-    <style>
-        body { margin:0; padding:0; background:#000033; color:#00FFAA; font-family:'Courier New', monospace; height:100vh; display:flex; flex-direction:column; overflow:hidden; touch-action:none; }
-        .story-marquee { height:12vh; background:rgba(0,0,20,0.95); overflow:hidden; border-bottom:8px solid #FF00FF; flex-shrink:0; position:relative; }
-        .story-inner { display:inline-block; white-space:nowrap; padding-left:100%; animation: scrollSlow 95s linear infinite; font-size:20px; color:#FFFF00; text-shadow:0 0 12px #00FFFF; }
-        @keyframes scrollSlow { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
-        #game-container { flex:1; position:relative; background:#000011; }
-        canvas { display:block; width:100%; height:100%; image-rendering:pixelated; }
-        #ui { position:absolute; top:8px; left:8px; font-size:22px; color:#FFFF00; text-shadow:0 0 10px #FF00FF; z-index:30; pointer-events:none; }
-        #tower-shop { position:absolute; bottom:10px; left:10px; right:10px; display:flex; gap:8px; z-index:40; }
-        .tower-btn { flex:1; background:#000033; color:#FFFF00; border:6px solid #00FFFF; padding:10px; font-size:18px; text-align:center; cursor:pointer; border-radius:8px; box-shadow:0 0 15px #FF00FF; }
-        .start-screen, .win-screen, .game-over { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; }
-        .start-pic { width:260px; border:10px solid #FFFF00; border-radius:12px; cursor:pointer; margin:20px 0; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>⚡ PEYTON BENSON · HYDRO DEFENSE ⚡</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0f1e;
+      color: #a0f0ff;
+      font-family: 'Courier New', Courier, monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      touch-action: none;
+    }
+    .story-marquee {
+      height: 10vh;
+      min-height: 44px;
+      background: #030617;
+      border-bottom: 4px solid #ff44ff;
+      overflow: hidden;
+      white-space: nowrap;
+      box-shadow: 0 0 20px #00aaff88;
+      flex-shrink: 0;
+    }
+    .marquee-content {
+      display: inline-block;
+      padding-left: 100%;
+      animation: scrollMarquee 70s linear infinite;
+      font-size: clamp(16px, 5vw, 22px);
+      font-weight: bold;
+      color: #ffffaa;
+      text-shadow: 0 0 12px cyan, 0 0 25px magenta;
+      letter-spacing: 2px;
+    }
+    @keyframes scrollMarquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    #game-container {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at 20% 30%, #0a1a2a, #010314);
+    }
+    canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      image-rendering: crisp-edges; /* pixelated style */
+      touch-action: none;
+    }
+    #ui-panel {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      background: rgba(0, 5, 20, 0.7);
+      backdrop-filter: blur(4px);
+      padding: 6px 16px;
+      border-radius: 60px;
+      border: 2px solid #00ffff;
+      box-shadow: 0 0 20px #ff00ff80;
+      color: #ffffaa;
+      font-size: clamp(16px, 4vw, 24px);
+      font-weight: bold;
+      text-shadow: 0 0 8px #00ffff;
+      z-index: 30;
+      pointer-events: none;
+    }
+    .ui-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #tower-shop {
+      position: absolute;
+      bottom: 12px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      gap: 10px;
+      z-index: 40;
+      padding: 4px;
+      background: rgba(0, 0, 30, 0.6);
+      backdrop-filter: blur(8px);
+      border-radius: 48px;
+      border: 2px solid #aa44ff;
+    }
+    .tower-btn {
+      flex: 1;
+      background: linear-gradient(145deg, #001d3d, #000814);
+      color: #ccffcc;
+      border: 3px solid #0ff;
+      padding: 12px 4px;
+      font-size: clamp(13px, 3.5vw, 20px);
+      font-weight: bold;
+      text-align: center;
+      border-radius: 60px;
+      box-shadow: 0 0 15px #ff44ff, inset 0 1px 4px #aaffff;
+      text-shadow: 0 0 5px black;
+      cursor: pointer;
+      transition: 0.15s;
+      touch-action: manipulation;
+      letter-spacing: 0.5px;
+    }
+    .tower-btn.active {
+      background: #2a6f97;
+      border-color: #ffff00;
+      box-shadow: 0 0 30px #ffff00;
+      color: #ffffff;
+      transform: scale(1.02);
+    }
+    .tower-btn:active {
+      background: #0a4c6e;
+    }
+    #cancel-select {
+      background: #3a1f4a;
+      border-color: #ff8888;
+      box-shadow: 0 0 10px #ff6666;
+      color: #ffdddd;
+      font-size: 18px;
+      padding: 12px 6px;
+      flex: 0.6;
+    }
+    .overlay-screen {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at 20% 20%, #001c3d, #00020b);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+      padding: 20px;
+    }
+    .hero-img {
+      width: min(70vw, 260px);
+      border: 6px solid #ffdd44;
+      border-radius: 30px;
+      box-shadow: 0 0 60px cyan;
+      margin: 20px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .hero-img:active { transform: scale(0.96); }
+    h1 {
+      color: #aaffff;
+      font-size: clamp(28px, 10vw, 54px);
+      text-shadow: 0 0 20px magenta, 0 0 40px blue;
+      margin: 8px 0;
+      text-align: center;
+    }
+    .big-text {
+      font-size: clamp(18px, 5vw, 28px);
+      color: #ffffaa;
+      text-align: center;
+    }
+    .restart-btn {
+      margin-top: 25px;
+      background: #0a1f2e;
+      border: 4px solid #0ff;
+      padding: 16px 36px;
+      border-radius: 60px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #ffffaa;
+      cursor: pointer;
+      box-shadow: 0 0 30px #ff00ff;
+      text-transform: uppercase;
+    }
+    .hidden { display: none !important; }
+    #peyton-fallback { display: none; }
+  </style>
 </head>
 <body>
 
 <div class="story-marquee">
-    <div class="story-inner" id="marquee">PEYTON BENSON WAS ONCE THE GREATEST HYDROGRAPHER... NOW HE DEFENDS THE STARS TO SAVE EMILY FROM SPACE NAZIS!!! PEYTON YOU THE MAN!!!</div>
+  <div class="marquee-content">
+    ⚡ PEYTON BENSON — HYDRO MASTER · DEFEND THE STARS · SAVE EMILY FROM SPACE NAZIS ⚡ 
+    ⚡ PEYTON BENSON — HYDRO MASTER · DEFEND THE STARS · SAVE EMILY FROM SPACE NAZIS ⚡ 
+  </div>
 </div>
 
 <div id="game-container">
-    <canvas id="game" width="800" height="500"></canvas>
-    <div id="ui">
-        SCORE: <span id="score">000000</span>  WAVE: <span id="wave">1</span>  LIVES: <span id="lives">20</span>  MONEY: <span id="money">500</span>
-    </div>
-    <div id="tower-shop">
-        <div class="tower-btn" onclick="selectTower(0)">HYDRO LASER (150)</div>
-        <div class="tower-btn" onclick="selectTower(1)">SPREAD SONAR (250)</div>
-        <div class="tower-btn" onclick="selectTower(2)">CTD BEAM (300)</div>
-    </div>
+  <canvas id="gameCanvas" width="900" height="550"></canvas>
+  
+  <div id="ui-panel">
+    <div class="ui-stat">💧 SCORE: <span id="scoreDisplay">000000</span></div>
+    <div class="ui-stat">🌊 WAVE: <span id="waveDisplay">1</span></div>
+    <div class="ui-stat">❤️ LIVES: <span id="livesDisplay">20</span></div>
+    <div class="ui-stat">💰 $<span id="moneyDisplay">500</span></div>
+  </div>
+
+  <div id="tower-shop">
+    <div class="tower-btn" data-type="0">💧 HYDRO LASER <span style="font-size:0.8em;">$150</span></div>
+    <div class="tower-btn" data-type="1">📡 SPREAD SONAR <span style="font-size:0.8em;">$250</span></div>
+    <div class="tower-btn" data-type="2">⚡ CTD BEAM <span style="font-size:0.8em;">$300</span></div>
+    <div id="cancel-select" class="tower-btn">✖ CANCEL</div>
+  </div>
 </div>
 
-<div id="start-screen" class="start-screen">
-    <h1 style="color:#00FFFF; margin:10px;">PEYTON BENSON'S<br>HYDRO DEFENSE</h1>
-    <p style="font-size:22px; color:#FFFF00;">Defend the path. Save Emily. Use hydrography to destroy Space Nazis.</p>
-    <img class="start-pic" id="peyton-start" src="peyton-suit.jpg" onclick="startGame()">
-    <p style="color:#00FFAA; font-size:20px; margin-top:10px;">CLICK PEYTON TO START THE ADVENTURE</p>
+<!-- START SCREEN -->
+<div id="startScreen" class="overlay-screen">
+  <h1>⚓ PEYTON BENSON'S<br>HYDRO DEFENSE</h1>
+  <div style="font-size:24px; color:#aaffdd; margin:10px; text-align:center;">Hydrography vs Space Nazis</div>
+  <img class="hero-img" id="peytonStartImg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='40' r='30' fill='%23224466'/%3E%3Ccircle cx='50' cy='40' r='25' fill='%23336699'/%3E%3Crect x='38' y='20' width='24' height='15' fill='%23aaccff'/%3E%3Ccircle cx='40' cy='30' r='4' fill='white'/%3E%3Ccircle cx='60' cy='30' r='4' fill='white'/%3E%3Ccircle cx='42' cy='32' r='2' fill='black'/%3E%3Ccircle cx='58' cy='32' r='2' fill='black'/%3E%3Cpath d='M40 48 L60 48 L55 70 L45 70 Z' fill='%23ccbb88'/%3E%3Ctext x='20' y='90' font-size='14' fill='%23ffff00' font-family='monospace'%3EPEYTON%3C/text%3E%3C/svg%3E"
+       alt="PEYTON" onclick="startNewGame()">
+  <p style="color:#88ffaa; font-size:22px; margin-top:12px;">⚡ TAP PEYTON TO START ⚡</p>
+  <p style="color:#aaccff;">Build towers · Defend 20 lives · Reach Wave 12</p>
 </div>
 
-<div id="win-screen" class="win-screen" style="display:none;">
-    <h1 style="color:#00FF00; font-size:42px;">YOU SAVED EMILY!!!</h1>
-    <p style="color:#FFFF00; font-size:26px;">PEYTON BENSON — THE ULTIMATE HYDRO HERO!!!</p>
-    <div style="margin:20px 0;">
-        <img src="peyton-suit.jpg" style="width:180px; border:8px solid #00FF00; border-radius:12px;">
-    </div>
-    <p style="color:#00FFAA;">TAP SCREEN TO PLAY AGAIN</p>
+<!-- WIN SCREEN -->
+<div id="winScreen" class="overlay-screen hidden">
+  <h1 style="color:#aaff88;">✨ EMILY IS SAVED! ✨</h1>
+  <div style="font-size:32px; color: gold; text-shadow:0 0 20px cyan;">PEYTON BENSON — HYDRO HERO</div>
+  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='40' r='28' fill='%23224477'/%3E%3Crect x='38' y='18' width='24' height='18' fill='%23ffddbb'/%3E%3Ccircle cx='42' cy='30' r='5' fill='white'/%3E%3Ccircle cx='58' cy='30' r='5' fill='white'/%3E%3Cpath d='M40 48 L60 48 L53 72 L47 72 Z' fill='%23ddbb99'/%3E%3Ctext x='10' y='90' fill='%23ffffaa' font-size='16'%3EVICTORY%3C/text%3E%3C/svg%3E"
+       style="width:180px; border:6px solid #00ffaa; border-radius:30px; margin:15px;">
+  <div class="big-text">FINAL SCORE: <span id="winFinalScore">0</span></div>
+  <div class="restart-btn" onclick="resetAndStart()">PLAY AGAIN</div>
 </div>
 
-<div id="game-over" class="start-screen" style="display:none;">
-    <h1 style="color:#FF0000;">GAME OVER</h1>
-    <div style="margin:20px 0;">
-        <img src="peyton-suit.jpg" style="width:180px; border:8px solid #FF0000; border-radius:12px;">
-        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:140px; color:#FF0000; opacity:0.9;">X</div>
-    </div>
-    <p style="color:#FFFF00;">FINAL SCORE: <span id="final-score">000000</span></p>
-    <p style="color:#00FFAA;">TAP SCREEN TO TRY AGAIN</p>
+<!-- GAME OVER SCREEN -->
+<div id="gameOverScreen" class="overlay-screen hidden">
+  <h1 style="color:#ff5555;">💀 GAME OVER 💀</h1>
+  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='45' r='28' fill='%23552222'/%3E%3Crect x='36' y='22' width='28' height='16' fill='%23bb6644'/%3E%3Ccircle cx='42' cy='35' r='5' fill='%23ffaaaa'/%3E%3Ccircle cx='58' cy='35' r='5' fill='%23ffaaaa'/%3E%3Cpath d='M40 50 L60 50 L53 75 L47 75 Z' fill='%23997755'/%3E%3Ctext x='25' y='90' fill='%23ff8888' font-size='14'%3ERETRY%3C/text%3E%3C/svg%3E"
+       style="width:180px; border:6px solid red; border-radius:30px;">
+  <div class="big-text">SCORE: <span id="overFinalScore">0</span></div>
+  <div class="restart-btn" onclick="resetAndStart()">DEFEND AGAIN</div>
 </div>
 
 <script>
-// ============== PEYTON BENSON HYDRO TOWER DEFENSE - MOBILE READY ==============
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-let W = 800, H = 500;
-canvas.width = W; canvas.height = H;
+  (function(){
+    "use strict";
 
-let score = 0;
-let lives = 20;
-let money = 500;
-let wave = 1;
-let gameRunning = false;
-let selectedTowerType = -1;
+    // ---------- CANVAS ----------
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let W = 900, H = 550;
+    canvas.width = W; canvas.height = H;
 
-let towers = [];
-let enemies = [];
-let bullets = [];
-let particles = [];
-
-const path = [
-    {x:0, y:150}, {x:150, y:150}, {x:150, y:300}, {x:400, y:300},
-    {x:400, y:100}, {x:650, y:100}, {x:650, y:400}, {x:800, y:400}
-];
-
-// Peyton image for towers
-const peytonImg = new Image();
-peytonImg.src = "peyton-suit.jpg";
-
-// Tower types
-const towerTypes = [
-    {name:"Hydro Laser", cost:150, range:140, damage:25, fireRate:800, color:"#00FFFF"},
-    {name:"Spread Sonar", cost:250, range:110, damage:18, fireRate:500, color:"#FF00FF"},
-    {name:"CTD Beam", cost:300, range:180, damage:40, fireRate:1200, color:"#FFFF00"}
-];
-
-class Tower {
-    constructor(x, y, type) {
-        this.x = x; this.y = y;
-        this.type = type;
-        this.range = towerTypes[type].range;
-        this.damage = towerTypes[type].damage;
-        this.fireRate = towerTypes[type].fireRate;
-        this.lastShot = 0;
+    // ---------- GAME STATE ----------
+    let gameActive = false;
+    let animationFrame = null;
+    
+    let score = 0;
+    let lives = 20;
+    let money = 500;
+    let wave = 1;
+    const MAX_WAVE = 12;
+    
+    let towers = [];
+    let enemies = [];
+    let bullets = [];
+    let particles = [];
+    
+    let selectedTowerType = -1; // -1 = none
+    
+    // UI elements
+    const scoreEl = document.getElementById('scoreDisplay');
+    const waveEl = document.getElementById('waveDisplay');
+    const livesEl = document.getElementById('livesDisplay');
+    const moneyEl = document.getElementById('moneyDisplay');
+    
+    const startScreen = document.getElementById('startScreen');
+    const winScreen = document.getElementById('winScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const winFinalScore = document.getElementById('winFinalScore');
+    const overFinalScore = document.getElementById('overFinalScore');
+    
+    // Tower buttons
+    const towerBtns = document.querySelectorAll('[data-type]');
+    const cancelBtn = document.getElementById('cancel-select');
+    
+    // ---------- PATH (fixed) ----------
+    const pathPoints = [
+      {x:0, y:170}, {x:170, y:170}, {x:170, y:350}, {x:440, y:350},
+      {x:440, y:120}, {x:700, y:120}, {x:700, y:440}, {x:900, y:440}
+    ];
+    
+    // ---------- TOWER DATA ----------
+    const towerTypes = [
+      { name:'HYDRO LASER', cost:150, range:150, damage:28, cooldown:700, color:'#00ffff', bulletSpeed:10 },
+      { name:'SPREAD SONAR', cost:250, range:120, damage:20, cooldown:450, color:'#ff66ff', bulletSpeed:12 },
+      { name:'CTD BEAM', cost:300, range:190, damage:45, cooldown:1100, color:'#ffff44', bulletSpeed:14 }
+    ];
+    
+    // ---------- HELPER: get enemy position ----------
+    function getEnemyPos(enemy) {
+      const idx = Math.floor(enemy.pathIndex);
+      const nextIdx = Math.min(idx+1, pathPoints.length-1);
+      const p1 = pathPoints[idx];
+      const p2 = pathPoints[nextIdx];
+      const t = enemy.pathIndex - idx;
+      return {
+        x: p1.x + (p2.x - p1.x) * t,
+        y: p1.y + (p2.y - p1.y) * t
+      };
     }
-    draw() {
-        ctx.drawImage(peytonImg, this.x-25, this.y-25, 50, 50);
-        ctx.strokeStyle = towerTypes[this.type].color;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.range, 0, Math.PI*2);
-        ctx.stroke();
-    }
-}
-
-class Enemy {
-    constructor() {
-        this.pos = 0;
-        this.speed = 1.2 + Math.random()*0.6;
-        this.hp = 80 + wave*15;
+    
+    // ---------- ENEMY CLASS ----------
+    class Enemy {
+      constructor(waveMulti) {
+        this.pathIndex = 0;
+        this.speed = 0.9 + Math.random() * 0.9 + (waveMulti * 0.07);
+        this.hp = 70 + wave * 18;
         this.maxHp = this.hp;
+        this.size = 22;
+      }
+      update() {
+        this.pathIndex += this.speed * 0.016; // frame independent approx
+        return (this.pathIndex >= pathPoints.length - 1);
+      }
+      draw() {
+        const pos = getEnemyPos(this);
+        // Space Nazi saucer
+        ctx.shadowColor = '#ff0000aa';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = '#aa2222';
+        ctx.beginPath();
+        ctx.ellipse(pos.x, pos.y-2, 22, 12, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#440000';
+        ctx.beginPath();
+        ctx.ellipse(pos.x, pos.y-6, 16, 8, 0, 0, Math.PI*2);
+        ctx.fill();
+        // cross emblem
+        ctx.fillStyle = '#111';
+        ctx.fillRect(pos.x-8, pos.y-10, 16, 4);
+        ctx.fillRect(pos.x-2, pos.y-16, 4, 16);
+        ctx.shadowBlur = 0;
+        // health bar
+        const hpPercent = this.hp / this.maxHp;
+        ctx.fillStyle = '#222';
+        ctx.fillRect(pos.x-22, pos.y-28, 44, 6);
+        ctx.fillStyle = hpPercent > 0.6 ? '#00ff88' : '#ffaa00';
+        ctx.fillRect(pos.x-22, pos.y-28, 44 * hpPercent, 6);
+      }
     }
-    update() {
-        this.pos += this.speed;
-        if (this.pos >= path.length-1) return true;
-        return false;
+    
+    // ---------- TOWER CLASS ----------
+    class Tower {
+      constructor(x, y, typeIndex) {
+        this.x = x; this.y = y;
+        this.type = typeIndex;
+        this.data = towerTypes[typeIndex];
+        this.lastShot = 0;
+        this.range = this.data.range;
+      }
+      draw() {
+        // draw tower (hydro device)
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = this.data.color;
+        // base
+        ctx.fillStyle = '#1a3a5c';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 22, 0, 2*Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = this.data.color;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        // hydro core
+        ctx.fillStyle = '#aaf0ff';
+        ctx.beginPath();
+        ctx.arc(this.x-4, this.y-4, 8, 0, 2*Math.PI);
+        ctx.fill();
+        // peyton icon
+        ctx.font = "bold 20px 'Courier New'";
+        ctx.fillStyle = '#ffffaa';
+        ctx.shadowBlur = 15;
+        ctx.fillText("⚡", this.x-12, this.y+8);
+        ctx.shadowBlur = 0;
+        // range indicator (if selected or hover)
+        if (selectedTowerType !== -1) {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.range, 0, Math.PI*2);
+          ctx.strokeStyle = this.data.color + '88';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
     }
-    draw() {
-        const p1 = path[Math.floor(this.pos)];
-        const p2 = path[Math.min(Math.floor(this.pos)+1, path.length-1)];
-        const t = this.pos % 1;
-        const x = p1.x + (p2.x - p1.x) * t;
-        const y = p1.y + (p2.y - p1.y) * t;
-        ctx.fillStyle = '#FF0000';
-        ctx.fillRect(x-18, y-12, 36, 12); // saildrone body
-        ctx.fillStyle = '#00FFFF';
-        ctx.fillRect(x-12, y-20, 24, 8); // solar panel
+    
+    // ---------- BULLET ----------
+    function addBullet(from, targetEnemy, damage, speed) {
+      const start = {x: from.x, y: from.y};
+      bullets.push({
+        x: start.x, y: start.y,
+        target: targetEnemy,
+        damage: damage,
+        speed: speed,
+        active: true
+      });
     }
-}
-
-function spawnEnemy() {
-    enemies.push(new Enemy());
-}
-
-function gameLoop() {
-    if (!gameRunning) return;
-
-    ctx.fillStyle = '#000033';
-    ctx.fillRect(0,0,W,H);
-
-    // draw path
-    ctx.strokeStyle = '#00FFAA';
-    ctx.lineWidth = 40;
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for (let p of path) ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-
-    // towers
-    for (let t of towers) {
+    
+    // ---------- SPAWN WAVE ----------
+    function spawnWave() {
+      const count = 5 + wave * 2;
+      for (let i=0; i<count; i++) {
+        setTimeout(() => {
+          if (gameActive) enemies.push(new Enemy(wave));
+        }, i * 280);
+      }
+    }
+    
+    // ---------- UPDATE UI ----------
+    function updateUI() {
+      scoreEl.textContent = String(Math.min(999999, score)).padStart(6,'0');
+      waveEl.textContent = wave;
+      livesEl.textContent = lives;
+      moneyEl.textContent = money;
+    }
+    
+    // ---------- CHECK WIN/LOSE ----------
+    function checkGameOver() {
+      if (lives <= 0) {
+        gameActive = false;
+        overFinalScore.textContent = score;
+        gameOverScreen.classList.remove('hidden');
+        if (animationFrame) cancelAnimationFrame(animationFrame);
+        return true;
+      }
+      return false;
+    }
+    
+    function checkWin() {
+      if (wave > MAX_WAVE && enemies.length === 0 && gameActive) {
+        gameActive = false;
+        winFinalScore.textContent = score;
+        winScreen.classList.remove('hidden');
+        if (animationFrame) cancelAnimationFrame(animationFrame);
+        return true;
+      }
+      return false;
+    }
+    
+    // ---------- RESET GAME ----------
+    function resetGameState() {
+      towers = [];
+      enemies = [];
+      bullets = [];
+      particles = [];
+      score = 0;
+      lives = 20;
+      money = 500;
+      wave = 1;
+      selectedTowerType = -1;
+      updateUI();
+      updateButtonActive();
+    }
+    
+    function startNewGame() {
+      startScreen.classList.add('hidden');
+      winScreen.classList.add('hidden');
+      gameOverScreen.classList.add('hidden');
+      resetGameState();
+      gameActive = true;
+      spawnWave();
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(gameLoop);
+    }
+    
+    function resetAndStart() {
+      startNewGame();
+    }
+    window.startNewGame = startNewGame;
+    window.resetAndStart = resetAndStart;
+    
+    // ---------- TOWER PLACEMENT ----------
+    function tryPlaceTower(clickX, clickY) {
+      if (selectedTowerType === -1) return false;
+      const typeIdx = selectedTowerType;
+      const cost = towerTypes[typeIdx].cost;
+      if (money < cost) return false;
+      
+      // prevent placing on path
+      for (let i=0; i<pathPoints.length-1; i++) {
+        const p1 = pathPoints[i], p2 = pathPoints[i+1];
+        const dist = distancePointSegment(clickX, clickY, p1.x, p1.y, p2.x, p2.y);
+        if (dist < 35) return false; // too close to path
+      }
+      
+      towers.push(new Tower(clickX, clickY, typeIdx));
+      money -= cost;
+      updateUI();
+      return true;
+    }
+    
+    function distancePointSegment(px, py, x1, y1, x2, y2) {
+      const vx = x2 - x1, vy = y2 - y1;
+      const dx = px - x1, dy = py - y1;
+      const dot = vx*dx + vy*dy;
+      const len2 = vx*vx + vy*vy;
+      let t = (len2 === 0) ? 0 : Math.max(0, Math.min(1, dot / len2));
+      const projx = x1 + t * vx, projy = y1 + t * vy;
+      return Math.hypot(px - projx, py - projy);
+    }
+    
+    // ---------- BUTTON UI ----------
+    function updateButtonActive() {
+      towerBtns.forEach(btn => {
+        const type = parseInt(btn.dataset.type);
+        if (type === selectedTowerType) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+    }
+    
+    towerBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        if (!gameActive) return;
+        const type = parseInt(btn.dataset.type);
+        selectedTowerType = type;
+        updateButtonActive();
+      });
+    });
+    
+    cancelBtn.addEventListener('click', () => {
+      selectedTowerType = -1;
+      updateButtonActive();
+    });
+    
+    // Canvas click / touch
+    function handleCanvasInteraction(clientX, clientY) {
+      if (!gameActive) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const scaleY = H / rect.height;
+      const canvasX = (clientX - rect.left) * scaleX;
+      const canvasY = (clientY - rect.top) * scaleY;
+      tryPlaceTower(canvasX, canvasY);
+    }
+    
+    canvas.addEventListener('click', (e) => handleCanvasInteraction(e.clientX, e.clientY));
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleCanvasInteraction(touch.clientX, touch.clientY);
+    }, {passive: false});
+    
+    // ---------- GAME LOOP ----------
+    function gameLoop() {
+      if (!gameActive) return;
+      
+      ctx.clearRect(0, 0, W, H);
+      
+      // draw starfield
+      ctx.fillStyle = '#0b1428';
+      ctx.fillRect(0,0,W,H);
+      for (let i=0; i<60; i++) {
+        ctx.fillStyle = `rgba(180,220,255,${0.5+Math.sin(Date.now()*0.001+i)*0.3})`;
+        ctx.beginPath();
+        ctx.arc((i*37)%W, (i*83)%H, 1.5, 0, Math.PI*2);
+        ctx.fill();
+      }
+      
+            
+      // draw path
+      ctx.shadowBlur = 25;
+      ctx.shadowColor = '#0ff';
+      ctx.beginPath();
+      ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+      for (let p of pathPoints) ctx.lineTo(p.x, p.y);
+      ctx.strokeStyle = '#22ddbb';
+      ctx.lineWidth = 42;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#aaffff';
+      ctx.lineWidth = 8;
+      ctx.stroke();
+      
+      // Towers update & shoot
+      const now = Date.now();
+      for (let t of towers) {
         t.draw();
-        if (Date.now() - t.lastShot > t.fireRate) {
-            for (let e of enemies) {
-                const p1 = path[Math.floor(e.pos)];
-                const p2 = path[Math.min(Math.floor(e.pos)+1, path.length-1)];
-                const tPos = p1.x + (p2.x - p1.x) * (e.pos % 1);
-                const tY = p1.y + (p2.y - p1.y) * (e.pos % 1);
-                if (Math.hypot(t.x - tPos, t.y - tY) < t.range) {
-                    bullets.push({x:t.x, y:t.y, tx:tPos, ty:tY, damage:t.damage});
-                    t.lastShot = Date.now();
-                    break;
-                }
+        if (now - t.lastShot > t.data.cooldown) {
+          // find enemy in range
+          for (let e of enemies) {
+            const pos = getEnemyPos(e);
+            const dist = Math.hypot(t.x - pos.x, t.y - pos.y);
+            if (dist <= t.range) {
+              addBullet({x: t.x, y: t.y}, e, t.data.damage, t.data.bulletSpeed);
+              t.lastShot = now;
+              break;
             }
+          }
         }
-    }
-
-    // enemies
-    for (let i = enemies.length-1; i >= 0; i--) {
-        if (enemies[i].update()) {
-            lives--;
-            enemies.splice(i,1);
-            if (lives <= 0) endGame();
-            continue;
+      }
+      
+      // Enemies
+      for (let i=enemies.length-1; i>=0; i--) {
+        const e = enemies[i];
+        const reachedEnd = e.update();
+        if (reachedEnd) {
+          lives = Math.max(0, lives-1);
+          enemies.splice(i,1);
+          if (checkGameOver()) { updateUI(); return; }
+          continue;
         }
-        enemies[i].draw();
-    }
-
-    // bullets
-    for (let i = bullets.length-1; i >= 0; i--) {
-        let b = bullets[i];
-        let dx = b.tx - b.x;
-        let dy = b.ty - b.y;
-        let dist = Math.hypot(dx, dy);
-        if (dist < 8) {
-            bullets.splice(i,1);
-            continue;
-        }
-        b.x += (dx/dist)*12;
-        b.y += (dy/dist)*12;
-        ctx.fillStyle = '#FFFF00';
-        ctx.fillRect(b.x-3, b.y-3, 6, 6);
-    }
-
-    // collision bullet vs enemy
-    for (let i = bullets.length-1; i >= 0; i--) {
-        let b = bullets[i];
-        for (let j = enemies.length-1; j >= 0; j--) {
-            let e = enemies[j];
-            const p1 = path[Math.floor(e.pos)];
-            const p2 = path[Math.min(Math.floor(e.pos)+1, path.length-1)];
-            const ex = p1.x + (p2.x - p1.x) * (e.pos % 1);
-            const ey = p1.y + (p2.y - p1.y) * (e.pos % 1);
-            if (Math.hypot(b.x - ex, b.y - ey) < 25) {
-                e.hp -= b.damage;
-                bullets.splice(i,1);
-                if (e.hp <= 0) {
-                    score += 100;
-                    enemies.splice(j,1);
-                }
-                break;
+        e.draw();
+      }
+      
+      // Bullets
+      for (let i=bullets.length-1; i>=0; i--) {
+        const b = bullets[i];
+        if (!b.target || b.target.hp <= 0) { bullets.splice(i,1); continue; }
+        const targetPos = getEnemyPos(b.target);
+        const dx = targetPos.x - b.x, dy = targetPos.y - b.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 20) {
+          // hit
+          b.target.hp -= b.damage;
+          if (b.target.hp <= 0) {
+            const idx = enemies.indexOf(b.target);
+            if (idx !== -1) {
+              enemies.splice(idx,1);
+              score += 120;
+              money += 60;  // 💰 earn cash
             }
+          }
+          bullets.splice(i,1);
+        } else {
+          b.x += (dx/dist) * b.speed;
+          b.y += (dy/dist) * b.speed;
+          // draw bullet
+          ctx.fillStyle = '#ffff88';
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, 6, 0, 2*Math.PI);
+          ctx.fill();
         }
-    }
-
-    if (enemies.length === 0 && wave < 12) {
-        wave++;
-        for (let i = 0; i < wave + 3; i++) {
-            setTimeout(spawnEnemy, i*300);
+      }
+      ctx.shadowBlur = 0;
+      
+      // Next wave trigger
+      if (enemies.length === 0 && gameActive) {
+        if (wave < MAX_WAVE) {
+          wave++;
+          spawnWave();
+        } else {
+          if (checkWin()) { updateUI(); return; }
         }
+      }
+      
+      updateUI();
+      if (gameActive) {
+        animationFrame = requestAnimationFrame(gameLoop);
+      }
     }
-
-    scoreEl.textContent = String(score).padStart(6,'0');
-    livesEl.textContent = lives;
-    waveEl.textContent = wave;
-    moneyEl.textContent = money;
-
-    requestAnimationFrame(gameLoop);
-}
-
-function selectTower(type) {
-    if (money >= towerTypes[type].cost) selectedTowerType = type;
-}
-
-canvas.addEventListener('click', e => {
-    if (!gameRunning) return;
-    if (selectedTowerType === -1) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (W / rect.width);
-    const y = (e.clientY - rect.top) * (H / rect.height);
-    if (money >= towerTypes[selectedTowerType].cost) {
-        towers.push(new Tower(x, y, selectedTowerType));
-        money -= towerTypes[selectedTowerType].cost;
-        selectedTowerType = -1;
-    }
-});
-
-function startGame() {
-    document.getElementById('start-screen').style.display = 'none';
-    gameRunning = true;
-    score = 0; lives = 20; money = 500; wave = 1;
-    towers = []; enemies = []; bullets = [];
-    for (let i = 0; i < 5; i++) setTimeout(spawnEnemy, i*400);
-    gameLoop();
-}
-
-function endGame() {
-    gameRunning = false;
-    document.getElementById('game-over').style.display = 'flex';
-}
-
-document.getElementById('start-screen').style.display = 'flex';
+    
+    // Initialize display
+    updateUI();
+    // Show start screen
+    startScreen.classList.remove('hidden');
+    // Prevent context menu
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+    
+    // fallback images already SVG
+  })();
 </script>
-
 </body>
 </html>
