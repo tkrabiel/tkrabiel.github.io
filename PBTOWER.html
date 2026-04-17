@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>⚡ PEYTON BENSON · HYDRO DEFENSE ⚡</title>
+  <title>⚡ PEYTON BENSON · HYDRO DEFENSE (GOD MODE) ⚡</title>
   <style>
     * {
       box-sizing: border-box;
@@ -200,7 +200,7 @@
     <div class="ui-stat">💧 SCORE: <span id="scoreDisplay">000000</span></div>
     <div class="ui-stat">🌊 WAVE: <span id="waveDisplay">1</span></div>
     <div class="ui-stat">❤️ LIVES: <span id="livesDisplay">20</span></div>
-    <div class="ui-stat">💰 $<span id="moneyDisplay">700</span></div>
+    <div class="ui-stat">💰 $<span id="moneyDisplay">5000</span></div>
   </div>
 
   <div id="tower-shop">
@@ -218,10 +218,10 @@
   <img class="hero-img" id="peytonStartImg" src="peyton-suit.jpg" alt="PEYTON" onclick="startNewGame()">
   <p style="color:#88ffaa; font-size:22px; margin-top:12px;">⚡ TAP PEYTON TO START ⚡</p>
   <p style="color:#aaccff;">Build towers · Defend 20 lives · Reach Wave 12</p>
-  <p style="color:#ffaa88; font-weight:bold;">⭐ EASY MODE: more money, weaker enemies ⭐</p>
+  <p style="color:#ffaa88; font-weight:bold;">🔥 GOD MODE: 10x damage, rapid fire, $5000 start! 🔥</p>
 </div>
 
-<!-- WIN SCREEN (with real image) -->
+<!-- WIN SCREEN -->
 <div id="winScreen" class="overlay-screen hidden">
   <h1 style="color:#aaff88;">✨ EMILY IS SAVED! ✨</h1>
   <div style="font-size:32px; color: gold; text-shadow:0 0 20px cyan;">PEYTON BENSON — HYDRO HERO</div>
@@ -230,7 +230,7 @@
   <div class="restart-btn" onclick="resetAndStart()">PLAY AGAIN</div>
 </div>
 
-<!-- GAME OVER SCREEN (with real image) -->
+<!-- GAME OVER SCREEN -->
 <div id="gameOverScreen" class="overlay-screen hidden">
   <h1 style="color:#ff5555;">💀 GAME OVER 💀</h1>
   <img src="peyton-suit.jpg" style="width:180px; border:6px solid red; border-radius:30px;">
@@ -252,13 +252,13 @@
     let W = 900, H = 550;
     canvas.width = W; canvas.height = H;
 
-    // ---------- GAME STATE (EASY MODE) ----------
+    // ---------- GAME STATE (GOD MODE) ----------
     let gameActive = false;
     let animationFrame = null;
     
     let score = 0;
     let lives = 20;
-    let money = 700;            // more starting cash
+    let money = 5000;           // 💰 WAY MORE MONEY
     let wave = 1;
     const MAX_WAVE = 12;
     
@@ -288,11 +288,11 @@
       {x:440, y:120}, {x:700, y:120}, {x:700, y:440}, {x:900, y:440}
     ];
     
-    // ---------- TOWER DATA (BUFFED FOR EASY MODE) ----------
+    // ---------- TOWER DATA (10x DAMAGE + RAPID FIRE) ----------
     const towerTypes = [
-      { name:'HYDRO LASER', cost:150, range:165, damage:34, cooldown:650, color:'#00ffff', bulletSpeed:11 },
-      { name:'SPREAD SONAR', cost:250, range:130, damage:26, cooldown:430, color:'#ff66ff', bulletSpeed:13 },
-      { name:'CTD BEAM', cost:300, range:200, damage:52, cooldown:1050, color:'#ffff44', bulletSpeed:15 }
+      { name:'HYDRO LASER', cost:150, range:180, damage:340, cooldown:180, color:'#00ffff', bulletSpeed:14, multiShot:2 },
+      { name:'SPREAD SONAR', cost:250, range:140, damage:260, cooldown:120, color:'#ff66ff', bulletSpeed:16, multiShot:3 },
+      { name:'CTD BEAM', cost:300, range:220, damage:520, cooldown:280, color:'#ffff44', bulletSpeed:18, multiShot:4 }
     ];
     
     // ---------- HELPER: enemy position ----------
@@ -308,12 +308,12 @@
       };
     }
     
-    // ---------- ENEMY (NERFED) ----------
+    // ---------- ENEMY (STILL NERFED) ----------
     class Enemy {
       constructor(waveMulti) {
         this.pathIndex = 0;
-        this.speed = 0.75 + Math.random() * 0.7 + (waveMulti * 0.04);
-        this.hp = 45 + wave * 12;
+        this.speed = 0.7 + Math.random() * 0.6 + (waveMulti * 0.03);
+        this.hp = 40 + wave * 10;
         this.maxHp = this.hp;
         this.size = 22;
       }
@@ -355,17 +355,14 @@
         this.range = this.data.range;
       }
       draw() {
-        // Draw Peyton image as tower
         if (peytonImg.complete && peytonImg.naturalWidth > 0) {
           ctx.drawImage(peytonImg, this.x-28, this.y-28, 56, 56);
         } else {
-          // fallback
           ctx.fillStyle = '#1a3a5c';
           ctx.beginPath();
           ctx.arc(this.x, this.y, 22, 0, 2*Math.PI);
           ctx.fill();
         }
-        // Range circle (only when tower selected)
         if (selectedTowerType !== -1) {
           ctx.beginPath();
           ctx.arc(this.x, this.y, this.range, 0, Math.PI*2);
@@ -373,7 +370,6 @@
           ctx.lineWidth = 2;
           ctx.stroke();
         }
-        // Tower type indicator
         ctx.font = "bold 14px 'Courier New'";
         ctx.fillStyle = this.data.color;
         ctx.shadowBlur = 10;
@@ -383,12 +379,13 @@
       }
     }
     
-    function addBullet(from, targetEnemy, damage, speed) {
+    function addBullet(from, targetEnemy, damage, speed, color) {
       bullets.push({
         x: from.x, y: from.y,
         target: targetEnemy,
         damage: damage,
         speed: speed,
+        color: color || '#ffff88',
         active: true
       });
     }
@@ -398,7 +395,7 @@
       for (let i=0; i<count; i++) {
         setTimeout(() => {
           if (gameActive) enemies.push(new Enemy(wave));
-        }, i * 260);
+        }, i * 240);
       }
     }
     
@@ -437,7 +434,7 @@
       bullets = [];
       score = 0;
       lives = 20;
-      money = 700;
+      money = 5000;
       wave = 1;
       selectedTowerType = -1;
       updateUI();
@@ -524,7 +521,7 @@
       handleCanvasInteraction(touch.clientX, touch.clientY);
     }, {passive: false});
     
-    // ---------- GAME LOOP ----------
+    // ---------- GAME LOOP (WITH MULTI-SHOT) ----------
     function gameLoop() {
       if (!gameActive) return;
       
@@ -553,14 +550,22 @@
       ctx.stroke();
       
       const now = Date.now();
-      // Towers update & shoot
+      // Towers update & shoot (multi-shot)
       for (let t of towers) {
         t.draw();
         if (now - t.lastShot > t.data.cooldown) {
           for (let e of enemies) {
             const pos = getEnemyPos(e);
             if (Math.hypot(t.x - pos.x, t.y - pos.y) <= t.range) {
-              addBullet({x: t.x, y: t.y}, e, t.data.damage, t.data.bulletSpeed);
+              // Shoot multiple lasers
+              const multi = t.data.multiShot || 1;
+              for (let m=0; m<multi; m++) {
+                // slight spread for visual effect
+                const angleOffset = (m - (multi-1)/2) * 0.15;
+                const targetPos = getEnemyPos(e);
+                // We'll just add bullet targeting same enemy but with small trajectory variation
+                addBullet({x: t.x, y: t.y}, e, t.data.damage, t.data.bulletSpeed, t.data.color);
+              }
               t.lastShot = now;
               break;
             }
@@ -593,18 +598,18 @@
             const idx = enemies.indexOf(b.target);
             if (idx !== -1) {
               enemies.splice(idx,1);
-              score += 130;
-              money += 75;
+              score += 150;
+              money += 100;
             }
           }
           bullets.splice(i,1);
         } else {
           b.x += (dx/dist) * b.speed;
           b.y += (dy/dist) * b.speed;
-          ctx.fillStyle = '#ffff88';
+          ctx.fillStyle = b.color || '#ffff88';
           ctx.shadowBlur = 14;
           ctx.beginPath();
-          ctx.arc(b.x, b.y, 6, 0, 2*Math.PI);
+          ctx.arc(b.x, b.y, 7, 0, 2*Math.PI);
           ctx.fill();
         }
       }
