@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NSPS CST Master Application Portal</title>
+    <title>NSPS Master Application Editor</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
         .container { max-width: 1000px; margin: auto; }
@@ -50,11 +50,13 @@
 </head>
 <body>
 
+<script src="competency_data.js"></script>
+
 <div class="container">
     <div class="controls">
         <a href="index.html" class="btn btn-home">HOME</a>
-        <button class="btn btn-add" onclick="addProjectEngagement()">+ Add New Project</button>
-        <button class="btn btn-add" onclick="addEducationalEngagement()">+ Add New Education</button>
+        <button class="btn btn-add" onclick="addProjectEngagement()">+ Add Project</button>
+        <button class="btn btn-add" onclick="addEducationalEngagement()">+ Add Education</button>
         <button class="btn btn-save" onclick="saveAllToJSON()">Save Master JSON</button>
         <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">Load JSON</button>
         <a href="export.html" class="btn btn-export">GO TO EXPORT</a>
@@ -351,6 +353,7 @@ function saveAllToJSON() {
 
     const output = {
         applicant: document.getElementById('master_name').value,
+        email: document.getElementById('email').value,
         level: document.getElementById('master_level').value,
         data: engagements
     };
@@ -371,6 +374,7 @@ function loadFromJSON(event) {
 
 function populateForm(json) {
     document.getElementById('master_name').value = json.applicant || '';
+    document.getElementById('email').value = json.email || '';
     document.getElementById('master_level').value = json.level || '';
     document.getElementById('engagement-list').innerHTML = ''; 
     counter = 0;
@@ -384,89 +388,7 @@ function populateForm(json) {
     }
 }
 
-// --- AUTOCOMPLETE @ LOGIC ---
-const competencyData = {
-    "Level I": [
-        {id: "B1.1a", desc: "Geometry"}, {id: "B1.1b", desc: "Linear algebra"}, {id: "B1.1c", desc: "Numerical methods for linear systems"},
-        {id: "B1.2a", desc: "Differential and integral calculus"}, {id: "B1.2b", desc: "Numerical solutions of non-linear equation"},
-        {id: "B1.3a", desc: "Probabilities and Bayesian estimation"}, {id: "B1.3b", desc: "Statistics"},
-        {id: "B2.1", desc: "Computer systems"}, {id: "B2.2", desc: "Office work software suites"}, {id: "B2.3", desc: "Programming"}, {id: "B2.4", desc: "Web and network services"}, {id: "B2.5", desc: "Databases"},
-        {id: "B3.1", desc: "Kinematics"}, {id: "B3.2", desc: "Gravity"}, {id: "B3.3", desc: "Magnetism"}, {id: "B3.4", desc: "Waves"}, {id: "B3.5", desc: "Electromagnetic waves"}, {id: "B3.6", desc: "Geometrical optics"}, {id: "B3.7", desc: "Lasers"}, {id: "B3.8", desc: "Transducers and clocks"},
-        {id: "B4.1", desc: "Conventional aids to navigation"}, {id: "B4.2", desc: "GMDSS"}, {id: "B4.3", desc: "Nautical charts"}, {id: "B4.4", desc: "Navigation publications"}, {id: "B4.5", desc: "Compasses"}, {id: "B4.6", desc: "Emergency procedures"}, {id: "B4.7", desc: "Safe working practice"}, {id: "B4.8", desc: "Rope and wires"}, {id: "B4.9", desc: "Towed and over the side instruments"}, {id: "B4.10", desc: "Anchoring"}, {id: "B4.11", desc: "Instrument moorings"},
-        {id: "B5.1", desc: "Weather fundamentals and observations"}, {id: "B5.2", desc: "Wind, waves and seas"}, {id: "B5.3", desc: "Weather forecasting"},
-        {id: "F1.1a", desc: "The gravity field of the Earth"}, {id: "F1.1b", desc: "Gravity observations and their reduction"}, {id: "F1.1c", desc: "Height systems and height determination"}, {id: "F1.1d", desc: "Geopotential and geoidal modelling"},
-        {id: "F1.2a", desc: "Coordinate systems for positioning"}, {id: "F1.2b", desc: "Datum transformation techniques"}, {id: "F1.2c", desc: "Geodetic computations on the ellipsoid"}, {id: "F1.2d", desc: "Three-dimensional geodetic modelling"},
-        {id: "F1.3a", desc: "Trigonometric surveys"}, {id: "F1.3b", desc: "Existing survey control"}, {id: "F1.3c", desc: "Establishing survey control"}, {id: "F1.3d", desc: "Instrument tests"}, {id: "F1.3e", desc: "Historical surveys"},
-        {id: "F1.4a", desc: "Levelling instruments"}, {id: "F1.4b", desc: "Height reduction"},
-        {id: "F1.5a", desc: "Map projections"},
-        {id: "F1.6a", desc: "Trigonometry"}, {id: "F1.6b", desc: "Theory of observations"}, {id: "F1.6c", desc: "Least squares"},
-        {id: "F2.1a", desc: "Water masses and circulation"}, {id: "F2.1b", desc: "Physical properties of sea water"}, {id: "F2.1c", desc: "Oceanographic measurements"}, {id: "F2.1d", desc: "Waves"},
-        {id: "F3.1a", desc: "Earth structure"}, {id: "F3.1b", desc: "Geomorphology"}, {id: "F3.1c", desc: "Substrates"},
-        {id: "F3.2a", desc: "Gravity fields and gravity surveys"}, {id: "F3.2b", desc: "Magnetic fields"}, {id: "F3.2c", desc: "Seismic surveys"},
-        {id: "H1.1a", desc: "Common reference frames for sensors"}, {id: "H1.1b", desc: "Integration of reference frames"},
-        {id: "H1.2a", desc: "GNSS signals"}, {id: "H1.2b", desc: "GNSS observables"}, {id: "H1.2c", desc: "Relative and absolute techniques"}, {id: "H1.2d", desc: "Installation and operation"}, {id: "H1.2e", desc: "Quality control"},
-        {id: "H1.3a", desc: "Accelerometers, gyroscopes, inclinometers, compass"}, {id: "H1.3b", desc: "Strap down inertial units"}, {id: "H1.3c", desc: "Kalman filtering"}, {id: "H1.3d", desc: "Aided inertial navigation"},
-        {id: "H1.4a", desc: "Acoustic positioning principles"}, {id: "H1.4b", desc: "Acoustic positioning systems"}, {id: "H1.4c", desc: "Acoustic positioning error analysis"}, {id: "H1.4d", desc: "Acoustic positioning applications"},
-        {id: "H1.5a", desc: "Track guidance"},
-        {id: "H2.1a", desc: "Transducers and generation of acoustic waves"}, {id: "H2.1b", desc: "Propagation of acoustic waves"}, {id: "H2.1c", desc: "Acoustic noise"}, {id: "H2.1d", desc: "Reflection, scattering and system performance"}, {id: "H2.1e", desc: "Refraction and ray-tracing"},
-        {id: "H2.2a", desc: "Single beam echo sounders principles"}, {id: "H2.2b", desc: "Single beam returns interpretation"}, {id: "H2.2c", desc: "Single beam survey system"}, {id: "H2.2d", desc: "Processing of single beam data"},
-        {id: "H2.3a", desc: "Side-scan sonar systems"}, {id: "H2.3b", desc: "Synthetic Aperture Sonar"},
-        {id: "H2.4a", desc: "Multi-beam echo sounders"}, {id: "H2.4b", desc: "Multi-beam system parameters"}, {id: "H2.4c", desc: "Multi-beam systems"}, {id: "H2.4d", desc: "Multi-beam data processing"}, {id: "H2.4e", desc: "Interferometric Sonar"},
-        {id: "H2.5a", desc: "Backscatter from side scan and MBES"},
-        {id: "H3.1a", desc: "Airborne LiDAR systems"}, {id: "H3.1b", desc: "Airborne LiDAR data products"}, {id: "H3.1c", desc: "Terrestrial LiDAR"},
-        {id: "H3.2a", desc: "Remotely sensed bathymetry"}, {id: "H3.2b", desc: "Satellite altimetry"}, {id: "H3.2c", desc: "Optical methods of shoreline delineation"},
-        {id: "H4.1a", desc: "Hydrographic survey requirements"}, {id: "H4.1b", desc: "Hydrographic survey project management"},
-        {id: "H4.2a", desc: "Survey planning"}, {id: "H4.2b", desc: "Single Beam operations"}, {id: "H4.2c", desc: "Multi-beam and Interferometric operations"}, {id: "H4.2d", desc: "Magnetic surveys"}, {id: "H4.2e", desc: "Airborne LiDAR surveys"}, {id: "H4.2f", desc: "Side scan sonar operations"}, {id: "H4.2g", desc: "Side-scan sonar data interpretation"},
-        {id: "H4.3a", desc: "Classification from acoustic data"}, {id: "H4.3b", desc: "Classification from optical data"}, {id: "H4.3c", desc: "Seabed sampling"}, {id: "H4.3d", desc: "Seabed characterization"},
-        {id: "H5.1a", desc: "Tide theory"}, {id: "H5.1b", desc: "Non-tidal water level variations"},
-        {id: "H5.2a", desc: "Water level gauges"}, {id: "H5.2b", desc: "Tidal measurement"}, {id: "H5.2c", desc: "Uncertainty in water level"},
-        {id: "H5.3a", desc: "Harmonic analysis"}, {id: "H5.3b", desc: "Ocean water level"},
-        {id: "H5.4a", desc: "Separation models"}, {id: "H5.4b", desc: "Vertical datums"}, {id: "H5.4c", desc: "Sounding reduction"},
-        {id: "H5.5a", desc: "Tidally induced currents"}, {id: "H5.5b", desc: "Current measurement, portrayal and surveys"},
-        {id: "H6.1a", desc: "Hydrographic data acquisition"}, {id: "H6.1b", desc: "Real-time data monitoring"}, {id: "H6.1c", desc: "Survey data storage and transfer"},
-        {id: "H6.2a", desc: "Filtering and estimation of single beam data"}, {id: "H6.2b", desc: "Filtering and estimation of multi-beam data"}, {id: "H6.2c", desc: "Spatial data quality control"}, {id: "H6.2d", desc: "Spatial data interpolation"}, {id: "H6.2e", desc: "Spatial data representation"},
-        {id: "H7.1a", desc: "Databases"}, {id: "H7.1b", desc: "Marine GIS basics"},
-        {id: "H7.2a", desc: "MSDI"}, {id: "H7.2b", desc: "Open access marine data"},
-        {id: "H7.3a", desc: "Spatial data integration"}, {id: "H7.3b", desc: "Spatial data visualisation"}, {id: "H7.3c", desc: "Deliverables"},
-        {id: "H8.1a", desc: "Responsibilities of the hydrographic surveyor"}, {id: "H8.1b", desc: "Contracts"},
-        {id: "H8.2a", desc: "Delimitations"}, {id: "H8.2b", desc: "Impact of surveys"}
-    ],
-    "Level II": [
-        {id: "B1.1", desc: "Linear algebra"}, {id: "B1.2", desc: "Differential calculus"}, {id: "B1.3", desc: "Trigonometry"}, {id: "B1.4", desc: "Statistics"}, {id: "B1.5", desc: "Theory of errors"}, {id: "B1.6", desc: "Least squares"}, {id: "B1.7", desc: "Interpolation"},
-        {id: "B2.1", desc: "Computer systems"}, {id: "B2.2", desc: "Office work software suites"}, {id: "B2.3", desc: "Programming"}, {id: "B2.4", desc: "Web and network services"}, {id: "B2.5", desc: "Databases"},
-        {id: "B3.1", desc: "Kinematics"}, {id: "B3.2", desc: "Gravity"}, {id: "B3.3", desc: "Magnetism"}, {id: "B3.4", desc: "Waves"}, {id: "B3.5", desc: "Electromagnetic waves"}, {id: "B3.6", desc: "Geometrical optics"}, {id: "B3.7", desc: "Lasers"}, {id: "B3.8", desc: "Transducers and clocks"},
-        {id: "B4.1", desc: "Geography and geology"}, {id: "B4.2", desc: "Substrates"},
-        {id: "B5.1", desc: "Conventional aids to navigation"}, {id: "B5.2", desc: "GMDSS"}, {id: "B5.3", desc: "Nautical charts"}, {id: "B5.4", desc: "Navigation publications"}, {id: "B5.5", desc: "Compasses"}, {id: "B5.6", desc: "Emergency procedures"}, {id: "B5.7", desc: "Safe working practice"}, {id: "B5.8", desc: "Rope and wires"}, {id: "B5.9", desc: "Towed and over the side instruments"}, {id: "B5.10", desc: "Anchoring"}, {id: "B5.11", desc: "Instrument moorings"},
-        {id: "B6.1", desc: "Weather fundamentals and observations"}, {id: "B6.2", desc: "Wind, waves and seas"}, {id: "B6.3", desc: "Weather forecasting"},
-        {id: "E1.1a", desc: "Generation of acoustic waves"}, {id: "E1.1b", desc: "Propagation of acoustic waves"}, {id: "E1.1c", desc: "Reflection, scattering and system performance"}, {id: "E1.1d", desc: "Reception of acoustic waves"},
-        {id: "E1.2a", desc: "Single beam echo sounders"}, {id: "E1.2b", desc: "Single beam echo sounder data recording"}, {id: "E1.2c", desc: "Range uncertainty"}, {id: "E1.2d", desc: "Side scan sonar"},
-        {id: "E1.3a", desc: "Beam characteristics"}, {id: "E1.3b", desc: "Backscatter and water column returns"}, {id: "E1.3c", desc: "Bottom spatial coverage"}, {id: "E1.3d", desc: "Installation and configuration"}, {id: "E1.3e", desc: "Range and angle uncertainty"}, {id: "E1.3f", desc: "Operation"},
-        {id: "E2.1a", desc: "Airborne LiDAR systems"}, {id: "E2.1b", desc: "Airborne LiDAR data products"}, {id: "E2.1c", desc: "Terrestrial LiDAR"},
-        {id: "E2.2a", desc: "Remotely sensed bathymetry"}, {id: "E2.2b", desc: "Shoreline deliniation"},
-        {id: "E3.1a", desc: "Tidal fundamentals"}, {id: "E3.1b", desc: "Tidal information"}, {id: "E3.1c", desc: "Non-tidal water level variations"},
-        {id: "E3.2a", desc: "Water level gauges"}, {id: "E3.2b", desc: "Tidal measurement"}, {id: "E3.2c", desc: "Water level datums"}, {id: "E3.2d", desc: "Uncertainty in water level"},
-        {id: "E3.3a", desc: "Water level reduction of soundings"}, {id: "E3.3b", desc: "Reduction of soundings using GNSS observations"},
-        {id: "E3.4a", desc: "Tidal streams and currents"}, {id: "E3.4b", desc: "Current measurement and portrayal"},
-        {id: "E4.1a", desc: "Introduction to geodesy"}, {id: "E4.1b", desc: "Coordinate systems, frames and datums"}, {id: "E4.1c", desc: "Geodetic transformations and associated computations"}, {id: "E4.1d", desc: "Ellipsoidal computations"},
-        {id: "E4.2", desc: "Map projections"},
-        {id: "E4.3a", desc: "Positioning fundamentals"}, {id: "E4.3b", desc: "Satellite positioning"}, {id: "E4.3c", desc: "Positioning systems"}, {id: "E4.3d", desc: "Historical surveys"}, {id: "E4.3e", desc: "Survey control"},
-        {id: "E4.4a", desc: "Height systems"}, {id: "E4.4b", desc: "Elevation measurements and computation"},
-        {id: "E4.5a", desc: "Acoustic positioning concepts"}, {id: "E4.5b", desc: "Acoustic positioning systems"},
-        {id: "E4.6a", desc: "Inertial Measurement Units"}, {id: "E4.6b", desc: "Inertial Navigation Systems"},
-        {id: "E4.7", desc: "Sources of uncertainty"},
-        {id: "E5.1a", desc: "Hydrographic survey purposes"}, {id: "E5.1b", desc: "Hydrographic survey execution requirements"}, {id: "E5.1c", desc: "Hydrographic survey project organization"},
-        {id: "E5.2a", desc: "Operational survey data transfer"}, {id: "E5.2b", desc: "Survey systems"}, {id: "E5.2c", desc: "Calibration and corrections"}, {id: "E5.2d", desc: "Line planning"}, {id: "E5.2e", desc: "Line keeping"}, {id: "E5.2f", desc: "Survey operations"}, {id: "E5.2g", desc: "Quality control"},
-        {id: "E5.3", desc: "Documentation"},
-        {id: "E5.4a", desc: "Liability of the hydrographic surveyor"}, {id: "E5.4b", desc: "Delimitations"},
-        {id: "E6.1a", desc: "Hydrographic data acquisition"}, {id: "E6.1b", desc: "Real-time data monitoring"}, {id: "E6.1c", desc: "Survey data storage and transfer"},
-        {id: "E6.2a", desc: "Spatial data cleaning"}, {id: "E6.2b", desc: "Spatial data quality control"}, {id: "E6.2c", desc: "Spatial data representation"},
-        {id: "E6.3a", desc: "Databases"}, {id: "E6.3b", desc: "Marine GIS basics"}, {id: "E6.3c", desc: "Visualization and presentation"}, {id: "E6.3d", desc: "Deliverables"},
-        {id: "E7.1a", desc: "Physical properties of sea water"}, {id: "E7.1b", desc: "Oceanographic measurements"}, {id: "E7.1c", desc: "Waves"},
-        {id: "E7.2a", desc: "Seabed characteristics"}, {id: "E7.2b", desc: "Magnetic surveys"}, {id: "E7.2c", desc: "Seismic surveys"},
-        {id: "E7.3a", desc: "Impact of surveys"}
-    ]
-};
-
+// --- AUTOCOMPLETE @ LOGIC USING EXTERNAL competency_data.js ---
 let currentMatchState = { active: false, startIndex: -1, textObj: null };
 
 document.addEventListener('input', function(e) {
@@ -489,14 +411,19 @@ function handleAutocomplete(textarea) {
 
     if (match) {
         currentMatchState = { active: true, startIndex: match.index, textObj: textarea };
+        
+        // Map the dropdown to the keys in competency_data.js (S5A or S5B)
         const levelSelect = document.getElementById('master_level'); 
         const selectedLevel = levelSelect ? levelSelect.value : "Level II"; 
+        const levelKey = selectedLevel === "Level I" ? "S5A" : "S5B";
+        
         const searchStr = match[1].toLowerCase();
-        const dataList = competencyData[selectedLevel] || competencyData["Level II"];
+        const dataList = masterData[levelKey] || masterData["S5B"];
         
         const filtered = dataList.filter(item => 
-            item.id.toLowerCase().includes(searchStr) || 
-            item.desc.toLowerCase().includes(searchStr)
+            item.id && 
+            item.type === "I" && // Only show actual specific competencies, not broad headers
+            (item.id.toLowerCase().includes(searchStr) || item.desc.toLowerCase().includes(searchStr))
         );
 
         if (filtered.length > 0) showDropdown(textarea, filtered, searchStr);
