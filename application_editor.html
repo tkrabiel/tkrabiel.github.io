@@ -88,7 +88,7 @@
 <script>
 let counter = 0;
 
-// --- MATH ENGINE ---
+// --- ROBUST RELATIVE MATH ENGINE ---
 function calculateMonths(d1, d2) {
     if (!d1 || !d2) return 0;
     const start = new Date(d1);
@@ -99,17 +99,22 @@ function calculateMonths(d1, d2) {
     return Math.max(0, months);
 }
 
-function calculateDuration(blockId) {
-    const block = document.getElementById(blockId);
+// "element" is the actual date input box that just changed
+function calculateDuration(element) {
+    // Find the specific parent container block this date input belongs to
+    const block = element.closest('.engagement-block');
+    if (!block) return;
+    
     const fromVal = block.querySelector('.d_from').value;
     const toVal = block.querySelector('.d_to').value;
-    const displaySpan = document.getElementById(`duration_${blockId}`);
+    const displaySpan = block.querySelector('.duration-display'); // relative class, no ID needed
 
     if (!fromVal || !toVal) return;
 
     const totalMonths = calculateMonths(fromVal, toVal);
     if (displaySpan) displaySpan.innerText = totalMonths;
 
+    // Restrict the number inputs inside THIS block only
     const numInputs = block.querySelectorAll('input[type="number"]');
     numInputs.forEach(input => {
         input.max = totalMonths;
@@ -141,7 +146,7 @@ function addEducationalEngagement(data = null) {
         <div class="engagement-block educational-bg" id="eng_${id}" data-type="EE">
             <div class="engagement-header">
                 <span>EDUCATIONAL ENGAGEMENT DETAIL # <span class="display_e_number">${id}</span></span>
-                <button class="btn btn-delete" onclick="removeEng(${id})">Remove Engagement</button>
+                <button class="btn btn-delete" onclick="removeEng(this)">Remove Engagement</button>
             </div>
             
             <div class="inner-padding" style="padding: 15px;">
@@ -165,18 +170,18 @@ function addEducationalEngagement(data = null) {
                 <div class="row">
                     <div class="col">
                         <label>From Date:</label> 
-                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration('eng_${id}')">
+                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration(this)">
                     </div>
                     <div class="col">
                         <label>To Date:</label> 
-                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration('eng_${id}')">
+                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration(this)">
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
                         <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
-                        <span id="duration_eng_${id}" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
+                        <span class="duration-display" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
                             ${data ? calculateMonths(data.d_from, data.d_to) : '0'}
                         </span>
                     </div>
@@ -223,7 +228,7 @@ function addProjectEngagement(data = null) {
         <div class="engagement-block project-bg" id="eng_${id}" data-type="PE">
             <div class="engagement-header">
                 <span>PROJECT ENGAGEMENT DETAIL # <span class="display_e_number">${id}</span></span>
-                <button class="btn btn-delete" onclick="removeEng(${id})">Remove Engagement</button>
+                <button class="btn btn-delete" onclick="removeEng(this)">Remove Engagement</button>
             </div>
             
             <div class="inner-padding" style="padding: 15px;">
@@ -246,17 +251,17 @@ function addProjectEngagement(data = null) {
                 <div class="row">
                     <div class="col">
                         <label>From Date:</label> 
-                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration('eng_${id}')">
+                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration(this)">
                     </div>
                     <div class="col">
                         <label>To Date:</label> 
-                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration('eng_${id}')">
+                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration(this)">
                     </div>
                 </div>
                 <div class="row">
                     <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
                         <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
-                        <span id="duration_eng_${id}" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
+                        <span class="duration-display" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
                             ${data ? calculateMonths(data.d_from, data.d_to) : '0'}
                         </span>
                     </div>
@@ -292,10 +297,11 @@ function addProjectEngagement(data = null) {
 }
 
 // --- DATA MANAGEMENT ---
-function removeEng(id) {
+// Updated removeEng to take the button element itself so it can find its parent block relative to the button
+function removeEng(buttonElement) {
     if(confirm("Are you sure you want to delete this engagement record?")) {
-        const element = document.getElementById(`eng_${id}`);
-        element.remove();
+        const block = buttonElement.closest('.engagement-block');
+        if (block) block.remove();
         reindexEngagements();
     }
 }
@@ -308,17 +314,15 @@ function reindexEngagements() {
         block.id = `eng_${newNumber}`;
         const displaySpan = block.querySelector('.display_e_number');
         if (displaySpan) displaySpan.innerText = newNumber;
-        const delBtn = block.querySelector('.btn-delete');
-        if (delBtn) delBtn.setAttribute('onclick', `removeEng(${newNumber})`);
     });
 }
 
 function saveAllToJSON() {
     const blocks = document.querySelectorAll('.engagement-block');
-    const engagements = Array.from(blocks).map(block => {
+    const engagements = Array.from(blocks).map((block, index) => {
         const type = block.getAttribute('data-type') || 'PE';
         let entry = {
-            e_number: block.querySelector('.display_e_number').innerText,
+            e_number: (index + 1).toString(), // Guarantee sequential numbering on save
             engagement_type: type,
             f_name: block.querySelector('.f_name').value,
             f_addr: block.querySelector('.f_addr').value,
@@ -412,7 +416,6 @@ function handleAutocomplete(textarea) {
     if (match) {
         currentMatchState = { active: true, startIndex: match.index, textObj: textarea };
         
-        // Map the dropdown to the keys in competency_data.js (S5A or S5B)
         const levelSelect = document.getElementById('master_level'); 
         const selectedLevel = levelSelect ? levelSelect.value : "Level II"; 
         const levelKey = selectedLevel === "Level I" ? "S5A" : "S5B";
@@ -422,7 +425,7 @@ function handleAutocomplete(textarea) {
         
         const filtered = dataList.filter(item => 
             item.id && 
-            item.type === "I" && // Only show actual specific competencies, not broad headers
+            item.type === "I" && 
             (item.id.toLowerCase().includes(searchStr) || item.desc.toLowerCase().includes(searchStr))
         );
 
