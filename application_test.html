@@ -92,12 +92,12 @@
             <button class="btn btn-add" onclick="addProjectEngagement()">+ Add Project</button>
             
             <div class="dropdown">
-                <button onclick="toggleEduDropdown()" class="btn btn-add dropbtn">+ Add Education ▼</button>
+                <button onclick="toggleEduDropdown()" class="btn btn-add dropbtn">+ Add Education â–¼</button>
                 <div id="eduDropdown" class="dropdown-content">
-                    <a href="#" onclick="addEducationalEngagement()">📄 Blank Education</a>
-                    <a href="#" onclick="addKnownEducation('UNH')">🎓 UNH CAT-A</a>
-                    <a href="#" onclick="addKnownEducation('USM')">🎓 USM CAT-A</a>
-                    <a href="#" onclick="addKnownEducation('CATB')">🎓 IHO CAT-B (Generic)</a>
+                    <a href="#" onclick="addEducationalEngagement()">ðŸ“„ Blank Education</a>
+                    <a href="#" onclick="addKnownEducation('UNH')">ðŸŽ“ UNH CAT-A</a>
+                    <a href="#" onclick="addKnownEducation('USM')">ðŸŽ“ USM CAT-A</a>
+                    <a href="#" onclick="addKnownEducation('CATB')">ðŸŽ“ IHO CAT-B (Generic)</a>
                 </div>
             </div>
 
@@ -106,7 +106,7 @@
             <a href="export.html" class="btn btn-export">EXPORT</a>
             <a href="competency_form.html" class="btn btn-comp">COMPETENCY FORM</a>
             
-            <button class="btn btn-tracker" onclick="toggleTracker()">📋 TOGGLE TRACKER</button>
+            <button class="btn btn-tracker" onclick="toggleTracker()">ðŸ“‹ TOGGLE TRACKER</button>
 
             <input type="file" id="fileInput" hidden accept=".json" onchange="loadFromJSON(event)">
         </div>
@@ -135,7 +135,7 @@
     <div id="trackerPanel">
         <div class="tracker-header">
             <span>Competency Tracker</span>
-            <button class="tracker-close" onclick="toggleTracker()">×</button>
+            <button class="tracker-close" onclick="toggleTracker()">Ã—</button>
         </div>
         <div class="tracker-progress-container">
             <strong id="tracker-status-text">0 / 0 Completed</strong>
@@ -193,200 +193,15 @@ function addKnownEducation(schoolType) {
     }
     
     addEducationalEngagement(data);
-    
-    // Ensure dropdown closes
-    document.getElementById("eduDropdown").classList.remove("show");
-}
-
-// --- TRACKER LOGIC ---
-function toggleTracker() {
-    const panel = document.getElementById('trackerPanel');
-    const container = document.getElementById('mainContainer');
-    panel.classList.toggle('open');
-    if(panel.classList.contains('open')) {
-        container.style.marginRight = '370px'; 
-        updateTracker(); 
-    } else {
-        container.style.marginRight = 'auto';
-    }
-}
-
-function updateTracker() {
-    if(!document.getElementById('trackerPanel').classList.contains('open')) return;
-
-    const levelSelect = document.getElementById('master_level'); 
-    const levelKey = levelSelect.value === "Level I" ? "S5A" : "S5B";
-    const dataList = masterData[levelKey] || masterData["S5B"];
-    
-    const requiredItems = dataList.filter(item => item.type === "I");
-    const total = requiredItems.length;
-    
-    let allText = "";
-    document.querySelectorAll('.engagement-block').forEach(block => {
-        const fields = ['.j_proj', '.j_resp', '.j_comments', '.j_title'];
-        fields.forEach(f => {
-            const el = block.querySelector(f);
-            if(el) allText += " " + el.value;
+        json.data.forEach(item => {
+            if(item.engagement_type === 'EE') addEducationalEngagement(item);
+            else addProjectEngagement(item);
         });
-    });
-    
-    const regex = /@([A-Za-z0-9.]+)\s*\[/g;
-    let match;
-    const foundRaw = new Set();
-    while ((match = regex.exec(allText)) !== null) {
-        foundRaw.add(match[1].toLowerCase()); 
-    }
-    
-    let completed = [];
-    let missing = [];
-    requiredItems.forEach(item => {
-        if(foundRaw.has(item.id.toLowerCase())) {
-            completed.push(item);
-        } else {
-            missing.push(item);
-        }
-    });
-    
-    const percentage = total === 0 ? 0 : Math.round((completed.length / total) * 100);
-    document.getElementById('tracker-progress-fill').style.width = percentage + '%';
-    document.getElementById('tracker-status-text').innerText = `${completed.length} / ${total} Completed (${percentage}%)`;
-    
-    if (missing.length === 0) {
-        document.getElementById('tracker-missing-list').innerHTML = "<div style='color:green; font-weight:bold;'>All competencies completed!</div>";
     } else {
-        const missingHtml = missing.map(m => `<div class="missing-item"><strong>${m.id}</strong>: ${m.desc}</div>`).join('');
-        document.getElementById('tracker-missing-list').innerHTML = missingHtml;
+        addProjectEngagement();
     }
-}
-
-// --- MATH ENGINE ---
-function calculateMonths(d1, d2) {
-    if (!d1 || !d2) return 0;
-    const start = new Date(d1);
-    const end = new Date(d2);
-    let months = (end.getFullYear() - start.getFullYear()) * 12;
-    months += end.getMonth() - start.getMonth();
-    if (end.getDate() < start.getDate()) months--;
-    return Math.max(0, months);
-}
-
-function calculateDuration(element) {
-    const block = element.closest('.engagement-block');
-    if (!block) return;
     
-    const fromVal = block.querySelector('.d_from').value;
-    const toVal = block.querySelector('.d_to').value;
-    const displaySpan = block.querySelector('.duration-display');
-
-    if (!fromVal || !toVal) return;
-
-    const totalMonths = calculateMonths(fromVal, toVal);
-    if (displaySpan) displaySpan.innerText = totalMonths;
-
-    const numInputs = block.querySelectorAll('input[type="number"]');
-    numInputs.forEach(input => {
-        input.max = totalMonths;
-        input.onchange = function() {
-            if (parseInt(this.value) > totalMonths) {
-                alert(`Error: Value cannot exceed the total duration (${totalMonths} months).`);
-                this.value = totalMonths;
-            }
-        };
-    });
-}
-
-function autoExpand(textarea) {
-    textarea.style.height = 'inherit';
-    const computed = window.getComputedStyle(textarea);
-    const height = textarea.scrollHeight + 
-                   parseInt(computed.getPropertyValue('border-top-width')) + 
-                   parseInt(computed.getPropertyValue('border-bottom-width'));
-    textarea.style.height = height + 'px';
-}
-
-// --- FORM BUILDERS ---
-function addEducationalEngagement(data = null) {
-    counter++;
-    const list = document.getElementById('engagement-list');
-    const id = counter;
-
-    const template = `
-        <div class="engagement-block educational-bg" id="eng_${id}" data-type="EE">
-            <div class="engagement-header">
-                <span>EDUCATIONAL ENGAGEMENT DETAIL # <span class="display_e_number">${id}</span></span>
-                <button class="btn btn-delete" onclick="removeEng(this)">Remove Engagement</button>
-            </div>
-            
-            <div class="inner-padding" style="padding: 15px;">
-                <div class="row">
-                    <div class="table-box">
-                        <span class="box-title">INSTITUTION</span>
-                        <label>Name:</label> <input type="text" class="f_name" value="${data?.f_name || ''}">
-                        <label>Address:</label> <input type="text" class="f_addr" value="${data?.f_addr || ''}">
-                        <label>Email:</label> <input type="email" class="f_email" value="${data?.f_email || ''}">
-                        <label>Telephone:</label> <input type="text" class="f_tel" value="${data?.f_tel || ''}">
-                    </div>
-                    <div class="table-box">
-                        <span class="box-title">CONTACT</span>
-                        <label>Name:</label> <input type="text" class="s_name" value="${data?.s_name || ''}">
-                        <label>Address:</label> <input type="text" class="s_addr" value="${data?.s_addr || ''}">
-                        <label>Email:</label> <input type="email" class="s_email" value="${data?.s_email || ''}">
-                        <label>Telephone:</label> <input type="text" class="s_tel" value="${data?.s_tel || ''}">
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col">
-                        <label>From Date:</label> 
-                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration(this)">
-                    </div>
-                    <div class="col">
-                        <label>To Date:</label> 
-                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration(this)">
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
-                        <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
-                        <span class="duration-display" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
-                            ${data ? calculateMonths(data.d_from, data.d_to) : '0'}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col"><label>Detail of any breaks or gaps during this period:</label> 
-                    <textarea class="d_gaps" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.d_gaps || ''}</textarea></div>
-                </div>
-
-                <div class="row">
-                    <div class="col"><label>Program Title:</label> 
-                    <textarea class="j_title" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_title || ''}</textarea></div>
-                </div>
-                <div class="row">
-		            <div class="col"><label>Certificate Awarded:</label> 
-                    <textarea class="j_cert" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_cert || ''}</textarea></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>Detailed Description of Program (Type @ to search competencies):</label> 
-                    <textarea class="j_proj" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_proj || ''}</textarea></div>
-                </div>
-                <div class="row">
-                    <div class="col"><label>Additional Comments:</label> 
-                    <textarea class="j_comments" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_comments || ''}</textarea></div>
-                </div>
-                <div class="row">
-                    <div class="table-box">
-                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" value="${data?.Edu_number || ''}"></div>
-                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" value="${data?.not_hydro_eng || ''}"></div>
-                    </div>                    
-                </div>
-            </div>
-        </div>`;
-    list.insertAdjacentHTML('beforeend', template);
-    
- // Autoexpand all textareas after loading
+    // Autoexpand all textareas after loading
     document.querySelectorAll('textarea').forEach(t => {
         if(t.value) autoExpand(t);
     });
