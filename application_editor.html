@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <title>NSPS Master Application Editor</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 1000px; margin: auto; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; margin: 0; }
+        .main-wrapper { display: flex; transition: margin-right 0.3s; }
+        .container { flex-grow: 1; max-width: 1000px; margin: auto; transition: 0.3s; }
+        
         .controls { 
             position: sticky; top: 0; background: white; padding: 15px; 
             border: 2px solid #333; z-index: 1000; display: flex; gap: 10px; 
-            margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex-wrap: wrap;
+            margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex-wrap: wrap; align-items: center;
         }
         .card { background: white; padding: 30px; border: 1px solid #000; margin-bottom: 20px; }
         h2 { text-align: center; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; }
@@ -30,7 +32,7 @@
         label { display: block; font-weight: bold; font-size: 11px; margin-top: 8px; text-transform: uppercase; }
         input, textarea, select { width: 100%; padding: 6px; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; }
         
-        .btn { padding: 12px 15px; cursor: pointer; border: none; font-weight: bold; color: white; border-radius: 4px; text-decoration: none; text-align: center; font-size: 13px; }
+        .btn { padding: 10px 12px; cursor: pointer; border: none; font-weight: bold; color: white; border-radius: 4px; text-decoration: none; text-align: center; font-size: 12px; }
         .btn-home { background: #6c757d; }
         .btn-add { background: #28a745; }
         .btn-save { background: #004a99; }
@@ -38,6 +40,19 @@
         .btn-export { background: #e67e22; }
         .btn-comp { background: #8e44ad; }
         .btn-delete { background: #dc3545; padding: 5px 10px; font-size: 12px; }
+        .btn-tracker { background: #343a40; margin-left: auto; border: 2px solid #ffc107; color: #ffc107; }
+
+        /* Dropdown Styles */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { 
+            display: none; position: absolute; background-color: #fff; min-width: 200px; 
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 2000; border-radius: 4px; 
+            overflow: hidden; top: 100%; left: 0; margin-top: 5px; border: 1px solid #ccc;
+        }
+        .dropdown-content a { color: #333; padding: 12px 16px; text-decoration: none; display: block; font-size: 12px; font-weight: bold; border-bottom: 1px solid #eee;}
+        .dropdown-content a:last-child { border-bottom: none; }
+        .dropdown-content a:hover { background-color: #f1f1f1; color: #004a99; }
+        .show { display: block; }
 
         /* Autocomplete Dropdown Styles */
         .autocomplete-container { position: relative; }
@@ -46,49 +61,204 @@
         .autocomplete-items div:hover { background-color: #004a99; color: #ffffff; }
         .autocomplete-items strong { color: #d35400; }
         .autocomplete-items div:hover strong { color: #ffd54f; }
+
+        /* Tracker Sidebar Styles */
+        #trackerPanel {
+            position: fixed; top: 0; right: -350px; width: 350px; height: 100vh;
+            background: #fff; box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+            transition: right 0.3s ease; z-index: 2000; display: flex; flex-direction: column;
+            border-left: 4px solid #004a99;
+        }
+        #trackerPanel.open { right: 0; }
+        .tracker-header { background: #004a99; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .tracker-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+        .tracker-progress-container { padding: 15px; border-bottom: 1px solid #eee; background: #f8f9fa; }
+        .progress-bar-bg { background: #ddd; height: 20px; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        .progress-bar-fill { background: #28a745; height: 100%; width: 0%; transition: width 0.4s ease; }
+        .tracker-list { flex-grow: 1; overflow-y: auto; padding: 15px; font-size: 13px; }
+        .missing-item { padding: 8px; border-bottom: 1px solid #eee; color: #dc3545; }
+        .missing-item strong { color: #333; }
     </style>
 </head>
 <body>
 
 <script src="competency_data.js"></script>
 
-<div class="container">
-    <div class="controls">
-        <a href="index.html" class="btn btn-home">HOME</a>
-        <button class="btn btn-add" onclick="addProjectEngagement()">+ Add Project</button>
-        <button class="btn btn-add" onclick="addEducationalEngagement()">+ Add Education</button>
-        <button class="btn btn-save" onclick="saveAllToJSON()">Save Master JSON</button>
-        <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">Load JSON</button>
-        <a href="export.html" class="btn btn-export">GO TO EXPORT</a>
-        <a href="competency_form.html" class="btn btn-comp">COMPETENCY FORM</a>
-        <input type="file" id="fileInput" hidden accept=".json" onchange="loadFromJSON(event)">
+<div class="main-wrapper">
+    <div class="container" id="mainContainer">
+        <div class="controls">
+            <a href="index.html" class="btn btn-home">HOME</a>
+            <button class="btn btn-add" onclick="addProjectEngagement()">+ Add Project</button>
+            
+            <div class="dropdown">
+                <button onclick="toggleEduDropdown()" class="btn btn-add dropbtn">+ Add Education ▼</button>
+                <div id="eduDropdown" class="dropdown-content">
+                    <a href="#" onclick="addEducationalEngagement()">📄 Blank Education</a>
+                    <a href="#" onclick="addKnownEducation('UNH')">🎓 UNH CAT-A</a>
+                    <a href="#" onclick="addKnownEducation('USM')">🎓 USM CAT-A</a>
+                    <a href="#" onclick="addKnownEducation('CATB')">🎓 IHO CAT-B (Generic)</a>
+                </div>
+            </div>
+
+            <button class="btn btn-save" onclick="saveAllToJSON()">Save JSON</button>
+            <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">Load JSON</button>
+            <a href="export.html" class="btn btn-export">EXPORT</a>
+            <a href="competency_form.html" class="btn btn-comp">COMPETENCY FORM</a>
+            
+            <button class="btn btn-tracker" onclick="toggleTracker()">📋 TOGGLE TRACKER</button>
+
+            <input type="file" id="fileInput" hidden accept=".json" onchange="loadFromJSON(event)">
+        </div>
+
+        <div class="card">
+            <h2>Applicant Information</h2>
+            <div class="row">
+                <div class="col"><label>Full Name:</label><input type="text" id="master_name"></div>
+                <div class="col"><label>Email:</label><input type="text" id="email"></div>	
+                <div class="col">
+                    <label>Level Seeking:</label>
+                    <select id="master_level" onchange="updateTracker()">
+                        <option value="Level I">Level I (S-5A)</option>
+                        <option value="Level II" selected>Level II (S-5B)</option>
+                    </select>
+                </div>
+            </div>
+            <p style="font-size: 13px; color: #666; margin-top: 15px; text-align: center;">
+                <em>Tip: While typing in Project Descriptions or Responsibilities, type <strong>@</strong> to auto-search and insert competency IDs.</em>
+            </p>
+        </div>
+
+        <div id="engagement-list"></div>
     </div>
 
-    <div class="card">
-        <h2>Applicant Information</h2>
-        <div class="row">
-            <div class="col"><label>Full Name:</label><input type="text" id="master_name"></div>
-            <div class="col"><label>Email:</label><input type="text" id="email"></div>	
-            <div class="col">
-                <label>Level Seeking:</label>
-                <select id="master_level">
-                    <option value="Level I">Level I (S-5A)</option>
-                    <option value="Level II" selected>Level II (S-5B)</option>
-                </select>
+    <div id="trackerPanel">
+        <div class="tracker-header">
+            <span>Competency Tracker</span>
+            <button class="tracker-close" onclick="toggleTracker()">×</button>
+        </div>
+        <div class="tracker-progress-container">
+            <strong id="tracker-status-text">0 / 0 Completed</strong>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="tracker-progress-fill"></div>
             </div>
         </div>
-        <p style="font-size: 13px; color: #666; margin-top: 15px; text-align: center;">
-            <em>Tip: While typing in Project Descriptions or Responsibilities, type <strong>@</strong> to auto-search and insert competency IDs.</em>
-        </p>
+        <div class="tracker-list">
+            <h4 style="margin-top:0; color: #004a99;">Missing Competencies:</h4>
+            <div id="tracker-missing-list">
+                </div>
+        </div>
     </div>
-
-    <div id="engagement-list"></div>
 </div>
 
 <script>
 let counter = 0;
 
-// --- ROBUST RELATIVE MATH ENGINE ---
+// --- DROPDOWN LOGIC ---
+function toggleEduDropdown() {
+    document.getElementById("eduDropdown").classList.toggle("show");
+}
+
+// Close the dropdown if the user clicks outside of it
+window.onclick = function(event) {
+    if (!event.target.matches('.dropbtn')) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        for (var i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+            }
+        }
+    }
+}
+
+function addKnownEducation(schoolType) {
+    // Determine which level of tags to load based on the applicant's selected level
+    const levelSelect = document.getElementById('master_level'); 
+    const levelKey = levelSelect.value === "Level I" ? "S5A" : "S5B";
+    
+    // Programmatically pull ALL competencies for that level and format them as tags
+    const allTags = masterData[levelKey]
+        .filter(item => item.type === "I") // Only get actionable IDs, not headers
+        .map(item => `@${item.id} []`)
+        .join("\n");
+
+    let data = {};
+    if (schoolType === 'UNH') {
+        data = { f_name: "University of New Hampshire", j_title: "IHO CAT-A Certificate Program", j_cert: "IHO CAT-A", j_proj: allTags };
+    } else if (schoolType === 'USM') {
+        data = { f_name: "University of Southern Mississippi", j_title: "IHO CAT-A Certificate Program", j_cert: "IHO CAT-A", j_proj: allTags };
+    } else if (schoolType === 'CATB') {
+        data = { f_name: "Generic Institution", j_title: "IHO CAT-B Certificate Program", j_cert: "IHO CAT-B", j_proj: allTags };
+    }
+    
+    addEducationalEngagement(data);
+    
+    // Ensure dropdown closes
+    document.getElementById("eduDropdown").classList.remove("show");
+}
+
+// --- TRACKER LOGIC ---
+function toggleTracker() {
+    const panel = document.getElementById('trackerPanel');
+    const container = document.getElementById('mainContainer');
+    panel.classList.toggle('open');
+    if(panel.classList.contains('open')) {
+        container.style.marginRight = '370px'; 
+        updateTracker(); 
+    } else {
+        container.style.marginRight = 'auto';
+    }
+}
+
+function updateTracker() {
+    if(!document.getElementById('trackerPanel').classList.contains('open')) return;
+
+    const levelSelect = document.getElementById('master_level'); 
+    const levelKey = levelSelect.value === "Level I" ? "S5A" : "S5B";
+    const dataList = masterData[levelKey] || masterData["S5B"];
+    
+    const requiredItems = dataList.filter(item => item.type === "I");
+    const total = requiredItems.length;
+    
+    let allText = "";
+    document.querySelectorAll('.engagement-block').forEach(block => {
+        const fields = ['.j_proj', '.j_resp', '.j_comments', '.j_title'];
+        fields.forEach(f => {
+            const el = block.querySelector(f);
+            if(el) allText += " " + el.value;
+        });
+    });
+    
+    const regex = /@([A-Za-z0-9.]+)\s*\[/g;
+    let match;
+    const foundRaw = new Set();
+    while ((match = regex.exec(allText)) !== null) {
+        foundRaw.add(match[1].toLowerCase()); 
+    }
+    
+    let completed = [];
+    let missing = [];
+    requiredItems.forEach(item => {
+        if(foundRaw.has(item.id.toLowerCase())) {
+            completed.push(item);
+        } else {
+            missing.push(item);
+        }
+    });
+    
+    const percentage = total === 0 ? 0 : Math.round((completed.length / total) * 100);
+    document.getElementById('tracker-progress-fill').style.width = percentage + '%';
+    document.getElementById('tracker-status-text').innerText = `${completed.length} / ${total} Completed (${percentage}%)`;
+    
+    if (missing.length === 0) {
+        document.getElementById('tracker-missing-list').innerHTML = "<div style='color:green; font-weight:bold;'>All competencies completed!</div>";
+    } else {
+        const missingHtml = missing.map(m => `<div class="missing-item"><strong>${m.id}</strong>: ${m.desc}</div>`).join('');
+        document.getElementById('tracker-missing-list').innerHTML = missingHtml;
+    }
+}
+
+// --- MATH ENGINE ---
 function calculateMonths(d1, d2) {
     if (!d1 || !d2) return 0;
     const start = new Date(d1);
@@ -99,22 +269,19 @@ function calculateMonths(d1, d2) {
     return Math.max(0, months);
 }
 
-// "element" is the actual date input box that just changed
 function calculateDuration(element) {
-    // Find the specific parent container block this date input belongs to
     const block = element.closest('.engagement-block');
     if (!block) return;
     
     const fromVal = block.querySelector('.d_from').value;
     const toVal = block.querySelector('.d_to').value;
-    const displaySpan = block.querySelector('.duration-display'); // relative class, no ID needed
+    const displaySpan = block.querySelector('.duration-display');
 
     if (!fromVal || !toVal) return;
 
     const totalMonths = calculateMonths(fromVal, toVal);
     if (displaySpan) displaySpan.innerText = totalMonths;
 
-    // Restrict the number inputs inside THIS block only
     const numInputs = block.querySelectorAll('input[type="number"]');
     numInputs.forEach(input => {
         input.max = totalMonths;
@@ -217,6 +384,13 @@ function addEducationalEngagement(data = null) {
             </div>
         </div>`;
     list.insertAdjacentHTML('beforeend', template);
+    
+    // Auto-expand the preloaded text if we generated CAT-A data
+    const newBlock = document.getElementById(`eng_${id}`);
+    const jProj = newBlock.querySelector('.j_proj');
+    if(jProj && jProj.value) autoExpand(jProj);
+    
+    updateTracker(); 
 }
 
 function addProjectEngagement(data = null) {
@@ -294,15 +468,16 @@ function addProjectEngagement(data = null) {
             </div>
         </div>`;
     list.insertAdjacentHTML('beforeend', template);
+    updateTracker(); 
 }
 
 // --- DATA MANAGEMENT ---
-// Updated removeEng to take the button element itself so it can find its parent block relative to the button
 function removeEng(buttonElement) {
     if(confirm("Are you sure you want to delete this engagement record?")) {
         const block = buttonElement.closest('.engagement-block');
         if (block) block.remove();
         reindexEngagements();
+        updateTracker(); 
     }
 }
 
@@ -322,7 +497,7 @@ function saveAllToJSON() {
     const engagements = Array.from(blocks).map((block, index) => {
         const type = block.getAttribute('data-type') || 'PE';
         let entry = {
-            e_number: (index + 1).toString(), // Guarantee sequential numbering on save
+            e_number: (index + 1).toString(),
             engagement_type: type,
             f_name: block.querySelector('.f_name').value,
             f_addr: block.querySelector('.f_addr').value,
@@ -390,12 +565,22 @@ function populateForm(json) {
     } else {
         addProjectEngagement();
     }
+    
+    // Autoexpand all textareas after loading
+    document.querySelectorAll('textarea').forEach(t => {
+        if(t.value) autoExpand(t);
+    });
+    
+    updateTracker(); 
 }
 
 // --- AUTOCOMPLETE @ LOGIC USING EXTERNAL competency_data.js ---
 let currentMatchState = { active: false, startIndex: -1, textObj: null };
 
 document.addEventListener('input', function(e) {
+    if (e.target.tagName.toLowerCase() === 'textarea' || e.target.tagName.toLowerCase() === 'input') {
+        updateTracker();
+    }
     if (e.target.tagName.toLowerCase() === 'textarea') {
         handleAutocomplete(e.target);
     }
@@ -417,9 +602,7 @@ function handleAutocomplete(textarea) {
         currentMatchState = { active: true, startIndex: match.index, textObj: textarea };
         
         const levelSelect = document.getElementById('master_level'); 
-        const selectedLevel = levelSelect ? levelSelect.value : "Level II"; 
-        const levelKey = selectedLevel === "Level I" ? "S5A" : "S5B";
-        
+        const levelKey = levelSelect.value === "Level I" ? "S5A" : "S5B";
         const searchStr = match[1].toLowerCase();
         const dataList = masterData[levelKey] || masterData["S5B"];
         
@@ -474,6 +657,7 @@ function insertTag(id) {
     textarea.setSelectionRange(newCursorPos, newCursorPos);
     
     closeDropdowns();
+    updateTracker(); 
 }
 
 function closeDropdowns() {
