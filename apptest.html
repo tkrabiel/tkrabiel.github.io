@@ -266,8 +266,8 @@ function calculateMonths(d1, d2) {
     // Convert to months (1 month = 30 days)
     const exactMonths = diffDays / 30;
     
-    // Round UP to the nearest tenth (0.1)
-    return Math.ceil(exactMonths * 10) / 10;
+    // Round UP to the nearest hundreth (0.01)
+    return Math.ceil(exactMonths * 100) / 100;
 }
 
 function calculateDuration(element) {
@@ -281,7 +281,7 @@ function calculateDuration(element) {
     if (!fromVal || !toVal) return;
 
     const totalMonths = calculateMonths(fromVal, toVal);
-    if (displaySpan) displaySpan.innerText = totalMonths.toFixed(1);
+    if (displaySpan) displaySpan.innerText = totalMonths.toFixed(2);
 
     // Update validation for fractional inputs
     const numInputs = block.querySelectorAll('input[type="number"]');
@@ -352,9 +352,9 @@ function addEducationalEngagement(data = null) {
                     <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
                         <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
                         <span class="duration-display" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
-                            ${data ? calculateMonths(data.d_from, data.d_to).toFixed(1) : '0'}
+                            ${data ? calculateMonths(data.d_from, data.d_to).toFixed(2) : '0'}
                         </span>
-                        <div style="font-size: 10px; color: #666; font-weight: normal; margin-top: 4px;">(1 month = 30 days, rounded up to nearest 0.1)</div>
+                        <div style="font-size: 10px; color: #666; font-weight: normal; margin-top: 4px;">(1 month = 30 days, rounded up to nearest 0.01)</div>
                     </div>
                 </div>
 
@@ -381,8 +381,8 @@ function addEducationalEngagement(data = null) {
                 </div>
                 <div class="row">
                     <div class="table-box">
-                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" step="0.1" value="${data?.Edu_number || ''}"></div>
-                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" step="0.1" value="${data?.not_hydro_eng || ''}"></div>
+                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" step="0.01" value="${data?.Edu_number || ''}"></div>
+                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" step="0.01" value="${data?.not_hydro_eng || ''}"></div>
                     </div>                    
                 </div>
             </div>
@@ -439,9 +439,9 @@ function addProjectEngagement(data = null) {
                     <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
                         <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
                         <span class="duration-display" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
-                            ${data ? calculateMonths(data.d_from, data.d_to).toFixed(1) : '0'}
+                            ${data ? calculateMonths(data.d_from, data.d_to).toFixed(2) : '0'}
                         </span>
-                        <div style="font-size: 10px; color: #666; font-weight: normal; margin-top: 4px;">(1 month = 30 days, rounded up to nearest 0.1)</div>
+                        <div style="font-size: 10px; color: #666; font-weight: normal; margin-top: 4px;">(1 month = 30 days, rounded up to nearest 0.01)</div>
                     </div>
                 </div>
                 <div class="row">
@@ -462,11 +462,11 @@ function addProjectEngagement(data = null) {
                 </div>
                 <div class="row">
                     <div class="table-box">
-                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" step="0.1" value="${data?.Edu_number || ''}"></div>
-                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" step="0.1" value="${data?.not_hydro_eng || ''}"></div>
-                        <div class="col"><label>Hydrography:</label> <input type="number" class="Hydro_time" min="0" step="0.1" value="${data?.Hydro_time || ''}"></div>
-                        <div class="col"><label>Hydrography in Field:</label> <input type="number" class="H_in_field" min="0" step="0.1" value="${data?.H_in_field || ''}"></div>
-                        <div class="col"><label>Hydrography in Technical Charge:</label> <input type="number" class="H_charge" min="0" step="0.1" value="${data?.H_charge || ''}"></div>
+                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" step="0.01" value="${data?.Edu_number || ''}"></div>
+                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" step="0.01" value="${data?.not_hydro_eng || ''}"></div>
+                        <div class="col"><label>Hydrography:</label> <input type="number" class="Hydro_time" min="0" step="0.01" value="${data?.Hydro_time || ''}"></div>
+                        <div class="col"><label>Hydrography in Field:</label> <input type="number" class="H_in_field" min="0" step="0.01" value="${data?.H_in_field || ''}"></div>
+                        <div class="col"><label>Hydrography in Technical Charge:</label> <input type="number" class="H_charge" min="0" step="0.01" value="${data?.H_charge || ''}"></div>
                     </div>                
                 </div>
             </div>
