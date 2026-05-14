@@ -19,15 +19,24 @@
             padding: 20px;
         }
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
             background: white;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
         h1, h2, h3 {
             color: var(--primary);
+            margin-top: 0;
         }
         .form-group {
             margin-bottom: 15px;
@@ -37,7 +46,7 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
-        input[type="text"], input[type="date"], input[type="number"], select {
+        input[type="text"], input[type="email"], input[type="date"], input[type="number"], select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ccc;
@@ -57,7 +66,12 @@
             grid-template-columns: 1fr 1fr 1fr;
             gap: 15px;
         }
-        button {
+        .grid-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        button, .btn {
             background-color: var(--primary);
             color: white;
             border: none;
@@ -66,9 +80,22 @@
             border-radius: 4px;
             font-size: 16px;
             margin-top: 10px;
+            display: inline-block;
+            text-align: center;
         }
-        button:hover {
+        button:hover, .btn:hover {
             background-color: var(--secondary);
+        }
+        .import-btn {
+            background-color: #f39c12;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .import-btn:hover {
+            background-color: #e67e22;
         }
         .export-btn {
             background-color: #28a745;
@@ -83,7 +110,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            font-size: 14px;
+            font-size: 13px;
         }
         th, td {
             border: 1px solid #ddd;
@@ -99,6 +126,7 @@
             padding: 20px;
             margin-bottom: 20px;
             border-radius: 6px;
+            background-color: #fafafa;
         }
         .help-text {
             font-size: 12px;
@@ -112,11 +140,34 @@
 <body>
 
 <div class="container">
-    <h1>NOAA - Tier - Logbook</h1>
-    <p>Use this tool to track daily log entries and compile them into a unified "Project" JSON file for the Competency Application.</p>
+    
+    <div class="header-flex">
+        <div>
+            <h1>NOAA - Tier - Logbook</h1>
+            <p style="margin:0; color:#555;">Track daily log entries and compile them into a Project JSON.</p>
+        </div>
+        <div>
+            <label for="importFile" class="import-btn">📂 Load Existing JSON</label>
+            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="loadProjectJSON(event)">
+        </div>
+    </div>
+
+    <div class="section-box" style="background-color: white; border-color: var(--primary);">
+        <h2>1. User Information</h2>
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="userName">Full Name</label>
+                <input type="text" id="userName" placeholder="e.g., Jane Doe">
+            </div>
+            <div class="form-group">
+                <label for="userEmail">Email Address</label>
+                <input type="email" id="userEmail" placeholder="e.g., jane.doe@noaa.gov">
+            </div>
+        </div>
+    </div>
 
     <div class="section-box">
-        <h2>1. Project & Job Information</h2>
+        <h2>2. Project & Job Information</h2>
         <div class="grid-2">
             <div class="form-group">
                 <label for="projectName">Project Name / Cruise</label>
@@ -130,8 +181,19 @@
     </div>
 
     <div class="section-box">
-        <h2>2. Add Log Entry (Sub-Category / Item)</h2>
-        <div class="grid-3">
+        <h2>3. Add Log Entry</h2>
+        
+        <datalist id="orgOptions">
+            <option value="NOAA - OMAO - MO-Science">
+            <option value="NOAA Ship - Thomas Jefferson">
+            <option value="NOAA OCS">
+        </datalist>
+
+        <div class="grid-4">
+            <div class="form-group">
+                <label for="organization">Organization</label>
+                <input type="text" id="organization" list="orgOptions" placeholder="e.g., NOAA OCS">
+            </div>
             <div class="form-group">
                 <label for="logDate">Date</label>
                 <input type="date" id="logDate">
@@ -184,11 +246,12 @@
         <button onclick="addLogEntry()">+ Add Entry to Project</button>
     </div>
 
-    <div class="section-box">
-        <h2>3. Current Project Logs</h2>
+    <div class="section-box" style="background-color: white;">
+        <h2>4. Current Project Logs</h2>
         <table id="logTable">
             <thead>
                 <tr>
+                    <th>Organization</th>
                     <th>Date</th>
                     <th>Category</th>
                     <th>Hours</th>
@@ -231,6 +294,7 @@
 
     function populateDropdown(elementId, dataArray) {
         const select = document.getElementById(elementId);
+        select.innerHTML = ''; // Clear existing
         dataArray.forEach(item => {
             let option = document.createElement('option');
             option.value = item;
@@ -246,6 +310,7 @@
 
     // --- Core Logic ---
     function addLogEntry() {
+        const organization = document.getElementById('organization').value;
         const logDate = document.getElementById('logDate').value;
         const activityCategory = document.getElementById('activityCategory').value;
         const activityHours = parseFloat(document.getElementById('activityHours').value) || 0;
@@ -256,6 +321,11 @@
         const equipment = getMultiSelectValues('equipment');
         const software = getMultiSelectValues('software');
 
+        if (!organization) {
+            alert("Please enter an Organization.");
+            return;
+        }
+
         if(activityHours <= 0) {
             alert("Please enter valid activity hours.");
             return;
@@ -263,6 +333,7 @@
 
         const entry = {
             id: Date.now().toString(),
+            organization: organization,
             date: logDate,
             category: activityCategory,
             hours: activityHours,
@@ -276,7 +347,7 @@
         projectLogs.push(entry);
         updateTable();
         
-        // Reset specific fields for quick entry
+        // Reset specific fields for quick entry (leave Organization filled for convenience)
         document.getElementById('activityHours').value = '';
         document.getElementById('activityPerformed').value = '';
     }
@@ -295,12 +366,13 @@
             totalHours += log.hours;
             const tr = document.createElement('tr');
             tr.innerHTML = `
+                <td><strong>${log.organization || 'N/A'}</strong></td>
                 <td>${log.date}</td>
                 <td>${log.category}</td>
                 <td>${log.hours}</td>
                 <td>${log.vesselLocation} (${log.vesselType})</td>
-                <td>${log.systemsUsed.join(', ')}</td>
-                <td>${log.softwareUsed.join(', ')}</td>
+                <td>${(log.systemsUsed || []).join(', ')}</td>
+                <td>${(log.softwareUsed || []).join(', ')}</td>
                 <td>${log.activity}</td>
                 <td><button style="background:red; padding: 5px 10px; margin:0;" onclick="removeEntry('${log.id}')">X</button></td>
             `;
@@ -310,8 +382,55 @@
         document.getElementById('totalHours').textContent = totalHours;
     }
 
+    // --- Import Logic ---
+    function loadProjectJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                // Verify this is one of our logbook project files
+                if (data.logbookEntries) {
+                    // Populate user and header info
+                    document.getElementById('userName').value = data.userName || '';
+                    document.getElementById('userEmail').value = data.userEmail || '';
+                    document.getElementById('projectName').value = data.title || '';
+                    document.getElementById('jobTitle').value = data.jobTitle || '';
+                    
+                    // Populate logs array
+                    projectLogs = data.logbookEntries;
+                    
+                    // Update table UI
+                    updateTable();
+
+                    // If entries exist, populate the Organization input with the most recently used org
+                    if(projectLogs.length > 0) {
+                        document.getElementById('organization').value = projectLogs[projectLogs.length - 1].organization || '';
+                    }
+
+                    alert("Project JSON loaded successfully!");
+                } else {
+                    alert("The selected JSON does not match the expected Logbook format.");
+                }
+            } catch (error) {
+                console.error("Error parsing JSON:", error);
+                alert("Failed to parse the JSON file. Ensure it is not corrupted.");
+            }
+            
+            // Reset the file input so the same file can be chosen again if needed
+            event.target.value = '';
+        };
+        
+        reader.readAsText(file);
+    }
+
     // --- Export Logic ---
     function exportProjectJSON() {
+        const userName = document.getElementById('userName').value || "No_Name_Provided";
+        const userEmail = document.getElementById('userEmail').value || "No_Email_Provided";
         const projectName = document.getElementById('projectName').value || "Untitled_Project";
         const jobTitle = document.getElementById('jobTitle').value || "No_Job_Title_Set";
         
@@ -323,11 +442,12 @@
         // Structuring this to match a typical "Project" architecture
         const projectData = {
             id: "proj_" + Date.now().toString(),
+            userName: userName,
+            userEmail: userEmail,
             title: projectName,
             jobTitle: jobTitle,
             description: `NOAA Tier Logbook compiled from ${projectLogs.length} activity entries.`,
             totalProjectHours: projectLogs.reduce((sum, log) => sum + log.hours, 0),
-            // The logs act as sub-categories or "tasks" inside this project
             logbookEntries: projectLogs, 
             exportDate: new Date().toISOString()
         };
@@ -337,7 +457,7 @@
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
         downloadAnchorNode.setAttribute("download", `${projectName.replace(/\s+/g, '_')}_Logbook.json`);
-        document.body.appendChild(downloadAnchorNode); // required for firefox
+        document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
     }
