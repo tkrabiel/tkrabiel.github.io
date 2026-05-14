@@ -158,7 +158,6 @@ function toggleEduDropdown() {
     document.getElementById("eduDropdown").classList.toggle("show");
 }
 
-// Close the dropdown if the user clicks outside of it
 window.onclick = function(event) {
     if (!event.target.matches('.dropbtn')) {
         var dropdowns = document.getElementsByClassName("dropdown-content");
@@ -172,13 +171,11 @@ window.onclick = function(event) {
 }
 
 function addKnownEducation(schoolType) {
-    // Determine which level of tags to load based on the applicant's selected level
     const levelSelect = document.getElementById('master_level'); 
     const levelKey = levelSelect.value === "Level I" ? "S5A" : "S5B";
     
-    // Programmatically pull ALL competencies for that level and format them as tags
     const allTags = masterData[levelKey]
-        .filter(item => item.type === "I") // Only get actionable IDs, not headers
+        .filter(item => item.type === "I") 
         .map(item => `@${item.id} []`)
         .join("\n");
 
@@ -192,8 +189,6 @@ function addKnownEducation(schoolType) {
     }
     
     addEducationalEngagement(data);
-    
-    // Ensure dropdown closes
     document.getElementById("eduDropdown").classList.remove("show");
 }
 
@@ -258,15 +253,21 @@ function updateTracker() {
     }
 }
 
-// --- MATH ENGINE ---
+// --- MATH ENGINE (UPDATED FOR DECIMALS & 30-DAY MONTHS) ---
 function calculateMonths(d1, d2) {
     if (!d1 || !d2) return 0;
     const start = new Date(d1);
     const end = new Date(d2);
-    let months = (end.getFullYear() - start.getFullYear()) * 12;
-    months += end.getMonth() - start.getMonth();
-    if (end.getDate() < start.getDate()) months--;
-    return Math.max(0, months);
+    if (end < start) return 0;
+    
+    // Calculate difference in days
+    const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+    
+    // Convert to months (1 month = 30 days)
+    const exactMonths = diffDays / 30;
+    
+    // Round UP to the nearest hundreth (0.01)
+    return Math.ceil(exactMonths * 100) / 100;
 }
 
 function calculateDuration(element) {
@@ -280,13 +281,15 @@ function calculateDuration(element) {
     if (!fromVal || !toVal) return;
 
     const totalMonths = calculateMonths(fromVal, toVal);
-    if (displaySpan) displaySpan.innerText = totalMonths;
+    if (displaySpan) displaySpan.innerText = totalMonths.toFixed(2);
 
+    // Update validation for fractional inputs
     const numInputs = block.querySelectorAll('input[type="number"]');
     numInputs.forEach(input => {
         input.max = totalMonths;
         input.onchange = function() {
-            if (parseInt(this.value) > totalMonths) {
+            let val = parseFloat(this.value);
+            if (val > totalMonths) {
                 alert(`Error: Value cannot exceed the total duration (${totalMonths} months).`);
                 this.value = totalMonths;
             }
@@ -349,8 +352,9 @@ function addEducationalEngagement(data = null) {
                     <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
                         <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
                         <span class="duration-display" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
-                            ${data ? calculateMonths(data.d_from, data.d_to) : '0'}
+                            ${data ? calculateMonths(data.d_from, data.d_to).toFixed(2) : '0'}
                         </span>
+                        <div style="font-size: 10px; color: #666; font-weight: normal; margin-top: 4px;">(1 month = 30 days, rounded up to nearest 0.01)</div>
                     </div>
                 </div>
 
@@ -377,15 +381,14 @@ function addEducationalEngagement(data = null) {
                 </div>
                 <div class="row">
                     <div class="table-box">
-                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" value="${data?.Edu_number || ''}"></div>
-                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" value="${data?.not_hydro_eng || ''}"></div>
+                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" step="0.01" value="${data?.Edu_number || ''}"></div>
+                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" step="0.01" value="${data?.not_hydro_eng || ''}"></div>
                     </div>                    
                 </div>
             </div>
         </div>`;
     list.insertAdjacentHTML('beforeend', template);
     
-    // Auto-expand the preloaded text if we generated CAT-A data
     const newBlock = document.getElementById(`eng_${id}`);
     const jProj = newBlock.querySelector('.j_proj');
     if(jProj && jProj.value) autoExpand(jProj);
@@ -436,8 +439,9 @@ function addProjectEngagement(data = null) {
                     <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
                         <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
                         <span class="duration-display" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
-                            ${data ? calculateMonths(data.d_from, data.d_to) : '0'}
+                            ${data ? calculateMonths(data.d_from, data.d_to).toFixed(2) : '0'}
                         </span>
+                        <div style="font-size: 10px; color: #666; font-weight: normal; margin-top: 4px;">(1 month = 30 days, rounded up to nearest 0.01)</div>
                     </div>
                 </div>
                 <div class="row">
@@ -458,11 +462,11 @@ function addProjectEngagement(data = null) {
                 </div>
                 <div class="row">
                     <div class="table-box">
-                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" value="${data?.Edu_number || ''}"></div>
-                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" value="${data?.not_hydro_eng || ''}"></div>
-                        <div class="col"><label>Hydrography:</label> <input type="number" class="Hydro_time" min="0" value="${data?.Hydro_time || ''}"></div>
-                        <div class="col"><label>Hydrography in Field:</label> <input type="number" class="H_in_field" min="0" value="${data?.H_in_field || ''}"></div>
-                        <div class="col"><label>Hydrography in Technical Charge:</label> <input type="number" class="H_charge" min="0" value="${data?.H_charge || ''}"></div>
+                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" step="0.01" value="${data?.Edu_number || ''}"></div>
+                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" step="0.01" value="${data?.not_hydro_eng || ''}"></div>
+                        <div class="col"><label>Hydrography:</label> <input type="number" class="Hydro_time" min="0" step="0.01" value="${data?.Hydro_time || ''}"></div>
+                        <div class="col"><label>Hydrography in Field:</label> <input type="number" class="H_in_field" min="0" step="0.01" value="${data?.H_in_field || ''}"></div>
+                        <div class="col"><label>Hydrography in Technical Charge:</label> <input type="number" class="H_charge" min="0" step="0.01" value="${data?.H_charge || ''}"></div>
                     </div>                
                 </div>
             </div>
@@ -566,7 +570,6 @@ function populateForm(json) {
         addProjectEngagement();
     }
     
-    // Autoexpand all textareas after loading
     document.querySelectorAll('textarea').forEach(t => {
         if(t.value) autoExpand(t);
     });
@@ -574,7 +577,7 @@ function populateForm(json) {
     updateTracker(); 
 }
 
-// --- AUTOCOMPLETE @ LOGIC USING EXTERNAL competency_data.js ---
+// --- AUTOCOMPLETE @ LOGIC ---
 let currentMatchState = { active: false, startIndex: -1, textObj: null };
 
 document.addEventListener('input', function(e) {
