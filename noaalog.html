@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOAA - Tier - Logbook</title>
+    <style>
+        :root {
+            --primary: #0055a4; /* NOAA Blue */
+            --secondary: #00a9e0;
+            --background: #f4f7f6;
+            --text: #333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: var(--primary);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="text"], input[type="date"], input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        select[multiple] {
+            height: 100px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: var(--secondary);
+        }
+        .export-btn {
+            background-color: #28a745;
+            width: 100%;
+            font-size: 18px;
+            padding: 15px;
+        }
+        .export-btn:hover {
+            background-color: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--primary);
+            color: white;
+        }
+        .section-box {
+            border: 2px solid #e0e0e0;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: -3px;
+            margin-bottom: 8px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>NOAA - Tier - Logbook</h1>
+    <p>Use this tool to track daily log entries and compile them into a unified "Project" JSON file for the Competency Application.</p>
+
+    <div class="section-box">
+        <h2>1. Project & Job Information</h2>
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="projectName">Project Name / Cruise</label>
+                <input type="text" id="projectName" placeholder="e.g., OPR-P356-FA-24">
+            </div>
+            <div class="form-group">
+                <label for="jobTitle">Job Title</label>
+                <input type="text" id="jobTitle" placeholder="e.g., Tier 1 Mapping Specialist">
+            </div>
+        </div>
+    </div>
+
+    <div class="section-box">
+        <h2>2. Add Log Entry (Sub-Category / Item)</h2>
+        <div class="grid-3">
+            <div class="form-group">
+                <label for="logDate">Date</label>
+                <input type="date" id="logDate">
+            </div>
+            <div class="form-group">
+                <label for="activityCategory">Activity Category</label>
+                <select id="activityCategory">
+                    <option value="Acquisition">Acquisition</option>
+                    <option value="Processing">Processing</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="activityHours">Activity Hours</label>
+                <input type="number" id="activityHours" min="0" step="0.5" placeholder="e.g., 8">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="activityPerformed">Activity Performed</label>
+            <input type="text" id="activityPerformed" placeholder="Brief description of duties performed...">
+        </div>
+
+        <div class="grid-3">
+            <div class="form-group">
+                <label for="vessel">Vessel / Location</label>
+                <select id="vessel"></select>
+            </div>
+            <div class="form-group">
+                <label for="vesselType">Vessel Type</label>
+                <select id="vesselType">
+                    <option value="N/A">N/A</option>
+                    <option value="Ship">Ship</option>
+                    <option value="Launch">Launch</option>
+                    <option value="Small Boat">Small Boat</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="equipment">System(s) Used</label>
+                <span class="help-text">Hold Ctrl/Cmd to select multiple</span>
+                <select id="equipment" multiple></select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="software">Software Used</label>
+            <span class="help-text">Hold Ctrl/Cmd to select multiple</span>
+            <select id="software" multiple></select>
+        </div>
+
+        <button onclick="addLogEntry()">+ Add Entry to Project</button>
+    </div>
+
+    <div class="section-box">
+        <h2>3. Current Project Logs</h2>
+        <table id="logTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Hours</th>
+                    <th>Vessel</th>
+                    <th>Systems</th>
+                    <th>Software</th>
+                    <th>Activity</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+        <h3 style="text-align: right; margin-top: 15px;">Total Project Hours: <span id="totalHours">0</span></h3>
+    </div>
+
+    <button class="export-btn" onclick="exportProjectJSON()">Export as Project JSON</button>
+</div>
+
+<script>
+    // --- Data Extracted from NOAA Template Dropdown CSV ---
+    const vesselList = ["Land-based", "Other", "Bell M. Shimada", "Fairweather", "Ferdinand R. Hassler", "Gordon Gunter", "Henry B. Bigelow", "Nancy Foster", "NRT Fernandina", "NRT Gulfport", "NRT New London", "NRT Patuxent", "NRT Seattle", "Okeanos Explorer", "Oregon II", "Oscar Dyson", "Oscar Elton Sette", "Pisces", "Rainier", "Reuben Lasker", "Ronald H. Brown", "Thomas Jefferson"];
+    
+    const equipmentList = ["N/A", "Other", "EM122", "EM124", "EM302", "EM304", "EM710", "EM712", "EM2040", "EM2040C", "EK60", "EK80", "ME70", "Klein 500", "Klein 5000", "SBP29"];
+    
+    const softwareList = ["N/A", "Other", "CARIS", "Charlene", "Fledermaus", "FMGT", "HYPACK", "POSPac", "Pydro (all others)", "QC Tools", "Qimera", "SIS5", "Sound Speed Manager"];
+
+    // --- State Management ---
+    let projectLogs = [];
+
+    // --- Initialization ---
+    window.onload = function() {
+        populateDropdown('vessel', vesselList);
+        populateDropdown('equipment', equipmentList);
+        populateDropdown('software', softwareList);
+        
+        // Default date to today
+        document.getElementById('logDate').valueAsDate = new Date();
+    };
+
+    function populateDropdown(elementId, dataArray) {
+        const select = document.getElementById(elementId);
+        dataArray.forEach(item => {
+            let option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            select.appendChild(option);
+        });
+    }
+
+    function getMultiSelectValues(elementId) {
+        const select = document.getElementById(elementId);
+        return Array.from(select.selectedOptions).map(option => option.value);
+    }
+
+    // --- Core Logic ---
+    function addLogEntry() {
+        const logDate = document.getElementById('logDate').value;
+        const activityCategory = document.getElementById('activityCategory').value;
+        const activityHours = parseFloat(document.getElementById('activityHours').value) || 0;
+        const activityPerformed = document.getElementById('activityPerformed').value;
+        const vessel = document.getElementById('vessel').value;
+        const vesselType = document.getElementById('vesselType').value;
+        
+        const equipment = getMultiSelectValues('equipment');
+        const software = getMultiSelectValues('software');
+
+        if(activityHours <= 0) {
+            alert("Please enter valid activity hours.");
+            return;
+        }
+
+        const entry = {
+            id: Date.now().toString(),
+            date: logDate,
+            category: activityCategory,
+            hours: activityHours,
+            activity: activityPerformed,
+            vesselLocation: vessel,
+            vesselType: vesselType,
+            systemsUsed: equipment,
+            softwareUsed: software
+        };
+
+        projectLogs.push(entry);
+        updateTable();
+        
+        // Reset specific fields for quick entry
+        document.getElementById('activityHours').value = '';
+        document.getElementById('activityPerformed').value = '';
+    }
+
+    function removeEntry(id) {
+        projectLogs = projectLogs.filter(log => log.id !== id);
+        updateTable();
+    }
+
+    function updateTable() {
+        const tbody = document.querySelector('#logTable tbody');
+        tbody.innerHTML = '';
+        let totalHours = 0;
+
+        projectLogs.forEach(log => {
+            totalHours += log.hours;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${log.date}</td>
+                <td>${log.category}</td>
+                <td>${log.hours}</td>
+                <td>${log.vesselLocation} (${log.vesselType})</td>
+                <td>${log.systemsUsed.join(', ')}</td>
+                <td>${log.softwareUsed.join(', ')}</td>
+                <td>${log.activity}</td>
+                <td><button style="background:red; padding: 5px 10px; margin:0;" onclick="removeEntry('${log.id}')">X</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('totalHours').textContent = totalHours;
+    }
+
+    // --- Export Logic ---
+    function exportProjectJSON() {
+        const projectName = document.getElementById('projectName').value || "Untitled_Project";
+        const jobTitle = document.getElementById('jobTitle').value || "No_Job_Title_Set";
+        
+        if (projectLogs.length === 0) {
+            alert("Add at least one log entry before exporting!");
+            return;
+        }
+
+        // Structuring this to match a typical "Project" architecture
+        const projectData = {
+            id: "proj_" + Date.now().toString(),
+            title: projectName,
+            jobTitle: jobTitle,
+            description: `NOAA Tier Logbook compiled from ${projectLogs.length} activity entries.`,
+            totalProjectHours: projectLogs.reduce((sum, log) => sum + log.hours, 0),
+            // The logs act as sub-categories or "tasks" inside this project
+            logbookEntries: projectLogs, 
+            exportDate: new Date().toISOString()
+        };
+
+        // Create Blob and Download
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData, null, 4));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `${projectName.replace(/\s+/g, '_')}_Logbook.json`);
+        document.body.appendChild(downloadAnchorNode); // required for firefox
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+</script>
+
+</body>
+</html>
