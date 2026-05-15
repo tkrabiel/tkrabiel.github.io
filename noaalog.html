@@ -33,6 +33,12 @@
             border-bottom: 2px solid var(--primary);
             padding-bottom: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 10px;
         }
         h1, h2, h3 {
             color: var(--primary);
@@ -110,6 +116,17 @@
         .import-btn:hover {
             background-color: #e67e22;
         }
+        .xml-btn {
+            background-color: #17a2b8; /* Teal color to distinguish */
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .xml-btn:hover {
+            background-color: #138496;
+        }
         .export-btn {
             background-color: #28a745;
             width: 100%;
@@ -150,6 +167,7 @@
             margin-bottom: 20px;
             border-radius: 6px;
             background-color: #fafafa;
+            position: relative;
         }
         .help-text {
             font-size: 12px;
@@ -231,6 +249,11 @@
             display: block;
             margin: 0;
         }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -242,7 +265,10 @@
             <h1>NOAA - Tier - Logbook</h1>
             <p style="margin:0; color:#555;">Track daily log entries and compile them into a Project JSON.</p>
         </div>
-        <div>
+        <div class="header-buttons">
+            <label for="importXMLFile" class="xml-btn">📄 Load NOAA XML</label>
+            <input type="file" id="importXMLFile" accept=".xml" style="display: none;" onchange="loadNOAAXML(event)">
+
             <label for="importFile" class="import-btn">📂 Load Existing JSON</label>
             <input type="file" id="importFile" accept=".json" style="display: none;" onchange="loadProjectJSON(event)">
         </div>
@@ -262,8 +288,8 @@
         </div>
     </div>
 
-    <div class="section-box">
-        <h2>2. Add Log Entry</h2>
+    <div class="section-box" id="logEntrySection">
+        <h2>2. Add / Edit Log Entry</h2>
         
         <datalist id="orgOptions">
             <option value="NOAA - OMAO - MO-Science">
@@ -376,7 +402,10 @@
             </div>
         </div>
 
-        <button onclick="addLogEntry()">+ Add Entry to Project</button>
+        <div class="action-buttons">
+            <button id="submitBtn" onclick="addLogEntry()">+ Add Entry to Project</button>
+            <button id="cancelEditBtn" style="display:none; background-color: #6c757d;" onclick="cancelEdit()">Cancel Edit</button>
+        </div>
     </div>
 
     <div class="section-box" style="background-color: white;">
@@ -413,6 +442,7 @@
     const softwareList = ["N/A", "CARIS", "Charlene", "Fledermaus", "FMGT", "HYPACK", "POSPac", "Pydro (all others)", "QC Tools", "Qimera", "SIS5", "Sound Speed Manager"];
 
     let projectLogs = [];
+    let currentEditId = null; // Track if we are editing an entry
 
     window.onload = function() {
         populateDatalist('vesselListDatalist', vesselList);
@@ -565,6 +595,68 @@
         document.querySelectorAll('.dropdown-checklist input[type="checkbox"]').forEach(cb => cb.checked = false);
     }
 
+    // --- EDIT LOGIC ---
+    function editEntry(id) {
+        const log = projectLogs.find(l => l.id === id);
+        if(!log) return;
+
+        // Populate standard fields
+        document.getElementById('projectName').value = log.projectName || '';
+        document.getElementById('jobTitle').value = log.jobTitle || '';
+        document.getElementById('projectDescription').value = log.projectDescription || '';
+        document.getElementById('organization').value = log.organization || '';
+        document.getElementById('startDate').value = log.startDate || '';
+        document.getElementById('endDate').value = log.endDate || '';
+        document.getElementById('activityHours').value = log.hoursInputBase || log.hours || '';
+        document.getElementById('activityPerformed').value = log.activity || '';
+        document.getElementById('vessel').value = log.vesselLocation || '';
+        document.getElementById('vesselType').value = log.vesselType || '';
+
+        // Radios
+        const hourRadios = document.querySelectorAll('input[name="hourMode"]');
+        hourRadios.forEach(r => r.checked = (r.value === (log.hourMode || 'total')));
+        
+        const weekendRadios = document.querySelectorAll('input[name="weekendMode"]');
+        weekendRadios.forEach(r => r.checked = (r.value === (log.weekendMode || 'no')));
+        
+        toggleWeekendOpts(); 
+
+        // Multi-selects
+        document.getElementById('activityCategoryInput').value = (log.category || []).join(', ');
+        syncCheckboxes('activityCategoryInput', 'activityCategoryList');
+
+        document.getElementById('equipmentInput').value = (log.systemsUsed || []).join(', ');
+        syncCheckboxes('equipmentInput', 'equipmentList');
+
+        document.getElementById('softwareInput').value = (log.softwareUsed || []).join(', ');
+        syncCheckboxes('softwareInput', 'softwareList');
+
+        // Set Edit Mode
+        currentEditId = id;
+        const btn = document.getElementById('submitBtn');
+        btn.textContent = '💾 Update Entry';
+        btn.style.backgroundColor = '#f39c12';
+        document.getElementById('cancelEditBtn').style.display = 'block';
+        
+        // Scroll smoothly up to the form
+        document.getElementById('logEntrySection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        currentEditId = null;
+        
+        // Restore buttons
+        const btn = document.getElementById('submitBtn');
+        btn.textContent = '+ Add Entry to Project';
+        btn.style.backgroundColor = 'var(--primary)';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        
+        // Clear activity specific fields (keep context fields like Project Name to save typing)
+        document.getElementById('activityHours').value = '';
+        document.getElementById('activityPerformed').value = '';
+        resetCustomInputs();
+    }
+
     function addLogEntry() {
         const projectName = document.getElementById('projectName').value;
         const jobTitle = document.getElementById('jobTitle').value;
@@ -608,7 +700,7 @@
         }
 
         const entry = {
-            id: Date.now().toString(),
+            id: currentEditId ? currentEditId : Date.now().toString(),
             projectName: projectName,
             jobTitle: jobTitle,
             projectDescription: projectDescription,
@@ -628,12 +720,20 @@
             softwareUsed: software
         };
 
-        projectLogs.push(entry);
+        if (currentEditId) {
+            const index = projectLogs.findIndex(l => l.id === currentEditId);
+            if (index !== -1) {
+                projectLogs[index] = entry; // Overwrite existing
+            }
+            cancelEdit(); // Reset form states and ID
+        } else {
+            projectLogs.push(entry);
+            document.getElementById('activityHours').value = '';
+            document.getElementById('activityPerformed').value = '';
+            resetCustomInputs();
+        }
+
         updateTable();
-        
-        document.getElementById('activityHours').value = '';
-        document.getElementById('activityPerformed').value = '';
-        resetCustomInputs();
     }
 
     function removeEntry(id) {
@@ -659,12 +759,117 @@
                 <td>${(log.systemsUsed || []).join(', ')}</td>
                 <td>${(log.softwareUsed || []).join(', ')}</td>
                 <td>${log.activity}</td>
-                <td><button style="background:red; padding: 5px 10px; margin:0;" onclick="removeEntry('${log.id}')">X</button></td>
+                <td style="white-space: nowrap;">
+                    <button style="background:#f39c12; padding: 5px 10px; margin:0 5px 0 0;" onclick="editEntry('${log.id}')" title="Edit Entry">✎</button>
+                    <button style="background:red; padding: 5px 10px; margin:0;" onclick="removeEntry('${log.id}')" title="Delete Entry">X</button>
+                </td>
             `;
             tbody.appendChild(tr);
         });
 
         document.getElementById('totalHours').textContent = totalHours;
+    }
+
+    // --- Import NOAA XML Metadata Logic ---
+    function loadNOAAXML(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+
+                function getLocalNodes(parent, name) {
+                    let results = [];
+                    if (!parent) return results;
+                    let elements = parent.getElementsByTagName('*');
+                    for (let i = 0; i < elements.length; i++) {
+                        let elName = elements[i].localName || elements[i].nodeName;
+                        if (elName.includes(':')) elName = elName.split(':')[1];
+                        if (elName.toLowerCase() === name.toLowerCase()) {
+                            results.push(elements[i]);
+                        }
+                    }
+                    return results;
+                }
+
+                let projects = getLocalNodes(xmlDoc, "project");
+                let surveys = getLocalNodes(xmlDoc, "survey");
+                let dates = getLocalNodes(xmlDoc, "date");
+
+                if (projects.length > 0 || surveys.length > 0 || dates.length > 0) {
+                    let pId = ""; let pLoc = "";
+                    if (projects.length > 0) {
+                        let uidNode = getLocalNodes(projects[0], "uniqueId")[0];
+                        let nameNode = getLocalNodes(projects[0], "name")[0];
+                        if (uidNode) pId = uidNode.textContent.trim();
+                        if (nameNode) pLoc = nameNode.textContent.trim();
+                    }
+
+                    let sId = ""; let sLoc = "";
+                    if (surveys.length > 0) {
+                        let uidNode = getLocalNodes(surveys[0], "uniqueId")[0];
+                        let nameNode = getLocalNodes(surveys[0], "name")[0];
+                        if (uidNode) sId = uidNode.textContent.trim();
+                        if (nameNode) sLoc = nameNode.textContent.trim();
+                    }
+
+                    let pName = (pId && sId) ? `${pId} (${sId})` : (pId || sId);
+                    let pDesc = (pLoc && sLoc) ? `${pLoc} - ${sLoc}` : (pLoc || sLoc);
+                    
+                    if (pName) document.getElementById('projectName').value = pName;
+                    if (pDesc) document.getElementById('projectDescription').value = pDesc;
+
+                    if (dates.length > 0) {
+                        let startNode = getLocalNodes(dates[0], "start")[0];
+                        let endNode = getLocalNodes(dates[0], "end")[0];
+                        if (startNode) document.getElementById('startDate').value = startNode.textContent.trim();
+                        if (endNode) document.getElementById('endDate').value = endNode.textContent.trim();
+                    }
+                    
+                    let vesselNodes = getLocalNodes(xmlDoc, "vessel");
+                    if (vesselNodes.length > 0) {
+                        let vNameNode = getLocalNodes(vesselNodes[0], "name")[0];
+                        if (vNameNode) document.getElementById('vessel').value = vNameNode.textContent.trim();
+                    }
+
+                } else {
+                    let titleNode = getLocalNodes(xmlDoc, "title")[0] || getLocalNodes(xmlDoc, "resTitle")[0];
+                    if (titleNode) document.getElementById('projectName').value = titleNode.textContent.trim();
+
+                    let abstractNode = getLocalNodes(xmlDoc, "abstract")[0];
+                    if (abstractNode) document.getElementById('projectDescription').value = abstractNode.textContent.trim();
+
+                    let begNode = getLocalNodes(xmlDoc, "begdate")[0];
+                    if (begNode) {
+                        let txt = begNode.textContent.trim().replace(/-/g, '');
+                        if(txt.length >= 8) {
+                           document.getElementById('startDate').value = `${txt.substring(0,4)}-${txt.substring(4,6)}-${txt.substring(6,8)}`;
+                        }
+                    }
+
+                    let endNode = getLocalNodes(xmlDoc, "enddate")[0];
+                    if (endNode) {
+                        let txt = endNode.textContent.trim().replace(/-/g, '');
+                        if(txt.length >= 8) {
+                           document.getElementById('endDate').value = `${txt.substring(0,4)}-${txt.substring(4,6)}-${txt.substring(6,8)}`;
+                        }
+                    }
+                }
+
+                alert("NOAA XML metadata parsed successfully and loaded into project fields!");
+
+            } catch (error) {
+                console.error("Error parsing NOAA XML:", error);
+                alert("Failed to parse the XML file. Ensure it is a valid NOAA metadata XML.");
+            }
+            
+            event.target.value = '';
+        };
+        
+        reader.readAsText(file);
     }
 
     function loadProjectJSON(event) {
@@ -683,7 +888,6 @@
                     projectLogs = data.logbookEntries;
                     updateTable();
 
-                    // Pre-fill fields from the last entry to make continued data entry easy
                     if(projectLogs.length > 0) {
                         const last = projectLogs[projectLogs.length - 1];
                         document.getElementById('projectName').value = last.projectName || '';
@@ -764,7 +968,6 @@
             if (log.startDate) groupedLogs[org].dates.push(new Date(log.startDate + 'T00:00:00').getTime());
             if (log.endDate) groupedLogs[org].dates.push(new Date(log.endDate + 'T00:00:00').getTime());
 
-            // Collect Unique Context values
             if (log.jobTitle && log.jobTitle.trim() !== '') groupedLogs[org].jobTitles.add(log.jobTitle.trim());
 
             const pName = log.projectName || "Unknown Project";
@@ -774,14 +977,13 @@
             const pEnd = log.endDate || (log.startDate ? log.startDate : "Unknown End Date");
             const pCategory = (log.category && log.category.length > 0) ? log.category.join(', ') : "None";
             
-            // Collect deduplicated Projects (j_proj)
+            // Collect deduplicated Projects (j_proj) 
             groupedLogs[org].j_projs.add(`${pName} - ${pDesc}`);
 
             // Collect deduplicated Responsibilities (j_resp) using exact requested format
             const respString = `From ${pStart} to ${pEnd} for ${pName}: daily activities: ${pCategory}, detailed activities: ${pAct}`;
             groupedLogs[org].j_resps.add(respString);
 
-            // Collect unique systems and software
             (log.systemsUsed || []).forEach(sys => { 
                 if(sys) groupedLogs[org].systems.add(sys.trim()); 
             });
@@ -805,7 +1007,6 @@
                 d_to = new Date(maxTime).toISOString().split('T')[0];
             }
 
-            // Assemble text blocks directly from the Sets
             let j_proj_text = Array.from(data.j_projs).join('\n');
             let j_resp_text = Array.from(data.j_resps).join('\n');
 
