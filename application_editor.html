@@ -89,6 +89,7 @@
         <div class="controls">
             <a href="index.html" class="btn btn-home">HOME</a>
             <button class="btn btn-add" onclick="addProjectEngagement()">+ Add Project</button>
+            <button class="btn btn-add" style="background: #17a2b8;" onclick="addProjectReportEngagement()">+ Add Project Report</button>
             
             <div class="dropdown">
                 <button onclick="toggleEduDropdown()" class="btn btn-add dropbtn">+ Add Education ▼</button>
@@ -475,6 +476,92 @@ function addProjectEngagement(data = null) {
     updateTracker(); 
 }
 
+function addProjectReportEngagement(data = null) {
+    counter++;
+    const list = document.getElementById('engagement-list');
+    const id = counter;
+
+    const template = `
+        <div class="engagement-block project-bg" id="eng_${id}" data-type="PR" style="border-color: #17a2b8;">
+            <div class="engagement-header" style="background: #17a2b8;">
+                <span>PROJECT REPORT DETAIL # <span class="display_e_number">${id}</span></span>
+                <button class="btn btn-delete" onclick="removeEng(this)">Remove Engagement</button>
+            </div>
+            
+            <div class="inner-padding" style="padding: 15px;">
+                <div class="row">
+                    <div class="table-box">
+                        <span class="box-title">FIRM</span>
+                        <label>Name:</label> <input type="text" class="f_name" value="${data?.f_name || ''}">
+                        <label>Address:</label> <input type="text" class="f_addr" value="${data?.f_addr || ''}">
+                        <label>Email:</label> <input type="email" class="f_email" value="${data?.f_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="f_tel" value="${data?.f_tel || ''}">
+                    </div>
+                    <div class="table-box">
+                        <span class="box-title">SUPERVISOR</span>
+                        <label>Name:</label> <input type="text" class="s_name" value="${data?.s_name || ''}">
+                        <label>Address:</label> <input type="text" class="s_addr" value="${data?.s_addr || ''}">
+                        <label>Email:</label> <input type="email" class="s_email" value="${data?.s_email || ''}">
+                        <label>Telephone:</label> <input type="text" class="s_tel" value="${data?.s_tel || ''}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <label>From Date:</label> 
+                        <input type="date" class="d_from" value="${data?.d_from || ''}" onchange="calculateDuration(this)">
+                    </div>
+                    <div class="col">
+                        <label>To Date:</label> 
+                        <input type="date" class="d_to" value="${data?.d_to || ''}" onchange="calculateDuration(this)">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col" style="background: #e9ecef; padding: 10px; border-radius: 4px; margin: 10px 15px;">
+                        <label style="margin:0; display:inline-block;">TOTAL MONTHS:</label>
+                        <span class="duration-display" style="font-size: 16px; font-weight: bold; color: #004a99; margin-left: 10px;">
+                            ${data ? calculateMonths(data.d_from, data.d_to).toFixed(2) : '0'}
+                        </span>
+                        <div style="font-size: 10px; color: #666; font-weight: normal; margin-top: 4px;">(1 month = 30 days, rounded up to nearest 0.01)</div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Detail of gaps during this period:</label> <textarea class="d_gaps" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.d_gaps || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Job Title:</label> <textarea class="j_title" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_title || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Responsibilities & Duties (Type @ to search competencies):</label> <textarea class="j_resp" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_resp || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Detailed Project Descriptions (Type @ to search competencies):</label> <textarea class="j_proj" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_proj || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Equipment Used:</label> <textarea class="j_equip" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_equip || ''}</textarea></div>
+                    <div class="col"><label>Software Used:</label> <textarea class="j_soft" rows="1" oninput="autoExpand(this)" style="overflow:hidden; resize:none; min-height: 30px;">${data?.j_soft || ''}</textarea></div>
+                </div>
+                <div class="row">
+                    <div class="table-box">
+                        <div class="col"><label>Non-Related or Education:</label> <input type="number" class="Edu_number" min="0" step="0.01" value="${data?.Edu_number || ''}"></div>
+                        <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" step="0.01" value="${data?.not_hydro_eng || ''}"></div>
+                        <div class="col"><label>Hydrography:</label> <input type="number" class="Hydro_time" min="0" step="0.01" value="${data?.Hydro_time || ''}"></div>
+                        <div class="col"><label>Hydrography in Field:</label> <input type="number" class="H_in_field" min="0" step="0.01" value="${data?.H_in_field || ''}"></div>
+                        <div class="col"><label>Hydrography in Technical Charge:</label> <input type="number" class="H_charge" min="0" step="0.01" value="${data?.H_charge || ''}"></div>
+                    </div>                
+                </div>
+                <hr style="margin: 20px 0; border: 1px solid #17a2b8;">
+                <div class="row">
+                    <div class="col">
+                        <label style="color: #17a2b8; font-size: 14px;">Project Abstract:</label> 
+                        <textarea class="p_abstract" rows="3" oninput="autoExpand(this)" style="overflow:hidden; resize:none; border-color: #17a2b8; min-height: 50px;">${data?.p_abstract || ''}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    list.insertAdjacentHTML('beforeend', template);
+    updateTracker(); 
+}
+
 // --- DATA MANAGEMENT ---
 function removeEng(buttonElement) {
     if(confirm("Are you sure you want to delete this engagement record?")) {
@@ -530,6 +617,10 @@ function saveAllToJSON() {
             entry.Hydro_time = block.querySelector('.Hydro_time').value;
             entry.H_in_field = block.querySelector('.H_in_field').value;
             entry.H_charge = block.querySelector('.H_charge').value;
+            
+            if (type === 'PR') {
+                entry.p_abstract = block.querySelector('.p_abstract').value;
+            }
         }
         return entry;
     });
@@ -564,6 +655,7 @@ function populateForm(json) {
     if (json.data && json.data.length > 0) {
         json.data.forEach(item => {
             if(item.engagement_type === 'EE') addEducationalEngagement(item);
+            else if(item.engagement_type === 'PR') addProjectReportEngagement(item);
             else addProjectEngagement(item);
         });
     } else {
