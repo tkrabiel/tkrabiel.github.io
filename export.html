@@ -86,7 +86,7 @@
     // This strips out "@B1.1 [Text here]" and leaves behind just "Text here"
     function stripCompetencyTags(text) {
         if (!text) return "";
-        return text.replace(/@([a-zA-Z0-9.]+)\s*\[([\s\S]*?)\]/g, '$2').trim();
+        return text.replace(/@([a-zA-Z0-9.]+)\s*\[([\s\S]*?)\]/g, '$1').trim();
     }
 
     // This takes a paragraph with "Enters" (newlines) and turns them into actual Word Document paragraph breaks
