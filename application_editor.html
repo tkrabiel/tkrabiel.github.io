@@ -53,6 +53,7 @@
         .dropdown-content a:last-child { border-bottom: none; }
         .dropdown-content a:hover { background-color: #f1f1f1; color: #004a99; }
         .show { display: block; }
+        .dropdown-divider { border-top: 2px solid #ccc; background: #f8f9fa; color: #666; font-size: 10px; font-weight: bold; padding: 4px 10px; text-transform: uppercase; }
 
         /* Autocomplete Dropdown Styles */
         .autocomplete-container { position: relative; }
@@ -79,36 +80,18 @@
 
         /* Tracker List Items & Tooltips */
         .tracker-item { position: relative; padding: 8px; border-bottom: 1px solid #eee; cursor: help; }
-        .tracker-item.missing { color: #dc3545; } /* Red for Missing */
+        .tracker-item.missing { color: #dc3545; }
         .tracker-item.missing strong { color: #333; }
-        .tracker-item.completed { color: #28a745; } /* Green for Completed */
+        .tracker-item.completed { color: #28a745; }
         .tracker-item.completed strong { color: #1d6f42; }
 
         .tracker-item .tooltip-text {
-            visibility: hidden;
-            width: 250px;
-            background-color: #2c3e50;
-            color: #fff;
-            text-align: left;
-            border-radius: 6px;
-            padding: 12px;
-            position: absolute;
-            z-index: 3000;
-            top: 100%;
-            right: 0;
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            font-weight: normal;
-            font-size: 11px;
-            line-height: 1.4;
-            pointer-events: none;
+            visibility: hidden; width: 250px; background-color: #2c3e50; color: #fff; text-align: left;
+            border-radius: 6px; padding: 12px; position: absolute; z-index: 3000; top: 100%; right: 0;
+            opacity: 0; transition: opacity 0.2s ease-in-out; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            font-weight: normal; font-size: 11px; line-height: 1.4; pointer-events: none;
         }
-
-        .tracker-item:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
+        .tracker-item:hover .tooltip-text { visibility: visible; opacity: 1; }
     </style>
 </head>
 <body>
@@ -119,18 +102,38 @@
     <div class="container" id="mainContainer">
         <div class="controls">
             <a href="index.html" class="btn btn-home">HOME</a>
-            <button class="btn btn-add" onclick="addProjectEngagement()">+ Add Project</button>
-            <button class="btn btn-add" style="background: #17a2b8;" onclick="addProjectReportEngagement()">+ Add Project Report</button>
             
             <div class="dropdown">
-                <button onclick="toggleEduDropdown()" class="btn btn-add dropbtn">+ Add Education ▼</button>
+                <button onclick="toggleDropdown('projDropdown')" class="btn btn-add dropbtn">+ Add Project ▼</button>
+                <div id="projDropdown" class="dropdown-content">
+                    <a href="#" onclick="addProjectEngagement()">📄 Blank Project</a>
+                    <div class="dropdown-divider">Import</div>
+                    <a href="#" onclick="document.getElementById('singleFileInput').click()">📂 Load JSON Block</a>
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button onclick="toggleDropdown('repDropdown')" class="btn btn-add dropbtn" style="background: #17a2b8;">+ Add Report ▼</button>
+                <div id="repDropdown" class="dropdown-content">
+                    <a href="#" onclick="addProjectReportEngagement()">📄 Blank Report</a>
+                    <div class="dropdown-divider">Import</div>
+                    <a href="#" onclick="document.getElementById('singleFileInput').click()">📂 Load JSON Block</a>
+                </div>
+            </div>
+            
+            <div class="dropdown">
+                <button onclick="toggleDropdown('eduDropdown')" class="btn btn-add dropbtn" style="background: #2c3e50;">+ Add Education ▼</button>
                 <div id="eduDropdown" class="dropdown-content">
                     <a href="#" onclick="addEducationalEngagement()">📄 Blank Education</a>
                     <a href="#" onclick="addKnownEducation('UNH')">🎓 UNH CAT-A</a>
                     <a href="#" onclick="addKnownEducation('USM')">🎓 USM CAT-A</a>
                     <a href="#" onclick="addKnownEducation('CATB')">🎓 IHO CAT-B (Generic)</a>
+                    <div class="dropdown-divider">Import</div>
+                    <a href="#" onclick="document.getElementById('singleFileInput').click()">📂 Load JSON Block</a>
                 </div>
             </div>
+
+            <input type="file" id="singleFileInput" hidden accept=".json" onchange="loadSingleBlockJSON(event)">
 
             <button class="btn btn-save" onclick="saveAllToJSON()">Save JSON</button>
             <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">Load JSON</button>
@@ -191,8 +194,8 @@
 let counter = 0;
 
 // --- DROPDOWN LOGIC ---
-function toggleEduDropdown() {
-    document.getElementById("eduDropdown").classList.toggle("show");
+function toggleDropdown(id) {
+    document.getElementById(id).classList.toggle("show");
 }
 
 window.onclick = function(event) {
@@ -226,7 +229,6 @@ function addKnownEducation(schoolType) {
     }
     
     addEducationalEngagement(data);
-    document.getElementById("eduDropdown").classList.remove("show");
 }
 
 // --- TRACKER LOGIC ---
@@ -254,7 +256,6 @@ function updateTracker() {
     
     let allText = "";
     document.querySelectorAll('.engagement-block').forEach(block => {
-        // Now includes p_abstract for Project Reports
         const fields = ['.j_proj', '.j_resp', '.j_comments', '.j_title', '.p_abstract'];
         fields.forEach(f => {
             const el = block.querySelector(f);
@@ -283,11 +284,9 @@ function updateTracker() {
     document.getElementById('tracker-progress-fill').style.width = percentage + '%';
     document.getElementById('tracker-status-text').innerText = `${completed.length} / ${total} Completed (${percentage}%)`;
     
-    // UI Builder with Checkbox logic and tooltips
     const showCompleted = document.getElementById('toggleCompleted').checked;
     let htmlContent = "";
 
-    // Build Missing (Red)
     if (missing.length === 0) {
         htmlContent += "<div style='color:green; font-weight:bold; padding: 10px 0;'>All competencies completed!</div>";
     } else {
@@ -301,7 +300,6 @@ function updateTracker() {
         }).join('');
     }
 
-    // Build Completed (Green) if toggled on
     if (showCompleted && completed.length > 0) {
         htmlContent += completed.map(c => {
             const extraInfo = c.info ? c.info : "No detailed learning outcomes provided.";
@@ -316,20 +314,15 @@ function updateTracker() {
     document.getElementById('tracker-missing-list').innerHTML = htmlContent;
 }
 
-// --- MATH ENGINE (UPDATED FOR DECIMALS & 30-DAY MONTHS) ---
+// --- MATH ENGINE ---
 function calculateMonths(d1, d2) {
     if (!d1 || !d2) return 0;
     const start = new Date(d1);
     const end = new Date(d2);
     if (end < start) return 0;
     
-    // Calculate difference in days
     const diffDays = (end - start) / (1000 * 60 * 60 * 24);
-    
-    // Convert to months (1 month = 30 days)
     const exactMonths = diffDays / 30;
-    
-    // Round UP to the nearest hundreth (0.01)
     return Math.ceil(exactMonths * 100) / 100;
 }
 
@@ -346,7 +339,6 @@ function calculateDuration(element) {
     const totalMonths = calculateMonths(fromVal, toVal);
     if (displaySpan) displaySpan.innerText = totalMonths.toFixed(2);
 
-    // Update validation for fractional inputs
     const numInputs = block.querySelectorAll('input[type="number"]');
     numInputs.forEach(input => {
         input.max = totalMonths;
@@ -448,6 +440,11 @@ function addEducationalEngagement(data = null) {
                         <div class="col"><label>Surveying, Engineering, Not Hydrography:</label> <input type="number" class="not_hydro_eng" min="0" step="0.01" value="${data?.not_hydro_eng || ''}"></div>
                     </div>                    
                 </div>
+                
+                <hr style="margin: 20px 0; border: 1px dashed #ccc;">
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn" style="background: #6c757d;" type="button" onclick="exportSingleBlock(this)">⬇️ Export Block to JSON</button>
+                </div>
             </div>
         </div>`;
     list.insertAdjacentHTML('beforeend', template);
@@ -531,6 +528,11 @@ function addProjectEngagement(data = null) {
                         <div class="col"><label>Hydrography in Field:</label> <input type="number" class="H_in_field" min="0" step="0.01" value="${data?.H_in_field || ''}"></div>
                         <div class="col"><label>Hydrography in Technical Charge:</label> <input type="number" class="H_charge" min="0" step="0.01" value="${data?.H_charge || ''}"></div>
                     </div>                
+                </div>
+
+                <hr style="margin: 20px 0; border: 1px dashed #ccc;">
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn" style="background: #6c757d;" type="button" onclick="exportSingleBlock(this)">⬇️ Export Block to JSON</button>
                 </div>
             </div>
         </div>`;
@@ -618,6 +620,11 @@ function addProjectReportEngagement(data = null) {
                         <textarea class="p_abstract" rows="3" oninput="autoExpand(this)" style="overflow:hidden; resize:none; border-color: #17a2b8; min-height: 50px;">${data?.p_abstract || ''}</textarea>
                     </div>
                 </div>
+
+                <hr style="margin: 20px 0; border: 1px dashed #ccc;">
+                <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn" style="background: #6c757d;" type="button" onclick="exportSingleBlock(this)">⬇️ Export Block to JSON</button>
+                </div>
             </div>
         </div>`;
     list.insertAdjacentHTML('beforeend', template);
@@ -699,7 +706,7 @@ function saveAllToJSON() {
     const link = document.createElement('a');
     link.href = url;
     
-    // Clean naming format requested previously
+    // Dynamic file naming logic
     const safeName = (output.applicant || 'Unknown_Applicant').replace(/\s+/g, '_');
     const safeLevel = (output.level || 'Unknown_Level').replace(/\s+/g, '_');
     const now = new Date();
@@ -736,6 +743,81 @@ function populateForm(json) {
     });
     
     updateTracker(); 
+}
+
+// --- SINGLE BLOCK EXPORT & IMPORT LOGIC ---
+function exportSingleBlock(buttonElement) {
+    const block = buttonElement.closest('.engagement-block');
+    const type = block.getAttribute('data-type') || 'PE';
+    
+    let entry = {
+        engagement_type: type,
+        f_name: block.querySelector('.f_name').value,
+        f_addr: block.querySelector('.f_addr').value,
+        s_name: block.querySelector('.s_name').value,
+        s_addr: block.querySelector('.s_addr').value,
+        d_from: block.querySelector('.d_from').value,
+        d_to: block.querySelector('.d_to').value,
+        j_title: block.querySelector('.j_title').value,
+        j_proj: block.querySelector('.j_proj').value,
+        d_gaps: block.querySelector('.d_gaps').value,
+        f_email: block.querySelector('.f_email').value,
+        f_tel: block.querySelector('.f_tel').value,
+        s_email: block.querySelector('.s_email').value,
+        s_tel: block.querySelector('.s_tel').value,
+        Edu_number: block.querySelector('.Edu_number').value,
+        not_hydro_eng: block.querySelector('.not_hydro_eng').value
+    };
+
+    if (type === 'EE') {
+        entry.j_cert = block.querySelector('.j_cert').value;
+        entry.j_comments = block.querySelector('.j_comments').value;
+    } else {
+        entry.j_resp = block.querySelector('.j_resp').value;
+        entry.j_equip = block.querySelector('.j_equip').value;
+        entry.j_soft = block.querySelector('.j_soft').value;
+        entry.Hydro_time = block.querySelector('.Hydro_time').value;
+        entry.H_in_field = block.querySelector('.H_in_field').value;
+        entry.H_charge = block.querySelector('.H_charge').value;
+        
+        if (type === 'PR') {
+            entry.p_abstract = block.querySelector('.p_abstract').value;
+        }
+    }
+
+    const blob = new Blob([JSON.stringify(entry, null, 4)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    const safeTitle = (entry.j_title || type).replace(/\s+/g, '_');
+    link.download = `Template_${type}_${safeTitle}.json`;
+    link.click();
+}
+
+function loadSingleBlockJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) { 
+        try {
+            const parsedData = JSON.parse(e.target.result);
+            if (parsedData.engagement_type === 'EE') {
+                addEducationalEngagement(parsedData);
+            } else if (parsedData.engagement_type === 'PR') {
+                addProjectReportEngagement(parsedData);
+            } else {
+                addProjectEngagement(parsedData);
+            }
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); 
+            updateTracker();
+        } catch (err) {
+            alert("Error: Invalid Single Block JSON file.");
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = ""; 
 }
 
 // --- AUTOCOMPLETE @ LOGIC ---
