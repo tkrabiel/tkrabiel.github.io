@@ -107,7 +107,7 @@
     // --- CSV GENERATOR ---
     function generateExcel() {
         if (!activeData) return alert("Please upload a JSON file first.");
-        const headers = ["Engagement Number", "Title and Organization", "Start Date (mm/yyyy)", "End Date (mm/yyyy)", "Months", "Non-Related or Education", "Surveying, Engineering, Not Hydrography", "Hydrography", "Hydrography in Technical Charge", "Hydrography in Field", "Total Months"];
+        const headers = ["Engagement Number", "Title and Organization", "Start Date (mm/yyyy)", "End Date (mm/yyyy)", "Months", "Non-Related or Education", "Surveying Engineering Not Hydrography", "Hydrography", "Hydrography in Technical Charge", "Hydrography in Field", "Total Months"];
         let csvRows = [headers.join(",")];
         let totals = { edu: 0, surv: 0, hydro: 0, charge: 0, field: 0, all: 0 };
 
