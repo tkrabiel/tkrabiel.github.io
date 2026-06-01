@@ -39,7 +39,6 @@
             </div>
         </div>
 
-        <!-- API Keys -->
         <div class="bg-gray-900 rounded-3xl p-6 mb-8 border border-gray-800">
             <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
                 🔑 TMDB API Configuration
@@ -66,7 +65,6 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Left: Form -->
             <div class="lg:col-span-5 bg-gray-900 rounded-3xl p-8">
                 <div class="mb-6">
                     <label class="block text-sm text-gray-400 mb-2">Media Type</label>
@@ -126,7 +124,6 @@
                 </form>
             </div>
 
-            <!-- Right: Preview -->
             <div class="lg:col-span-7">
                 <div class="bg-gray-900 rounded-3xl p-8 h-full flex flex-col">
                     <h2 class="text-xl font-medium mb-6">Preview</h2>
@@ -145,7 +142,6 @@
             </div>
         </div>
 
-        <!-- Download Section -->
         <div id="download-section" class="hidden mt-8 bg-gray-900 rounded-3xl p-8">
             <h3 class="font-medium mb-4">Ready to create folders on your computer?</h3>
             <div class="flex gap-4">
@@ -169,7 +165,7 @@
 
         let currentType = "tv"
         let tmdbKey = localStorage.getItem("tmdbKey") || ""
-        let tmdbConfig = null   // Will store the result from /configuration
+        let tmdbConfig = null   
 
         const mediaTypes = [
             { id: "tv", label: "📺 TV Show", value: "tv" },
@@ -248,7 +244,7 @@
             resultsContainer.classList.remove("hidden")
 
             const mediaType = currentType === "tv" ? "tv" : "movie"
-            const url = `https://api.themoviedb.org/3/search/\( {mediaType}?api_key= \){tmdbKey}&query=${encodeURIComponent(query)}&language=en-US`
+            const url = `https://api.themoviedb.org/3/search/${mediaType}?api_key=${tmdbKey}&query=${encodeURIComponent(query)}&language=en-US`
 
             try {
                 const res = await fetch(url)
@@ -262,11 +258,11 @@
                         const year = (item.release_date || item.first_air_date || "").split("-")[0] || "—"
                         const posterPath = item.poster_path
                         let posterHTML = posterPath && tmdbConfig 
-                            ? `<img src="\( {tmdbConfig.images.secure_base_url}w92 \){posterPath}" class="poster" alt="poster">`
+                            ? `<img src="${tmdbConfig.images.secure_base_url}w92${posterPath}" class="poster" alt="poster">`
                             : `<div class="w-12 h-16 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-400">No poster</div>`
 
                         html += `
-                            <div onclick="selectSearchResult(${JSON.stringify(item)})" 
+                            <div onclick='selectSearchResult(${JSON.stringify(item).replace(/'/g, "&apos;")})' 
                                  class="result-card cursor-pointer bg-gray-800 hover:bg-gray-700 border border-gray-700 p-4 rounded-2xl flex gap-4 items-center">
                                 ${posterHTML}
                                 <div class="flex-1 min-w-0">
@@ -306,7 +302,7 @@
             const seasons = currentType === "tv" ? parseInt(document.getElementById("seasons").value) || 5 : 0
             const outputDir = document.getElementById("output-dir").value.trim() || "/media/Jellyfin"
             
-            const folderName = year ? `\( {title} ( \){year})` : title
+            const folderName = year ? `${title} (${year})` : title
             
             // Build folder tree preview
             let treeHTML = `<div class="text-emerald-400 font-medium">📁 ${folderName}</div>`
@@ -377,7 +373,7 @@
         function downloadShellScript() {
             if (!window.lastGenerated) return
             const data = window.lastGenerated
-            let script = `#!/bin/bash\n\nmkdir -p "\( {data.outputDir}/ \){data.folderName}"\ncd "\( {data.outputDir}/ \){data.folderName}"\n`
+            let script = `#!/bin/bash\n\nmkdir -p "${data.outputDir}/${data.folderName}"\ncd "${data.outputDir}/${data.folderName}"\n`
             
             if (data.type === "tv") {
                 script += `mkdir -p "Season 00"\n`
@@ -386,7 +382,7 @@
             } else if (data.type === "movie") {
                 script += `mkdir -p "trailers" "behind the scenes" "deleted scenes" "featurettes" "theme-music"\n`
             } else if (data.author) {
-                script = `#!/bin/bash\nmkdir -p "\( {data.outputDir}/ \){data.author}/${data.folderName}"\n`
+                script = `#!/bin/bash\nmkdir -p "${data.outputDir}/${data.author}/${data.folderName}"\n`
             }
             
             script += `\ncat > "README_Jellyfin_Naming.txt" << 'EOF'\n${data.readmeContent}\nEOF\n`
@@ -402,7 +398,7 @@
         function downloadBatScript() {
             if (!window.lastGenerated) return
             const data = window.lastGenerated
-            let script = `@echo off\nmkdir "${data.outputDir}\\\( {data.folderName}" 2>nul\ncd /d " \){data.outputDir}\\${data.folderName}"\n`
+            let script = `@echo off\nmkdir "${data.outputDir}\\${data.folderName}" 2>nul\ncd /d "${data.outputDir}\\${data.folderName}"\n`
             
             if (data.type === "tv") {
                 script += `mkdir "Season 00" 2>nul\n`
