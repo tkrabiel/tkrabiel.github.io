@@ -351,7 +351,7 @@
             }
             
             document.getElementById("preview-tree").innerHTML = treeHTML
-            
+  
             // Generate README content
             const readmeContent = generateREADME(title, year, author, currentType, seasons)
             document.getElementById("readme-preview").textContent = readmeContent
@@ -381,4 +381,97 @@
             let content = `# Jellyfin Media Organization Guide - ${fullTitle}\nGenerated on ${new Date().toISOString().slice(0,10)}\n\n`
             
             if (type === "tv") {
-                content += `## TV Show\nFolder:
+                content += `## TV Show\nFolder: ${fullTitle}\n\nEpisode files → ${title} S01E01.mkv\nSeason folders must be exactly "Season 01", "Season 02"...\nSpecials go in Season 00.\n`
+            } else if (type === "movie") {
+                content += `## Movie\nFolder: ${fullTitle}\nMain file must be named exactly ${fullTitle}.mkv\n`
+            } else {
+                content += `## ${type === "audiobook" ? "Audiobook" : "Book"}\nFolder: ${fullTitle}\n`
+                if (author) content += `Author folder: ${author}\n`
+            }
+            
+            content += `\nOfficial Jellyfin rules followed.\nHappy streaming!`
+            return content
+        }
+
+        function downloadREADME() {
+            if (!window.lastGenerated) return
+            const blob = new Blob([window.lastGenerated.readmeContent], { type: "text/plain" })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            a.href = url
+            a.download = "README_Jellyfin_Naming.txt"
+            a.click()
+            URL.revokeObjectURL(url)
+        }
+
+        function downloadShellScript() {
+            if (!window.lastGenerated) return
+            const data = window.lastGenerated
+            let script = `#!/bin/bash\n\nmkdir -p "\( {data.outputDir}/ \){data.folderName}"\ncd "\( {data.outputDir}/ \){data.folderName}"\n`
+            
+            if (data.type === "tv") {
+                script += `mkdir -p "Season 00"\n`
+                for (let i = 1; i <= data.seasons; i++) {
+                    script += `mkdir -p "Season ${i.toString().padStart(2, '0')}"\n`
+                }
+                script += `mkdir -p "trailers" "behind the scenes" "interviews" "theme-music"\n`
+            } else if (data.type === "movie") {
+                script += `mkdir -p "trailers" "behind the scenes" "deleted scenes" "featurettes" "theme-music"\n`
+            } else if (data.author) {
+                script = `#!/bin/bash\n\nmkdir -p "\( {data.outputDir}/ \){data.author}/${data.folderName}"\n`
+            }
+            
+            script += `\n# Write README\ncat > "README_Jellyfin_Naming.txt" << 'EOF'\n${data.readmeContent}\nEOF\n`
+            script += `\necho "✅ Structure created for ${data.folderName}"`
+            
+            const blob = new Blob([script], { type: "text/plain" })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            a.href = url
+            a.download = "create_jellyfin_structure.sh"
+            a.click()
+            URL.revokeObjectURL(url)
+        }
+
+        function downloadBatScript() {
+            if (!window.lastGenerated) return
+            const data = window.lastGenerated
+            let script = `@echo off\nmkdir "${data.outputDir}\\\( {data.folderName}"\ncd /d " \){data.outputDir}\\${data.folderName}"\n`
+            
+            if (data.type === "tv") {
+                script += `mkdir "Season 00"\n`
+                for (let i = 1; i <= data.seasons; i++) {
+                    script += `mkdir "Season ${i.toString().padStart(2, '0')}"\n`
+                }
+                script += `mkdir "trailers" "behind the scenes" "interviews" "theme-music"\n`
+            } else if (data.type === "movie") {
+                script += `mkdir "trailers" "behind the scenes" "deleted scenes" "featurettes" "theme-music"\n`
+            }
+            
+            script += `\necho ${data.readmeContent.replace(/\n/g, "^\n")} > README_Jellyfin_Naming.txt\n`
+            script += `echo Structure created for ${data.folderName}`
+            
+            const blob = new Blob([script], { type: "text/plain" })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            a.href = url
+            a.download = "create_jellyfin_structure.bat"
+            a.click()
+            URL.revokeObjectURL(url)
+        }
+
+        // Initialize
+        window.onload = function() {
+            initTailwind()
+            renderTypeButtons()
+            selectType("tv")
+            
+            // Pre-fill keys if available
+            if (tmdbKey) document.getElementById("tmdb-key").value = tmdbKey
+            if (omdbKey) document.getElementById("omdb-key").value = omdbKey
+            
+            console.log("%cJellyfin Web Organizer ready! Use TMDB/OMDb for smart search.", "color:#00a4bd")
+        }
+    </script>
+</body>
+</html>
