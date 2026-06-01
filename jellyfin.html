@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jellyfin Media Organizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .folder-tree { font-family: monospace; line-height: 1.4; }
+        .result-card { transition: all 0.2s; }
+        .result-card:hover { transform: scale(1.03); }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100">
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-4xl font-semibold flex items-center gap-3">
+                    <span class="text-[#00a4bd]">Jellyfin</span> Media Organizer
+                </h1>
+                <p class="text-gray-400 mt-1">Create perfect folder structures + READMEs using official Jellyfin rules</p>
+            </div>
+            <div class="flex items-center gap-4 text-sm">
+                <a href="https://jellyfin.org/docs/general/server/media/shows/" target="_blank" 
+                   class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center gap-2">
+                    📺 TV Shows
+                </a>
+                <a href="https://jellyfin.org/docs/general/server/media/movies/" target="_blank" 
+                   class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center gap-2">
+                    🎥 Movies
+                </a>
+                <a href="https://jellyfin.org/docs/general/server/media/books/" target="_blank" 
+                   class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center gap-2">
+                    📖 Books
+                </a>
+            </div>
+        </div>
+
+        <!-- API Keys -->
+        <div class="bg-gray-900 rounded-3xl p-6 mb-8 border border-gray-800">
+            <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
+                🔑 API Keys (required for search)
+                <span class="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded-2xl">Free accounts only</span>
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">TheMovieDB (TMDB) API Key</label>
+                    <input id="tmdb-key" type="password" placeholder="tmDB api key (get at themoviedb.org)" 
+                           class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#00a4bd]">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">OMDb API Key (optional)</label>
+                    <input id="omdb-key" type="password" placeholder="omdbapi.com key" 
+                           class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#00a4bd]">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="saveApiKeys()" 
+                            class="w-full bg-[#00a4bd] hover:bg-[#008a9e] text-white font-medium py-3 rounded-2xl text-sm">
+                        Save Keys
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-4">
+                Get free keys: 
+                <a href="https://www.themoviedb.org/settings/api" target="_blank" class="underline">TMDB</a> • 
+                <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" class="underline">OMDb</a> • 
+                TheTVDB not yet integrated (TV fallback uses TMDB)
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Left: Form -->
+            <div class="lg:col-span-5 bg-gray-900 rounded-3xl p-8">
+                <div class="mb-6">
+                    <label class="block text-sm text-gray-400 mb-2">Media Type</label>
+                    <div class="flex gap-2" id="type-buttons">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm text-gray-400 mb-2">Search Title</label>
+                    <div class="flex gap-3">
+                        <input id="search-input" type="text" placeholder="e.g. The Boys, Dune, Project Hail Mary" 
+                               class="flex-1 bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
+                        <button onclick="performSearch()" 
+                                class="bg-[#00a4bd] hover:bg-[#008a9e] px-8 rounded-2xl font-medium">Search</button>
+                    </div>
+                </div>
+
+                <div id="search-results" class="mb-8 hidden"></div>
+
+                <form id="media-form" onsubmit="generateStructure(event)">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Title</label>
+                            <input id="title" type="text" required
+                                   class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Year (optional)</label>
+                                <input id="year" type="text" placeholder="2024"
+                                       class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
+                            </div>
+                            <div id="author-field">
+                                <label class="block text-sm text-gray-400 mb-2">Author (books/audiobooks)</label>
+                                <input id="author" type="text" placeholder="Andy Weir"
+                                       class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
+                            </div>
+                        </div>
+
+                        <div id="seasons-field" class="hidden">
+                            <label class="block text-sm text-gray-400 mb-2">Pre-create Seasons</label>
+                            <input id="seasons" type="number" value="5" min="1" max="30"
+                                   class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Base Output Directory (on your PC)</label>
+                            <input id="output-dir" type="text" placeholder="/media/Jellyfin/Movies" value="/media/Jellyfin"
+                                   class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
+                            <p class="text-xs text-gray-500 mt-2">This is only used in the generated shell script.</p>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full py-5 bg-[#00a4bd] hover:bg-[#008a9e] rounded-3xl text-lg font-semibold mt-4">
+                            Generate Folder Structure + README
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right: Preview -->
+            <div class="lg:col-span-7">
+                <div class="bg-gray-900 rounded-3xl p-8 h-full flex flex-col">
+                    <h2 class="text-xl font-medium mb-6">Preview</h2>
+                    
+                    <!-- Folder Tree -->
+                    <div id="preview-tree" class="folder-tree bg-gray-950 border border-gray-700 rounded-2xl p-6 flex-1 overflow-auto text-sm mb-6">
+                        <p class="text-gray-500 italic">Structure preview will appear here after you generate...</p>
+                    </div>
+
+                    <!-- README Preview -->
+                    <div class="mt-auto">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-medium">README_Jellyfin_Naming.txt Preview</h3>
+                            <button onclick="downloadREADME()" 
+                                    class="text-xs px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-2xl">Download README.txt</button>
+                        </div>
+                        <pre id="readme-preview" class="bg-gray-950 border border-gray-700 rounded-2xl p-5 text-xs overflow-auto max-h-80 text-gray-300"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Script Download -->
+        <div id="download-section" class="hidden mt-8 bg-gray-900 rounded-3xl p-8">
+            <h3 class="font-medium mb-4">Ready to create on your computer?</h3>
+            <div class="flex gap-4">
+                <button onclick="downloadShellScript()" 
+                        class="flex-1 py-4 border border-gray-700 hover:border-gray-400 rounded-2xl flex items-center justify-center gap-3">
+                    📥 Download bash script (macOS / Linux)
+                </button>
+                <button onclick="downloadBatScript()" 
+                        class="flex-1 py-4 border border-gray-700 hover:border-gray-400 rounded-2xl flex items-center justify-center gap-3">
+                    📥 Download .bat script (Windows)
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-6">
+                1. Download the script above<br>
+                2. Run it on your computer (it will create the exact folders + README)<br>
+                3. Drop your media files following the naming rules in the README
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script already loaded
+        function initTailwind() {
+            tailwind.config = {
+                content: [],
+                theme: { extend: {} }
+            }
+        }
+
+        let currentType = "tv"
+        let selectedMedia = null
+        let tmdbKey = localStorage.getItem("tmdbKey") || ""
+        let omdbKey = localStorage.getItem("omdbKey") || ""
+
+        // Media types
+        const mediaTypes = [
+            { id: "tv", label: "📺 TV Show", value: "tv" },
+            { id: "movie", label: "🎬 Movie", value: "movie" },
+            { id: "audiobook", label: "🎧 Audiobook", value: "audiobook" },
+            { id: "book", label: "📖 Book", value: "book" }
+        ]
+
+        function renderTypeButtons() {
+            const container = document.getElementById("type-buttons")
+            container.innerHTML = mediaTypes.map(type => `
+                <button onclick="selectType('${type.value}')" 
+                        id="type-btn-${type.value}"
+                        class="flex-1 py-4 rounded-2xl font-medium transition-all ${currentType === type.value ? 'bg-[#00a4bd] text-white shadow-lg' : 'bg-gray-800 hover:bg-gray-700'}">
+                    ${type.label}
+                </button>
+            `).join("")
+        }
+
+        function selectType(type) {
+            currentType = type
+            renderTypeButtons()
+            
+            // Show/hide fields
+            const seasonsField = document.getElementById("seasons-field")
+            const authorField = document.getElementById("author-field")
+            
+            if (type === "tv") {
+                seasonsField.classList.remove("hidden")
+            } else {
+                seasonsField.classList.add("hidden")
+            }
+            
+            if (type === "audiobook" || type === "book") {
+                authorField.style.display = "block"
+            } else {
+                authorField.style.display = "none"
+            }
+            
+            // Clear previous results
+            document.getElementById("search-results").classList.add("hidden")
+        }
+
+        function saveApiKeys() {
+            tmdbKey = document.getElementById("tmdb-key").value.trim()
+            omdbKey = document.getElementById("omdb-key").value.trim()
+            localStorage.setItem("tmdbKey", tmdbKey)
+            localStorage.setItem("omdbKey", omdbKey)
+            alert("API keys saved in browser (localStorage)")
+        }
+
+        async function performSearch() {
+            const query = document.getElementById("search-input").value.trim()
+            if (!query) return alert("Enter a title to search")
+            
+            const resultsContainer = document.getElementById("search-results")
+            resultsContainer.innerHTML = `<p class="text-gray-400">Searching ${currentType}...</p>`
+            resultsContainer.classList.remove("hidden")
+            
+            if (!tmdbKey && (currentType === "tv" || currentType === "movie")) {
+                resultsContainer.innerHTML = `<p class="text-amber-400">⚠️ Please enter your TMDB API key above first.</p>`
+                return
+            }
+            
+            let url = ""
+            if (currentType === "tv" || currentType === "movie") {
+                const mediaType = currentType === "tv" ? "tv" : "movie"
+                url = `https://api.themoviedb.org/3/search/\( {mediaType}?api_key= \){tmdbKey}&query=${encodeURIComponent(query)}&language=en-US`
+            } else {
+                // Books/Audiobooks - demo fallback (no great public API in requested list)
+                resultsContainer.innerHTML = `<p class="text-gray-400">Book search not available via requested APIs. Please type manually.</p>`
+                return
+            }
+            
+            try {
+                const res = await fetch(url)
+                const data = await res.json()
+                
+                if (data.results && data.results.length > 0) {
+                    let html = `<div class="grid grid-cols-1 gap-3 max-h-64 overflow-auto">`
+                    data.results.slice(0, 8).forEach(item => {
+                        const year = item.release_date || item.first_air_date || "—"
+                        const title = item.title || item.name
+                        html += `
+                            <div onclick="selectSearchResult(${JSON.stringify(item)})" 
+                                 class="result-card cursor-pointer bg-gray-800 hover:bg-gray-700 border border-gray-700 p-4 rounded-2xl flex gap-4">
+                                <div class="flex-1">
+                                    <div class="font-medium">${title}</div>
+                                    <div class="text-xs text-gray-400">${year} • ${item.overview ? item.overview.substring(0, 90) + "..." : ""}</div>
+                                </div>
+                            </div>`
+                    })
+                    html += `</div>`
+                    resultsContainer.innerHTML = html
+                } else {
+                    resultsContainer.innerHTML = `<p class="text-gray-400">No results found.</p>`
+                }
+            } catch (e) {
+                resultsContainer.innerHTML = `<p class="text-red-400">Search failed. Check your API key.</p>`
+            }
+        }
+
+        function selectSearchResult(item) {
+            document.getElementById("title").value = item.title || item.name || ""
+            
+            const year = (item.release_date || item.first_air_date || "").split("-")[0]
+            if (year) document.getElementById("year").value = year
+            
+            // Auto-hide results
+            document.getElementById("search-results").classList.add("hidden")
+            
+            // For TV, we could fetch more details for seasons, but keep simple for now
+            if (currentType === "tv") {
+                console.log("Selected TV show:", item)
+                // Could extend to fetch full details with /tv/{id} for season count
+            }
+            
+            selectedMedia = item
+        }
+
+        function generateStructure(e) {
+            e.preventDefault()
+            
+            const title = document.getElementById("title").value.trim()
+            if (!title) return alert("Title is required")
+            
+            const year = document.getElementById("year").value.trim()
+            const author = document.getElementById("author").value.trim()
+            const seasons = currentType === "tv" ? parseInt(document.getElementById("seasons").value) || 5 : 0
+            const outputDir = document.getElementById("output-dir").value.trim() || "/media/Jellyfin"
+            
+            const folderName = year ? `\( {title} ( \){year})` : title
+            
+            // Build folder tree HTML
+            let treeHTML = `<div class="text-emerald-400">📁 ${folderName}</div>`
+            
+            if (currentType === "tv") {
+                treeHTML += `<div class="ml-6">📁 Season 00</div>`
+                for (let i = 1; i <= seasons; i++) {
+                    treeHTML += `<div class="ml-6">📁 Season ${i.toString().padStart(2, '0')}</div>`
+                }
+                treeHTML += `<div class="ml-6 text-amber-300">📁 trailers</div>`
+                treeHTML += `<div class="ml-6 text-amber-300">📁 behind the scenes</div>`
+                treeHTML += `<div class="ml-6 text-amber-300">📁 interviews</div>`
+                treeHTML += `<div class="ml-6 text-amber-300">📁 theme-music</div>`
+            } else if (currentType === "movie") {
+                treeHTML += `<div class="ml-6 text-emerald-400">📄 ${folderName}.mkv</div>`
+                treeHTML += `<div class="ml-6 text-amber-300">📁 trailers</div>`
+                treeHTML += `<div class="ml-6 text-amber-300">📁 behind the scenes</div>`
+                treeHTML += `<div class="ml-6 text-amber-300">📁 deleted scenes</div>`
+            } else if (currentType === "audiobook" || currentType === "book") {
+                if (author) {
+                    treeHTML = `<div class="text-emerald-400">📁 ${author}</div><div class="ml-6">📁 ${folderName}</div>`
+                }
+                treeHTML += `<div class="ml-12 text-emerald-400">📄 ${folderName}.m4b</div>`
+                treeHTML += `<div class="ml-12 text-gray-400">📄 cover.jpg</div>`
+            }
+            
+            document.getElementById("preview-tree").innerHTML = treeHTML
+            
+            // Generate README content
+            const readmeContent = generateREADME(title, year, author, currentType, seasons)
+            document.getElementById("readme-preview").textContent = readmeContent
+            
+            // Store data for download scripts
+            window.lastGenerated = {
+                type: currentType,
+                title: title,
+                year: year,
+                author: author,
+                folderName: folderName,
+                seasons: seasons,
+                outputDir: outputDir,
+                readmeContent: readmeContent
+            }
+            
+            document.getElementById("download-section").classList.remove("hidden")
+            
+            // Scroll to preview
+            document.getElementById("preview-tree").scrollIntoView({ behavior: "smooth" })
+        }
+
+        function generateREADME(title, year, author, type, seasons) {
+            const yearStr = year ? ` (${year})` : ""
+            const fullTitle = title + yearStr
+            
+            let content = `# Jellyfin Media Organization Guide - ${fullTitle}\nGenerated on ${new Date().toISOString().slice(0,10)}\n\n`
+            
+            if (type === "tv") {
+                content += `## TV Show\nFolder:
