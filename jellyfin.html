@@ -11,6 +11,7 @@
         .folder-tree { font-family: monospace; line-height: 1.4; }
         .result-card { transition: all 0.2s; }
         .result-card:hover { transform: scale(1.03); }
+        .poster { width: 50px; height: 75px; object-fit: cover; border-radius: 6px; }
     </style>
 </head>
 <body class="bg-gray-950 text-gray-100">
@@ -20,7 +21,7 @@
                 <h1 class="text-4xl font-semibold flex items-center gap-3">
                     <span class="text-[#00a4bd]">Jellyfin</span> Media Organizer
                 </h1>
-                <p class="text-gray-400 mt-1">Create perfect folder structures + READMEs using official Jellyfin rules</p>
+                <p class="text-gray-400 mt-1">Create perfect folder structures + READMEs • Powered by TMDB API + Configuration</p>
             </div>
             <div class="flex items-center gap-4 text-sm">
                 <a href="https://jellyfin.org/docs/general/server/media/shows/" target="_blank" 
@@ -41,32 +42,26 @@
         <!-- API Keys -->
         <div class="bg-gray-900 rounded-3xl p-6 mb-8 border border-gray-800">
             <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
-                🔑 API Keys (required for search)
-                <span class="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded-2xl">Free accounts only</span>
+                🔑 TMDB API Configuration
+                <span class="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded-2xl">Now using Configuration API</span>
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">TheMovieDB (TMDB) API Key</label>
-                    <input id="tmdb-key" type="password" placeholder="tmDB api key (get at themoviedb.org)" 
-                           class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#00a4bd]">
-                </div>
-                <div>
-                    <label class="block text-sm text-gray-400 mb-1">OMDb API Key (optional)</label>
-                    <input id="omdb-key" type="password" placeholder="omdbapi.com key" 
+                    <label class="block text-sm text-gray-400 mb-1">TheMovieDB (TMDB) API Key (v3)</label>
+                    <input id="tmdb-key" type="password" placeholder="Paste your TMDB API key" 
                            class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#00a4bd]">
                 </div>
                 <div class="flex items-end">
-                    <button onclick="saveApiKeys()" 
+                    <button onclick="saveApiKeysAndFetchConfig()" 
                             class="w-full bg-[#00a4bd] hover:bg-[#008a9e] text-white font-medium py-3 rounded-2xl text-sm">
-                        Save Keys
+                        Save Key + Load Image Config
                     </button>
                 </div>
             </div>
+            <div id="config-status" class="mt-4 text-xs"></div>
             <p class="text-xs text-gray-500 mt-4">
-                Get free keys: 
-                <a href="https://www.themoviedb.org/settings/api" target="_blank" class="underline">TMDB</a> • 
-                <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" class="underline">OMDb</a> • 
-                TheTVDB not yet integrated (TV fallback uses TMDB)
+                Get free key: <a href="https://www.themoviedb.org/settings/api" target="_blank" class="underline">TMDB Settings → API</a><br>
+                We now automatically call <strong>/configuration</strong> to get secure image URLs for posters.
             </p>
         </div>
 
@@ -75,9 +70,7 @@
             <div class="lg:col-span-5 bg-gray-900 rounded-3xl p-8">
                 <div class="mb-6">
                     <label class="block text-sm text-gray-400 mb-2">Media Type</label>
-                    <div class="flex gap-2" id="type-buttons">
-                        <!-- Populated by JS -->
-                    </div>
+                    <div class="flex gap-2" id="type-buttons"></div>
                 </div>
 
                 <div class="mb-6">
@@ -120,10 +113,9 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm text-gray-400 mb-2">Base Output Directory (on your PC)</label>
+                            <label class="block text-sm text-gray-400 mb-2">Base Output Directory</label>
                             <input id="output-dir" type="text" placeholder="/media/Jellyfin/Movies" value="/media/Jellyfin"
                                    class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
-                            <p class="text-xs text-gray-500 mt-2">This is only used in the generated shell script.</p>
                         </div>
 
                         <button type="submit"
@@ -139,17 +131,13 @@
                 <div class="bg-gray-900 rounded-3xl p-8 h-full flex flex-col">
                     <h2 class="text-xl font-medium mb-6">Preview</h2>
                     
-                    <!-- Folder Tree -->
-                    <div id="preview-tree" class="folder-tree bg-gray-950 border border-gray-700 rounded-2xl p-6 flex-1 overflow-auto text-sm mb-6">
-                        <p class="text-gray-500 italic">Structure preview will appear here after you generate...</p>
-                    </div>
+                    <div id="preview-tree" class="folder-tree bg-gray-950 border border-gray-700 rounded-2xl p-6 flex-1 overflow-auto text-sm mb-6"></div>
 
-                    <!-- README Preview -->
                     <div class="mt-auto">
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="font-medium">README_Jellyfin_Naming.txt Preview</h3>
                             <button onclick="downloadREADME()" 
-                                    class="text-xs px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-2xl">Download README.txt</button>
+                                    class="text-xs px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-2xl">Download README</button>
                         </div>
                         <pre id="readme-preview" class="bg-gray-950 border border-gray-700 rounded-2xl p-5 text-xs overflow-auto max-h-80 text-gray-300"></pre>
                     </div>
@@ -157,42 +145,32 @@
             </div>
         </div>
 
-        <!-- Generated Script Download -->
+        <!-- Download Section -->
         <div id="download-section" class="hidden mt-8 bg-gray-900 rounded-3xl p-8">
-            <h3 class="font-medium mb-4">Ready to create on your computer?</h3>
+            <h3 class="font-medium mb-4">Ready to create folders on your computer?</h3>
             <div class="flex gap-4">
                 <button onclick="downloadShellScript()" 
                         class="flex-1 py-4 border border-gray-700 hover:border-gray-400 rounded-2xl flex items-center justify-center gap-3">
-                    📥 Download bash script (macOS / Linux)
+                    📥 Download .sh (macOS / Linux)
                 </button>
                 <button onclick="downloadBatScript()" 
                         class="flex-1 py-4 border border-gray-700 hover:border-gray-400 rounded-2xl flex items-center justify-center gap-3">
-                    📥 Download .bat script (Windows)
+                    📥 Download .bat (Windows)
                 </button>
             </div>
-            <p class="text-xs text-gray-500 mt-6">
-                1. Download the script above<br>
-                2. Run it on your computer (it will create the exact folders + README)<br>
-                3. Drop your media files following the naming rules in the README
-            </p>
         </div>
     </div>
 
     <script>
-        // Tailwind script already loaded
+        // Tailwind
         function initTailwind() {
-            tailwind.config = {
-                content: [],
-                theme: { extend: {} }
-            }
+            tailwind.config = { content: [] }
         }
 
         let currentType = "tv"
-        let selectedMedia = null
         let tmdbKey = localStorage.getItem("tmdbKey") || ""
-        let omdbKey = localStorage.getItem("omdbKey") || ""
+        let tmdbConfig = null   // Will store the result from /configuration
 
-        // Media types
         const mediaTypes = [
             { id: "tv", label: "📺 TV Show", value: "tv" },
             { id: "movie", label: "🎬 Movie", value: "movie" },
@@ -215,72 +193,86 @@
             currentType = type
             renderTypeButtons()
             
-            // Show/hide fields
-            const seasonsField = document.getElementById("seasons-field")
-            const authorField = document.getElementById("author-field")
+            document.getElementById("seasons-field").classList.toggle("hidden", type !== "tv")
+            document.getElementById("author-field").style.display = (type === "audiobook" || type === "book") ? "block" : "none"
             
-            if (type === "tv") {
-                seasonsField.classList.remove("hidden")
-            } else {
-                seasonsField.classList.add("hidden")
-            }
-            
-            if (type === "audiobook" || type === "book") {
-                authorField.style.display = "block"
-            } else {
-                authorField.style.display = "none"
-            }
-            
-            // Clear previous results
             document.getElementById("search-results").classList.add("hidden")
         }
 
-        function saveApiKeys() {
+        async function fetchTMDBConfig() {
+            if (!tmdbKey) return false
+            
+            const statusEl = document.getElementById("config-status")
+            statusEl.innerHTML = `<span class="text-amber-400">Loading TMDB configuration...</span>`
+            
+            try {
+                const url = `https://api.themoviedb.org/3/configuration?api_key=${tmdbKey}`
+                const res = await fetch(url)
+                if (!res.ok) throw new Error("Failed to load config")
+                
+                tmdbConfig = await res.json()
+                
+                statusEl.innerHTML = `<span class="text-emerald-400">✅ Configuration loaded • Secure image base: ${tmdbConfig.images.secure_base_url}</span>`
+                console.log("TMDB Configuration loaded:", tmdbConfig.images)
+                return true
+            } catch (e) {
+                statusEl.innerHTML = `<span class="text-red-400">❌ Config failed: ${e.message}</span>`
+                return false
+            }
+        }
+
+        async function saveApiKeysAndFetchConfig() {
             tmdbKey = document.getElementById("tmdb-key").value.trim()
-            omdbKey = document.getElementById("omdb-key").value.trim()
+            if (!tmdbKey) {
+                alert("Please enter a valid TMDB API key")
+                return
+            }
             localStorage.setItem("tmdbKey", tmdbKey)
-            localStorage.setItem("omdbKey", omdbKey)
-            alert("API keys saved in browser (localStorage)")
+            await fetchTMDBConfig()
         }
 
         async function performSearch() {
             const query = document.getElementById("search-input").value.trim()
-            if (!query) return alert("Enter a title to search")
-            
+            if (!query) return alert("Enter a title")
+
+            if (!tmdbKey) return alert("Please set your TMDB API key first")
+
+            // Ensure config is loaded
+            if (!tmdbConfig) {
+                await fetchTMDBConfig()
+                if (!tmdbConfig) return
+            }
+
             const resultsContainer = document.getElementById("search-results")
-            resultsContainer.innerHTML = `<p class="text-gray-400">Searching ${currentType}...</p>`
+            resultsContainer.innerHTML = `<p class="text-gray-400">Searching...</p>`
             resultsContainer.classList.remove("hidden")
-            
-            if (!tmdbKey && (currentType === "tv" || currentType === "movie")) {
-                resultsContainer.innerHTML = `<p class="text-amber-400">⚠️ Please enter your TMDB API key above first.</p>`
-                return
-            }
-            
-            let url = ""
-            if (currentType === "tv" || currentType === "movie") {
-                const mediaType = currentType === "tv" ? "tv" : "movie"
-                url = `https://api.themoviedb.org/3/search/\( {mediaType}?api_key= \){tmdbKey}&query=${encodeURIComponent(query)}&language=en-US`
-            } else {
-                // Books/Audiobooks - demo fallback (no great public API in requested list)
-                resultsContainer.innerHTML = `<p class="text-gray-400">Book search not available via requested APIs. Please type manually.</p>`
-                return
-            }
-            
+
+            const mediaType = currentType === "tv" ? "tv" : "movie"
+            const url = `https://api.themoviedb.org/3/search/\( {mediaType}?api_key= \){tmdbKey}&query=${encodeURIComponent(query)}&language=en-US`
+
             try {
                 const res = await fetch(url)
                 const data = await res.json()
-                
+
                 if (data.results && data.results.length > 0) {
-                    let html = `<div class="grid grid-cols-1 gap-3 max-h-64 overflow-auto">`
-                    data.results.slice(0, 8).forEach(item => {
-                        const year = item.release_date || item.first_air_date || "—"
-                        const title = item.title || item.name
+                    let html = `<div class="grid grid-cols-1 gap-3 max-h-80 overflow-auto pr-2">`
+                    
+                    data.results.slice(0, 10).forEach(item => {
+                        const title = item.title || item.name || "Untitled"
+                        const year = (item.release_date || item.first_air_date || "").split("-")[0] || "—"
+                        const posterPath = item.poster_path
+                        let posterHTML = posterPath && tmdbConfig 
+                            ? `<img src="\( {tmdbConfig.images.secure_base_url}w92 \){posterPath}" class="poster" alt="poster">`
+                            : `<div class="w-12 h-16 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-400">No poster</div>`
+
                         html += `
                             <div onclick="selectSearchResult(${JSON.stringify(item)})" 
-                                 class="result-card cursor-pointer bg-gray-800 hover:bg-gray-700 border border-gray-700 p-4 rounded-2xl flex gap-4">
-                                <div class="flex-1">
-                                    <div class="font-medium">${title}</div>
-                                    <div class="text-xs text-gray-400">${year} • ${item.overview ? item.overview.substring(0, 90) + "..." : ""}</div>
+                                 class="result-card cursor-pointer bg-gray-800 hover:bg-gray-700 border border-gray-700 p-4 rounded-2xl flex gap-4 items-center">
+                                ${posterHTML}
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-medium truncate">${title}</div>
+                                    <div class="text-xs text-gray-400">${year}</div>
+                                    <div class="text-xs text-gray-400 line-clamp-2 mt-1">${item.overview || "No overview"}</div>
                                 </div>
                             </div>`
                     })
@@ -290,7 +282,7 @@
                     resultsContainer.innerHTML = `<p class="text-gray-400">No results found.</p>`
                 }
             } catch (e) {
-                resultsContainer.innerHTML = `<p class="text-red-400">Search failed. Check your API key.</p>`
+                resultsContainer.innerHTML = `<p class="text-red-400">Search error. Check API key and configuration.</p>`
             }
         }
 
@@ -300,16 +292,7 @@
             const year = (item.release_date || item.first_air_date || "").split("-")[0]
             if (year) document.getElementById("year").value = year
             
-            // Auto-hide results
             document.getElementById("search-results").classList.add("hidden")
-            
-            // For TV, we could fetch more details for seasons, but keep simple for now
-            if (currentType === "tv") {
-                console.log("Selected TV show:", item)
-                // Could extend to fetch full details with /tv/{id} for season count
-            }
-            
-            selectedMedia = item
         }
 
         function generateStructure(e) {
@@ -325,38 +308,30 @@
             
             const folderName = year ? `\( {title} ( \){year})` : title
             
-            // Build folder tree HTML
-            let treeHTML = `<div class="text-emerald-400">📁 ${folderName}</div>`
+            // Build folder tree preview
+            let treeHTML = `<div class="text-emerald-400 font-medium">📁 ${folderName}</div>`
             
             if (currentType === "tv") {
                 treeHTML += `<div class="ml-6">📁 Season 00</div>`
                 for (let i = 1; i <= seasons; i++) {
                     treeHTML += `<div class="ml-6">📁 Season ${i.toString().padStart(2, '0')}</div>`
                 }
-                treeHTML += `<div class="ml-6 text-amber-300">📁 trailers</div>`
-                treeHTML += `<div class="ml-6 text-amber-300">📁 behind the scenes</div>`
-                treeHTML += `<div class="ml-6 text-amber-300">📁 interviews</div>`
-                treeHTML += `<div class="ml-6 text-amber-300">📁 theme-music</div>`
+                treeHTML += `<div class="ml-6 text-amber-300">📁 trailers</div><div class="ml-6 text-amber-300">📁 behind the scenes</div>`
+                treeHTML += `<div class="ml-6 text-amber-300">📁 interviews</div><div class="ml-6 text-amber-300">📁 theme-music</div>`
             } else if (currentType === "movie") {
                 treeHTML += `<div class="ml-6 text-emerald-400">📄 ${folderName}.mkv</div>`
-                treeHTML += `<div class="ml-6 text-amber-300">📁 trailers</div>`
-                treeHTML += `<div class="ml-6 text-amber-300">📁 behind the scenes</div>`
+                treeHTML += `<div class="ml-6 text-amber-300">📁 trailers</div><div class="ml-6 text-amber-300">📁 behind the scenes</div>`
                 treeHTML += `<div class="ml-6 text-amber-300">📁 deleted scenes</div>`
             } else if (currentType === "audiobook" || currentType === "book") {
-                if (author) {
-                    treeHTML = `<div class="text-emerald-400">📁 ${author}</div><div class="ml-6">📁 ${folderName}</div>`
-                }
+                if (author) treeHTML = `<div class="text-emerald-400">📁 ${author}</div><div class="ml-6">📁 ${folderName}</div>`
                 treeHTML += `<div class="ml-12 text-emerald-400">📄 ${folderName}.m4b</div>`
-                treeHTML += `<div class="ml-12 text-gray-400">📄 cover.jpg</div>`
             }
             
             document.getElementById("preview-tree").innerHTML = treeHTML
-  
-            // Generate README content
+
             const readmeContent = generateREADME(title, year, author, currentType, seasons)
             document.getElementById("readme-preview").textContent = readmeContent
-            
-            // Store data for download scripts
+
             window.lastGenerated = {
                 type: currentType,
                 title: title,
@@ -369,9 +344,6 @@
             }
             
             document.getElementById("download-section").classList.remove("hidden")
-            
-            // Scroll to preview
-            document.getElementById("preview-tree").scrollIntoView({ behavior: "smooth" })
         }
 
         function generateREADME(title, year, author, type, seasons) {
@@ -381,27 +353,25 @@
             let content = `# Jellyfin Media Organization Guide - ${fullTitle}\nGenerated on ${new Date().toISOString().slice(0,10)}\n\n`
             
             if (type === "tv") {
-                content += `## TV Show\nFolder: ${fullTitle}\n\nEpisode files → ${title} S01E01.mkv\nSeason folders must be exactly "Season 01", "Season 02"...\nSpecials go in Season 00.\n`
+                content += `## TV Show\nFolder: ${fullTitle}\n\nEpisode files must be named: ${title} S01E01.mkv\nSeason folders: "Season 01", "Season 02" etc.\nSpecials → Season 00\n`
             } else if (type === "movie") {
-                content += `## Movie\nFolder: ${fullTitle}\nMain file must be named exactly ${fullTitle}.mkv\n`
+                content += `## Movie\nFolder: ${fullTitle}\nMain file: ${fullTitle}.mkv (or .mp4)\n`
             } else {
                 content += `## ${type === "audiobook" ? "Audiobook" : "Book"}\nFolder: ${fullTitle}\n`
                 if (author) content += `Author folder: ${author}\n`
             }
             
-            content += `\nOfficial Jellyfin rules followed.\nHappy streaming!`
+            content += `\nOfficial Jellyfin naming rules followed.\nHappy streaming!`
             return content
         }
 
         function downloadREADME() {
             if (!window.lastGenerated) return
             const blob = new Blob([window.lastGenerated.readmeContent], { type: "text/plain" })
-            const url = URL.createObjectURL(blob)
             const a = document.createElement("a")
-            a.href = url
+            a.href = URL.createObjectURL(blob)
             a.download = "README_Jellyfin_Naming.txt"
             a.click()
-            URL.revokeObjectURL(url)
         }
 
         function downloadShellScript() {
@@ -411,66 +381,59 @@
             
             if (data.type === "tv") {
                 script += `mkdir -p "Season 00"\n`
-                for (let i = 1; i <= data.seasons; i++) {
-                    script += `mkdir -p "Season ${i.toString().padStart(2, '0')}"\n`
-                }
+                for (let i = 1; i <= data.seasons; i++) script += `mkdir -p "Season ${i.toString().padStart(2, '0')}"\n`
                 script += `mkdir -p "trailers" "behind the scenes" "interviews" "theme-music"\n`
             } else if (data.type === "movie") {
                 script += `mkdir -p "trailers" "behind the scenes" "deleted scenes" "featurettes" "theme-music"\n`
             } else if (data.author) {
-                script = `#!/bin/bash\n\nmkdir -p "\( {data.outputDir}/ \){data.author}/${data.folderName}"\n`
+                script = `#!/bin/bash\nmkdir -p "\( {data.outputDir}/ \){data.author}/${data.folderName}"\n`
             }
             
-            script += `\n# Write README\ncat > "README_Jellyfin_Naming.txt" << 'EOF'\n${data.readmeContent}\nEOF\n`
-            script += `\necho "✅ Structure created for ${data.folderName}"`
+            script += `\ncat > "README_Jellyfin_Naming.txt" << 'EOF'\n${data.readmeContent}\nEOF\n`
+            script += `echo "✅ Done! Structure created for ${data.folderName}"`
             
             const blob = new Blob([script], { type: "text/plain" })
-            const url = URL.createObjectURL(blob)
             const a = document.createElement("a")
-            a.href = url
+            a.href = URL.createObjectURL(blob)
             a.download = "create_jellyfin_structure.sh"
             a.click()
-            URL.revokeObjectURL(url)
         }
 
         function downloadBatScript() {
             if (!window.lastGenerated) return
             const data = window.lastGenerated
-            let script = `@echo off\nmkdir "${data.outputDir}\\\( {data.folderName}"\ncd /d " \){data.outputDir}\\${data.folderName}"\n`
+            let script = `@echo off\nmkdir "${data.outputDir}\\\( {data.folderName}" 2>nul\ncd /d " \){data.outputDir}\\${data.folderName}"\n`
             
             if (data.type === "tv") {
-                script += `mkdir "Season 00"\n`
-                for (let i = 1; i <= data.seasons; i++) {
-                    script += `mkdir "Season ${i.toString().padStart(2, '0')}"\n`
-                }
-                script += `mkdir "trailers" "behind the scenes" "interviews" "theme-music"\n`
+                script += `mkdir "Season 00" 2>nul\n`
+                for (let i = 1; i <= data.seasons; i++) script += `mkdir "Season ${i.toString().padStart(2, '0')}" 2>nul\n`
+                script += `mkdir "trailers" "behind the scenes" "interviews" "theme-music" 2>nul\n`
             } else if (data.type === "movie") {
-                script += `mkdir "trailers" "behind the scenes" "deleted scenes" "featurettes" "theme-music"\n`
+                script += `mkdir "trailers" "behind the scenes" "deleted scenes" "featurettes" "theme-music" 2>nul\n`
             }
             
             script += `\necho ${data.readmeContent.replace(/\n/g, "^\n")} > README_Jellyfin_Naming.txt\n`
-            script += `echo Structure created for ${data.folderName}`
+            script += `echo Structure created successfully!`
             
             const blob = new Blob([script], { type: "text/plain" })
-            const url = URL.createObjectURL(blob)
             const a = document.createElement("a")
-            a.href = url
+            a.href = URL.createObjectURL(blob)
             a.download = "create_jellyfin_structure.bat"
             a.click()
-            URL.revokeObjectURL(url)
         }
 
         // Initialize
-        window.onload = function() {
+        window.onload = async function() {
             initTailwind()
             renderTypeButtons()
             selectType("tv")
             
-            // Pre-fill keys if available
-            if (tmdbKey) document.getElementById("tmdb-key").value = tmdbKey
-            if (omdbKey) document.getElementById("omdb-key").value = omdbKey
+            if (tmdbKey) {
+                document.getElementById("tmdb-key").value = tmdbKey
+                await fetchTMDBConfig()
+            }
             
-            console.log("%cJellyfin Web Organizer ready! Use TMDB/OMDb for smart search.", "color:#00a4bd")
+            console.log("%c✅ Jellyfin Organizer ready with TMDB Configuration API integration", "color:#00a4bd;font-weight:bold")
         }
     </script>
 </body>
