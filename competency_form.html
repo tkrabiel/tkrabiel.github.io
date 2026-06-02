@@ -3,51 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>NSPS-THSOA Master Competency Portal</title>
-    <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 1400px; margin: auto; background: white; padding: 40px; border: 1px solid #ccc; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
-        .controls { background: #004a99; padding: 20px; color: white; border-radius: 8px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 10px; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn { padding: 10px 20px; background: white; color: #004a99; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; text-decoration: none; transition: 0.2s; }
-        .btn:hover { background: #ffc107; color: #333; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
-        th { background: #333; color: white; text-transform: uppercase; padding: 12px; border: 1px solid #000; font-size: 11px; }
-        td { border: 1px solid #000; padding: 10px; vertical-align: top; font-size: 12px; word-wrap: break-word; min-height: 40px; }
-
-        /* Manual Entry Styling */
-        td[contenteditable="true"] { background: #ffffff; outline: none; transition: 0.2s; }
-        td[contenteditable="true"]:hover { background: #fdfdfd; box-shadow: inset 0 0 5px rgba(0,74,153,0.2); }
-        td[contenteditable="true"]:focus { background: #fff; border: 2px solid #ffc107 !important; }
-
-        .header-row { background: #004a99 !important; color: white; font-weight: bold; font-size: 14px; text-align: center; }
-        .subheader-row { background: #e9ecef !important; font-weight: bold; font-size: 13px; }
-        .highlight { border-left: 10px solid #ffc107 !important; background-color: #fffdec !important; }
-
-        .id-col { width: 75px; font-weight: bold; text-align: center; background: #f8f9fa;}
-        .desc-col { width: 30%; background: #f8f9fa;}
-        .eng-col { width: 85px; text-align: center; font-weight: bold; color: #004a99; }
-        .detail-col { width: auto; }
-
-        h1 { text-align: center; margin-bottom: 5px; color: #004a99; text-transform: uppercase; }
-        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-weight: bold; text-transform: uppercase; }
-
-        @media print {
-            .controls { display: none; }
-            body { background: white; padding: 0; }
-            .container { border: none; box-shadow: none; width: 100%; max-width: 100%; padding: 10px; }
-            tr { page-break-inside: avoid; }
-            .header-row { background-color: #004a99 !important; -webkit-print-color-adjust: exact; }
-            .subheader-row { background-color: #e9ecef !important; -webkit-print-color-adjust: exact; }
-            .highlight { background-color: #fffdec !important; -webkit-print-color-adjust: exact; }
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <script src="competency_data.js"></script>
 
-<div class="container">
+<div class="container container-wide">
     <div class="controls">
         <div>
             <strong>LOAD MASTER JSON:</strong>
@@ -55,14 +17,14 @@
         </div>
         <div>
             <strong>SELECT LEVEL:</strong>
-            <select id="levelSelect" onchange="renderTable()" style="padding: 8px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; margin-right: 15px; margin-left: 5px;">
+            <select id="levelSelect" onchange="renderTable()" style="padding: 8px; border-radius: 4px">
                 <option value="S5A">Level 1 (S-5A)</option>
                 <option value="S5B" selected>Level 2 (S-5B)</option>
             </select>
-            <button class="btn" onclick="window.print()">PRINT / SAVE AS PDF</button>
-            <a href="index.html" class="btn" style="margin-left:10px;">HOME</a>
-            <a href="export.html" class="btn btn-export" style="margin-left:10px;">GO TO EXPORT</a>
-            <a href="application_editor.html" class="btn btn-export" style="margin-left:10px;">APPLICATION</a>
+            <button class="btn btn-light" onclick="window.print()">PRINT / SAVE AS PDF</button>
+            <a href="index.html" class="btn btn-light" style="margin-left:5px;">HOME</a>
+            <a href="export.html" class="btn btn-light" style="margin-left:5px;">GO TO EXPORT</a>
+            <a href="application_editor.html" class="btn btn-light" style="margin-left:5px;">APPLICATION</a>
         </div>
     </div>
 
@@ -83,87 +45,7 @@
     </table>
 </div>
 
-<script>
-    let activeJSON = null;
-
-    document.getElementById('jsonInput').onchange = function(e) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            activeJSON = JSON.parse(event.target.result);
-            renderTable();
-        };
-        reader.readAsText(e.target.files[0]);
-    };
-
-    function renderTable() {
-        const levelKey = document.getElementById('levelSelect').value;
-        const tbody = document.getElementById('tableBody');
-        const title = document.getElementById('formTitle');
-        const subtitle = document.getElementById('formSubtitle');
-        
-        title.innerText = `Competency Form ${levelKey === 'S5A' ? 'S-5A' : 'S-5B'}`;
-        subtitle.innerText = levelKey === 'S5A' ? 'Level 1 - Certified Master Hydrographer (CMH)' : 'Level 2 - Certified Hydrographer (CH)';
-        tbody.innerHTML = "";
-
-        const tagMap = {};
-        
-        const validIds = {};
-        // Use masterData which is now loaded from competency_data.js
-        masterData[levelKey].forEach(item => {
-            if(item.id) validIds[item.id.toLowerCase()] = item.id;
-        });
-
-        if (activeJSON && activeJSON.data) {
-            activeJSON.data.forEach(eng => {
-                const searchableText = [
-                    eng.j_proj, eng.j_resp, eng.j_comments, eng.j_title
-                ].filter(Boolean).join(" ");
-                
-                const regex = /@([A-Za-z0-9.]+)\s*\[([\s\S]*?)\]/g;
-                let match;
-                
-                while ((match = regex.exec(searchableText)) !== null) {
-                    const rawId = match[1].toLowerCase();
-                    const correctId = validIds[rawId]; 
-                    
-                    if (correctId) {
-                        if (!tagMap[correctId]) tagMap[correctId] = { engs: new Set(), details: [] };
-                        tagMap[correctId].engs.add(eng.e_number);
-                        tagMap[correctId].details.push(`(Eng #${eng.e_number}): ${match[2].trim()}`);
-                    }
-                }
-            });
-        }
-
-        // Use masterData from competency_data.js to draw the table
-        masterData[levelKey].forEach(item => {
-            const userData = tagMap[item.id] || null;
-            const row = document.createElement('tr');
-            
-            if (item.type === "H") {
-                row.className = "header-row";
-                row.innerHTML = `<td colspan="4">${item.desc}</td>`;
-            } else if (item.type === "S") {
-                row.className = "subheader-row";
-                row.innerHTML = `<td class="id-col">${item.id}</td><td colspan="3">${item.desc}</td>`;
-            } else {
-                if (userData) row.className = "highlight";
-                
-                row.innerHTML = `
-                    <td class="id-col">${item.id}</td>
-                    <td class="desc-col">${item.desc}</td>
-                    <td class="eng-col" contenteditable="true">${userData ? Array.from(userData.engs).sort((a,b)=>a-b).join(", ") : ""}</td>
-                    <td class="detail-col" contenteditable="true">${userData ? userData.details.join("<br><br>") : ""}</td>
-                `;
-            }
-            tbody.appendChild(row);
-        });
-    }
-
-    // Since masterData is now loaded synchronously from competency_data.js, 
-    // we can draw the initial empty table right away.
-    renderTable(); 
-</script>
+<script src="competency_form.js"></script>
 
 </body>
 </html>

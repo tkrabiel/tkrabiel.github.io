@@ -4,293 +4,52 @@
     <meta charset="UTF-8">
     <title>Export Documents</title>
     <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
+    <script src="https://unpkg.com/pizzip@3.1.4/dist/pizzip.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: auto; }
-        
-        /* Navigation Bar */
-        .nav-bar { background: #333; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
-        .nav-bar a { color: white; text-decoration: none; font-weight: bold; font-size: 13px; padding: 10px 15px; border-radius: 4px; transition: 0.2s; text-transform: uppercase;}
-        .nav-bar a.btn-home { background: #6c757d; }
-        .nav-bar a.btn-editor { background: #004a99; }
-        .nav-bar a.btn-comp { background: #8e44ad; }
-        .nav-bar a:hover { opacity: 0.9; }
-
-        .card { background: white; padding: 40px; border-radius: 12px; border: 2px solid #004a99; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center;}
-        h1 { color: #004a99; text-transform: uppercase; margin-bottom: 25px; }
-        .upload-section { border: 2px dashed #ccc; padding: 30px; margin-bottom: 30px; border-radius: 8px; background: #fafafa; }
-        
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; }
-        .btn { padding: 18px 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; color: white; font-size: 13px; text-transform: uppercase;}
-        .btn-excel { background: #1d6f42; }
-        .btn-project { background: #004a99; }
-        .btn-edu { background: #2c3e50; }
-        .btn-report { background: #17a2b8; }
-        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
-        
-        .status { margin-top: 25px; font-weight: bold; color: #28a745; min-height: 24px; }
-        .file-info { margin-top: 10px; font-size: 14px; color: #666; }
-    </style>
+    
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div class="container">
+<div class="container container-narrow">
     <div class="nav-bar">
         <a href="index.html" class="btn-home">← BACK TO HOME</a>
         <a href="application_editor.html" class="btn-editor">APPLICATION EDITOR</a>
         <a href="competency_form.html" class="btn-comp">COMPETENCY FORM</a>
     </div>
 
-    <div class="card">
+    <div class="card card-center">
         <h1>Export Documents</h1>
         
         <div class="upload-section">
-            <label style="font-weight: bold; display: block; margin-bottom: 10px;">Step 1: Upload your Master JSON file</label>
+            <label style="font-weight: bold; display: block; margin-bottom: 10px;">Step 1: Upload your Master Data (.json)</label>
             <input type="file" id="jsonInput" accept=".json">
             <div id="file-meta" class="file-info"></div>
         </div>
 
-        <label style="font-weight: bold; display: block; margin-bottom: 15px;">Step 2: Generate Documents</label>
+        <div class="upload-section" style="background: #f8f9fa; border: 1px dashed #6c757d;">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Step 2 (Optional): Manual Template Override</label>
+            <p style="font-size: 11px; color: #6c757d; margin: 0 0 10px 0;">Leave this blank to generate the classic all-in-one document. Upload an official template here to inject the data into it instead.</p>
+            <input type="file" id="templateInput" accept=".docx">
+            <div id="template-meta" class="file-info" style="color: #28a745; font-weight: bold;"></div>
+        </div>
+
+        <label style="font-weight: bold; display: block; margin-bottom: 15px;">Step 3: Generate Documents</label>
         <div class="btn-group">
-            <button class="btn btn-excel" onclick="generateExcel()">Download CSV</button>
-            <button class="btn btn-project" onclick="generateWordDocs('PE')">Download PE Docs</button>
-            <button class="btn btn-edu" onclick="generateWordDocs('EE')">Download EE Docs</button>
-            <button class="btn btn-report" onclick="generateWordDocs('PR')">Download Reports</button>
+            <button class="btn btn-excel btn-large" onclick="generateExcel()">Download CSV</button>
+            <button class="btn btn-project btn-large" onclick="generateDocs('PE')">Download PE Docs</button>
+            <button class="btn btn-edu btn-large" onclick="generateDocs('EE')">Download EE Docs</button>
+            <button class="btn btn-report btn-large" onclick="generateDocs('PR')">Download Reports</button>
         </div>
 
         <div id="status" class="status"></div>
     </div>
 </div>
 
-<script>
-    let activeData = null;
-    
-    // Import the required elements from the DOCX library
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, PageBreak, BorderStyle } = docx;
+<script src="export.js"></script>
 
-    document.getElementById('jsonInput').onchange = function(e) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                activeData = JSON.parse(event.target.result);
-                document.getElementById('status').innerText = "File successfully parsed!";
-                document.getElementById('file-meta').innerText = `Applicant: ${activeData.applicant || 'Unknown'} | Entries: ${activeData.data.length}`;
-            } catch (err) { 
-                alert("Invalid JSON file."); 
-            }
-        };
-        reader.readAsText(e.target.files[0]);
-    };
-
-    // --- HELPER FUNCTIONS FOR CLEANING TEXT ---
-    
-    // This removes ONLY the "@" symbol, leaving the ID, brackets, and text intact
-    function stripCompetencyTags(text) {
-        if (!text) return "";
-        return text.replace(/@([a-zA-Z0-9.]+)/g, '$1');
-    }
-
-    // This takes a paragraph with "Enters" (newlines) and turns them into actual Word Document paragraph breaks
-    function createMultiLineParagraphs(text) {
-        if (!text) return [new Paragraph({ text: "N/A", spacing: { after: 200 } })];
-        
-        const cleanText = stripCompetencyTags(text);
-        const lines = cleanText.split('\n');
-        
-        return lines.map(line => new Paragraph({ 
-            text: line.trim(), 
-            spacing: { after: 120 } 
-        }));
-    }
-
-    // --- CSV GENERATOR ---
-    function generateExcel() {
-        if (!activeData) return alert("Please upload a JSON file first.");
-        const headers = ["Engagement Number", "Title and Organization", "Start Date (mm/yyyy)", "End Date (mm/yyyy)", "Months", "Non-Related or Education", "Surveying Engineering Not Hydrography", "Hydrography", "Hydrography in Technical Charge", "Hydrography in Field", "Total Months"];
-        let csvRows = [headers.join(",")];
-        let totals = { edu: 0, surv: 0, hydro: 0, charge: 0, field: 0, all: 0 };
-
-        for (let i = 1; i <= 20; i++) {
-            const eng = activeData.data ? activeData.data.find(e => parseInt(e.e_number) === i) : null;
-            if (eng) {
-                const num = (v) => parseFloat(v) || 0;
-                const rowTotal = num(eng.Edu_number) + num(eng.not_hydro_eng) + num(eng.Hydro_time);
-                csvRows.push([i, `"${eng.j_title || ''} - ${eng.f_name || ''}"`, eng.d_from || '', eng.d_to || '', rowTotal, num(eng.Edu_number), num(eng.not_hydro_eng), num(eng.Hydro_time), num(eng.H_charge), num(eng.H_in_field), rowTotal].join(","));
-                totals.edu += num(eng.Edu_number); totals.surv += num(eng.not_hydro_eng); totals.hydro += num(eng.Hydro_time); totals.charge += num(eng.H_charge); totals.field += num(eng.H_in_field); totals.all += rowTotal;
-            } else { csvRows.push(`${i},,,,0,0,0,0,0,0,0`); }
-        }
-        csvRows.push(["Candidate Total", "", "", "", totals.all, totals.edu, totals.surv, totals.hydro, totals.charge, totals.field, totals.all].join(","));
-        saveAs(new Blob([csvRows.join("\n")], { type: 'text/csv' }), `Experience_Summary_${activeData.applicant || 'Export'}.csv`);
-    }
-
-    // --- WORD DOCUMENT GENERATOR (CONCATENATED & STYLED) ---
-    async function generateWordDocs(filterType) {
-        if (!activeData) return alert("Upload JSON first.");
-        
-        const targetEngagements = activeData.data.filter(e => e.engagement_type === filterType);
-        if (targetEngagements.length === 0) return alert(`No ${filterType} entries found.`);
-
-        document.getElementById('status').innerText = `Generating compiled ${filterType} Document...`;
-        
-        const isEdu = (filterType === 'EE');
-        const isReport = (filterType === 'PR');
-        const docChildren = [];
-        const applicantName = activeData.applicant || "Applicant";
-
-        // Loop through all engagements of this type
-        for (let i = 0; i < targetEngagements.length; i++) {
-            const eng = targetEngagements[i];
-
-            // If it's not the first engagement, add a Page Break
-            if (i > 0) {
-                docChildren.push(new Paragraph({ children: [new PageBreak()] }));
-            }
-
-            // 1. Header Title
-            docChildren.push(new Paragraph({ 
-                text: isEdu ? "EDUCATIONAL ENGAGEMENT DETAIL" : (isReport ? "PROJECT REPORT DETAIL" : "PROJECT ENGAGEMENT DETAIL"), 
-                heading: HeadingLevel.HEADING_1, 
-                alignment: AlignmentType.CENTER 
-            }));
-            
-            docChildren.push(new Paragraph({ 
-                text: `Engagement #${eng.e_number} | Applicant: ${applicantName}`, 
-                alignment: AlignmentType.CENTER,
-                spacing: { after: 400 } // Spacing below the title
-            }));
-
-            // 2. Organization & Contact Info Table
-            docChildren.push(new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                rows: [
-                    new TableRow({
-                        children: [
-                            new TableCell({ 
-                                margins: { top: 100, bottom: 100, left: 100, right: 100 },
-                                children: [
-                                    new Paragraph({ text: isEdu ? "INSTITUTION" : "FIRM", bold: true, spacing: { after: 100 } }), 
-                                    new Paragraph({ children: [new TextRun({ text: "NAME: ", bold: true }), new TextRun(eng.f_name || "N/A")] }), 
-                                    new Paragraph({ children: [new TextRun({ text: "ADDRESS: ", bold: true }), new TextRun(eng.f_addr || "N/A")] }),
-                                    new Paragraph({ children: [new TextRun({ text: "EMAIL: ", bold: true }), new TextRun(eng.f_email || "N/A")] }),
-                                    new Paragraph({ children: [new TextRun({ text: "TELEPHONE: ", bold: true }), new TextRun(eng.f_tel || "N/A")] })
-                                ] 
-                            }),
-                            new TableCell({ 
-                                margins: { top: 100, bottom: 100, left: 100, right: 100 },
-                                children: [
-                                    new Paragraph({ text: isEdu ? "CONTACT" : "SUPERVISOR", bold: true, spacing: { after: 100 } }), 
-                                    new Paragraph({ children: [new TextRun({ text: "NAME: ", bold: true }), new TextRun(eng.s_name || "N/A")] }), 
-                                    new Paragraph({ children: [new TextRun({ text: "ADDRESS: ", bold: true }), new TextRun(eng.s_addr || "N/A")] }),
-                                    new Paragraph({ children: [new TextRun({ text: "EMAIL: ", bold: true }), new TextRun(eng.s_email || "N/A")] }),
-                                    new Paragraph({ children: [new TextRun({ text: "TELEPHONE: ", bold: true }), new TextRun(eng.s_tel || "N/A")] })
-                                ] 
-                            }),
-                        ],
-                    }),
-                ],
-            }));
-
-            // 3. Dates
-            docChildren.push(new Paragraph({ 
-                children: [
-                    new TextRun({ text: "START DATE: ", bold: true }), 
-                    new TextRun(`${eng.d_from || "N/A"}    `), 
-                    new TextRun({ text: "END DATE: ", bold: true }), 
-                    new TextRun(`${eng.d_to || "N/A"}    `),
-                    new TextRun({ text: "GAPS/BREAKS: ", bold: true }),
-                    new TextRun(eng.d_gaps || "None")
-                ], 
-                spacing: { before: 300, after: 200 } 
-            }));
-
-            // 4. Job/Program Title
-            docChildren.push(new Paragraph({ 
-                children: [
-                    new TextRun({ text: isEdu ? "PROGRAM TITLE: " : "JOB TITLE: ", bold: true }), 
-                    new TextRun(eng.j_title || "N/A")
-                ],
-                spacing: { after: 200 }
-            }));
-
-            // 5. Dynamic Details (Education vs Project/Report)
-            if (isEdu) {
-                // Education specific details
-                docChildren.push(new Paragraph({ 
-                    children: [new TextRun({ text: "CERTIFICATE/DEGREE AWARDED: ", bold: true }), new TextRun(eng.j_cert || "N/A")],
-                    spacing: { after: 200 }
-                }));
-
-                docChildren.push(new Paragraph({ 
-                    children: [new TextRun({ text: "DETAILED DESCRIPTION OF PROGRAM:", bold: true, underline: { type: "single" }, size: 25 })], 
-                    spacing: { after: 100 } 
-                }));
-                docChildren.push(...createMultiLineParagraphs(eng.j_proj));
-
-                if (eng.j_comments) {
-                    docChildren.push(new Paragraph({ 
-                        children: [new TextRun({ text: "ADDITIONAL COMMENTS:", bold: true, underline: { type: "single" }, size: 25 })], 
-                        spacing: { after: 100, before: 200 } 
-                    }));
-                    docChildren.push(...createMultiLineParagraphs(eng.j_comments));
-                }
-
-            } else {
-                // Project & Report specific details
-                docChildren.push(new Paragraph({ 
-                    children: [new TextRun({ text: "RESPONSIBILITIES & DUTIES:", bold: true, underline: { type: "single" }, size: 25 })], 
-                    spacing: { after: 100 } 
-                }));
-                docChildren.push(...createMultiLineParagraphs(eng.j_resp));
-
-                docChildren.push(new Paragraph({ 
-                    children: [new TextRun({ text: "DETAILED PROJECT DESCRIPTION:", bold: true, underline: { type: "single" }, size: 25 })], 
-                    spacing: { after: 100, before: 200 } 
-                }));
-                docChildren.push(...createMultiLineParagraphs(eng.j_proj));
-
-                // Equipment & Software
-                docChildren.push(new Paragraph({ 
-                    children: [new TextRun({ text: "EQUIPMENT USED:", bold: true, underline: { type: "single" }, size: 25 })], 
-                    spacing: { after: 100, before: 200 } 
-                }));
-                docChildren.push(new Paragraph({ text: stripCompetencyTags(eng.j_equip) || "N/A", spacing: { after: 200 } }));
-
-                docChildren.push(new Paragraph({ 
-                    children: [new TextRun({ text: "SOFTWARE USED:", bold: true, underline: { type: "single" }, size: 25 })], 
-                    spacing: { after: 100 } 
-                }));
-                docChildren.push(new Paragraph({ text: stripCompetencyTags(eng.j_soft) || "N/A", spacing: { after: 200 } }));
-                
-                // If it is a Project Report, include the Abstract
-                if (isReport) {
-                    docChildren.push(new Paragraph({ 
-                        children: [new TextRun({ text: "PROJECT ABSTRACT:", bold: true, underline: { type: "single" }, size: 25 })], 
-                        spacing: { after: 100, before: 300 } 
-                    }));
-                    docChildren.push(...createMultiLineParagraphs(eng.p_abstract));
-                }
-            }
-        }
-
-        // 6. Finalize and Download the Single Document
-        const doc = new Document({ 
-            sections: [{ 
-                properties: {},
-                children: docChildren 
-            }] 
-        });
-
-        // Determine proper file name based on type
-        let docTitle = "All_Project_Engagements";
-        if (isEdu) docTitle = "All_Education_Engagements";
-        if (isReport) docTitle = "All_Project_Reports";
-
-        const blob = await Packer.toBlob(doc);
-        saveAs(blob, `CST_${applicantName.replace(/\s+/g, '_')}_${docTitle}.docx`);
-        
-        document.getElementById('status').innerText = `${docTitle}.docx downloaded successfully!`;
-    }
-</script>
 </body>
 </html>

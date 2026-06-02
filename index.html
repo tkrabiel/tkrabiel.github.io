@@ -3,36 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>NSPS Master Application Portal</title>
-    <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 40px; color: #333; line-height: 1.6; }
-        .container { max-width: 900px; margin: auto; }
-        .card { background: white; padding: 40px; border-radius: 12px; border: 2px solid #004a99; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        
-        h1 { color: #004a99; margin-top: 0; text-transform: uppercase; border-bottom: 2px solid #004a99; padding-bottom: 10px; }
-        h2 { color: #2c3e50; font-size: 1.2rem; margin-top: 30px; }
-        
-        .info-box { background: #e9ecef; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #004a99; }
-        .warning-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; color: #856404; margin-top: 20px; font-size: 0.9rem; }
-        
-        .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
-        .nav-btn { 
-            display: block; text-align: center; padding: 25px; background: #004a99; color: white; 
-            text-decoration: none; font-weight: bold; border-radius: 8px; transition: 0.3s;
-        }
-        .nav-btn:hover { background: #003366; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .nav-btn.secondary { background: #6c757d; }
-
-        .levels { list-style: none; padding: 0; }
-        .levels li { background: #fff; margin: 5px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .levels strong { color: #004a99; }
-
-        .external-link { display: inline-block; margin-top: 10px; color: #004a99; font-weight: bold; text-decoration: underline; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
+<div class="container container-narrow">
+    <div class="card card-center">
         <h1>NSPS-THSOA Hydrographer Certification Portal</h1>
         
         <p>This site is designed to streamline the application process for professional hydrographer certifications. The <strong>U.S. Hydrographer Certification program</strong>, administered by the NSPS-THSOA Hydrographer Board, provides professional recognition for hydrographers who meet established education, training, and experience standards.</p>
@@ -53,12 +29,11 @@
         </div>
 
         <div class="nav-grid">
-            <a href="application_editor.html" class="nav-btn">GO TO APPLICATION EDITOR</a>
-            <a href="export.html" class="nav-btn secondary">GO TO EXPORT PORTAL</a>
+            <a href="application_editor.html" class="nav-grid-btn">GO TO APPLICATION EDITOR</a>
+            <a href="export.html" class="nav-grid-btn secondary">GO TO EXPORT PORTAL</a>
         </div>
     </div>
 </div>
 
 </body>
 </html>
-
