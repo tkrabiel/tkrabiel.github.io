@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NSPS-THSOA Master Competency Portal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<script src="competency_data.js"></script>
+
+<div class="container container-wide">
+    <div class="controls">
+        <div>
+            <strong>LOAD MASTER JSON:</strong>
+            <input type="file" id="jsonInput" accept=".json" style="margin-left:10px;">
+        </div>
+        <div>
+            <strong>SELECT LEVEL:</strong>
+            <select id="levelSelect" onchange="renderTable()" style="padding: 8px; border-radius: 4px">
+                <option value="S5A">Level 1 (S-5A)</option>
+                <option value="S5B" selected>Level 2 (S-5B)</option>
+            </select>
+            <button class="btn btn-light" onclick="window.print()">PRINT / SAVE AS PDF</button>
+            <a href="index.html" class="btn btn-light" style="margin-left:5px;">HOME</a>
+            <a href="export.html" class="btn btn-light" style="margin-left:5px;">GO TO EXPORT</a>
+            <a href="application_editor.html" class="btn btn-light" style="margin-left:5px;">APPLICATION</a>
+        </div>
+    </div>
+
+    <h1 id="formTitle">Competency Form</h1>
+    <p id="formSubtitle" class="subtitle"></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="id-col">ID</th>
+                <th class="desc-col">Competency Description</th>
+                <th class="eng-col">Eng #</th>
+                <th class="detail-col">Education: Course Number & Name / Practice: Specific Detail of Gained Competency</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+</div>
+
+<script src="competency_form.js"></script>
+
+</body>
+</html>

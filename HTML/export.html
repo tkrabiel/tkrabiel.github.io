@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Export Documents</title>
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.11/docxtemplater.js"></script>
+    <script src="https://unpkg.com/pizzip@3.1.4/dist/pizzip.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container container-narrow">
+    <div class="nav-bar">
+        <a href="index.html" class="btn-home">← BACK TO HOME</a>
+        <a href="application_editor.html" class="btn-editor">APPLICATION EDITOR</a>
+        <a href="competency_form.html" class="btn-comp">COMPETENCY FORM</a>
+    </div>
+
+    <div class="card card-center">
+        <h1>Export Documents</h1>
+        
+        <div class="upload-section">
+            <label style="font-weight: bold; display: block; margin-bottom: 10px;">Step 1: Upload your Master Data (.json)</label>
+            <input type="file" id="jsonInput" accept=".json">
+            <div id="file-meta" class="file-info"></div>
+        </div>
+
+        <div class="upload-section" style="background: #f8f9fa; border: 1px dashed #6c757d;">
+            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Step 2 (Optional): Manual Template Override</label>
+            <p style="font-size: 11px; color: #6c757d; margin: 0 0 10px 0;">Leave this blank to generate the classic all-in-one document. Upload an official template here to inject the data into it instead.</p>
+            <input type="file" id="templateInput" accept=".docx">
+            <div id="template-meta" class="file-info" style="color: #28a745; font-weight: bold;"></div>
+        </div>
+
+        <label style="font-weight: bold; display: block; margin-bottom: 15px;">Step 3: Generate Documents</label>
+        <div class="btn-group">
+            <button class="btn btn-excel btn-large" onclick="generateExcel()">Download CSV</button>
+            <button class="btn btn-project btn-large" onclick="generateDocs('PE')">Download PE Docs</button>
+            <button class="btn btn-edu btn-large" onclick="generateDocs('EE')">Download EE Docs</button>
+            <button class="btn btn-report btn-large" onclick="generateDocs('PR')">Download Reports</button>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+</div>
+
+<script src="export.js"></script>
+
+</body>
+</html>

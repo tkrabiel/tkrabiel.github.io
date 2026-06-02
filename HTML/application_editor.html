@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NSPS Master Application Editor</title>
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<script src="competency_data.js"></script>
+
+<div class="main-wrapper">
+    <div class="container" id="mainContainer">
+        <div class="controls">
+            <a href="index.html" class="btn btn-home">HOME</a>
+            
+            <div class="dropdown">
+                <button onclick="toggleDropdown('projDropdown')" class="btn btn-add dropbtn">+ Add Project ▼</button>
+                <div id="projDropdown" class="dropdown-content">
+                    <a href="#" onclick="addProjectEngagement()">📄 Blank Project</a>
+                    <div class="dropdown-divider">Import</div>
+                    <a href="#" onclick="document.getElementById('singleFileInput').click()">📂 Load JSON Block</a>
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button onclick="toggleDropdown('repDropdown')" class="btn btn-add dropbtn" style="background: #17a2b8;">+ Add Report ▼</button>
+                <div id="repDropdown" class="dropdown-content">
+                    <a href="#" onclick="addProjectReportEngagement()">📄 Blank Report</a>
+                    <div class="dropdown-divider">Import</div>
+                    <a href="#" onclick="document.getElementById('singleFileInput').click()">📂 Load JSON Block</a>
+                </div>
+            </div>
+            
+            <div class="dropdown">
+                <button onclick="toggleDropdown('eduDropdown')" class="btn btn-add dropbtn" style="background: #2c3e50;">+ Add Education ▼</button>
+                <div id="eduDropdown" class="dropdown-content">
+                    <a href="#" onclick="addEducationalEngagement()">📄 Blank Education</a>
+                    <a href="#" onclick="addKnownEducation('UNH')">🎓 UNH CAT-A</a>
+                    <a href="#" onclick="addKnownEducation('USM')">🎓 USM CAT-A</a>
+                    <a href="#" onclick="addKnownEducation('CATB')">🎓 IHO CAT-B (Generic)</a>
+                    <div class="dropdown-divider">Import</div>
+                    <a href="#" onclick="document.getElementById('singleFileInput').click()">📂 Load JSON Block</a>
+                </div>
+            </div>
+
+            <input type="file" id="singleFileInput" hidden accept=".json" onchange="loadSingleBlockJSON(event)">
+
+            <button class="btn btn-save" onclick="saveAllToJSON()">Save JSON</button>
+            <button class="btn btn-upload" onclick="document.getElementById('fileInput').click()">Load JSON</button>
+            <a href="export.html" class="btn btn-export">EXPORT</a>
+            <a href="competency_form.html" class="btn btn-comp">COMPETENCY FORM</a>
+            
+            <button class="btn btn-tracker" onclick="toggleTracker()">📋 TOGGLE TRACKER</button>
+
+            <input type="file" id="fileInput" hidden accept=".json" onchange="loadFromJSON(event)">
+        </div>
+
+        <div class="card">
+            <h2>Applicant Information</h2>
+            <div class="row">
+                <div class="col"><label>Full Name:</label><input type="text" id="master_name"></div>
+                <div class="col"><label>Email:</label><input type="text" id="email"></div>	
+                <div class="col">
+                    <label>Level Seeking:</label>
+                    <select id="master_level" onchange="updateTracker()">
+                        <option value="Level I">Level I (S-5A)</option>
+                        <option value="Level II" selected>Level II (S-5B)</option>
+                    </select>
+                </div>
+            </div>
+            <p style="font-size: 13px; color: #666; margin-top: 15px; text-align: center;">
+                <em>Tip: While typing in Project Descriptions or Responsibilities, type <strong>@</strong> to auto-search and insert competency IDs.</em>
+            </p>
+        </div>
+
+        <div id="engagement-list"></div>
+    </div>
+
+    <div id="trackerPanel">
+        <div class="tracker-header">
+            <span>Competency Tracker</span>
+            <button class="tracker-close" onclick="toggleTracker()">×</button>
+        </div>
+        <div class="tracker-progress-container">
+            <strong id="tracker-status-text">0 / 0 Completed</strong>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="tracker-progress-fill"></div>
+            </div>
+        </div>
+        <div class="tracker-list">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin:0; color: #004a99;">Competencies:</h4>
+                <label style="font-size: 12px; font-weight: bold; cursor: pointer; color: #333;">
+                    <input type="checkbox" id="toggleCompleted" onchange="updateTracker()"> Show Completed
+                </label>
+            </div>
+            <div id="tracker-missing-list">
+                </div>
+        </div>
+    </div>
+</div>
+
+<script src="editor.js"></script>
+
+</body>
+</html>
