@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jellyfin Media Organizer</title>
+    <title>Jellyfin Media Organizer & Renamer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
@@ -21,23 +21,23 @@
                 <h1 class="text-4xl font-semibold flex items-center gap-3">
                     <span class="text-[#00a4bd]">Jellyfin</span> Media Organizer
                 </h1>
-                <p class="text-gray-400 mt-1">Create perfect folder structures + READMEs • Powered by TMDB API</p>
+                <p class="text-gray-400 mt-1">Search TMDB • Generate Folders • Auto-Rename Local Files</p>
             </div>
             <div class="flex items-center gap-4 text-sm">
                 <a href="https://jellyfin.org/docs/general/server/media/shows/" target="_blank" 
                    class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center gap-2">
-                    TV Shows
+                    📺 TV Shows Guide
                 </a>
                 <a href="https://jellyfin.org/docs/general/server/media/movies/" target="_blank" 
                    class="px-4 py-2 bg-gray-900 hover:bg-gray-800 rounded-xl flex items-center gap-2">
-                    Movies
+                    🎥 Movies Guide
                 </a>
             </div>
         </div>
 
         <div class="bg-gray-900 rounded-3xl p-6 mb-8 border border-gray-800">
             <h2 class="text-lg font-medium mb-4 flex items-center gap-2">
-                TMDB API Configuration
+                🔑 TMDB API Configuration
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -47,8 +47,8 @@
                 </div>
                 <div class="flex items-end">
                     <button onclick="saveApiKeysAndFetchConfig()" 
-                            class="w-full bg-[#00a4bd] hover:bg-[#008a9e] text-white font-medium py-3 rounded-2xl text-sm">
-                        Save Key + Load Image Config
+                            class="w-full bg-[#00a4bd] hover:bg-[#008a9e] text-white font-medium py-3 rounded-2xl text-sm transition-colors">
+                        Save Key & Verify
                     </button>
                 </div>
             </div>
@@ -56,7 +56,7 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-5 bg-gray-900 rounded-3xl p-8">
+            <div class="lg:col-span-5 bg-gray-900 rounded-3xl p-8 shadow-lg">
                 <div class="mb-6">
                     <label class="block text-sm text-gray-400 mb-2">Media Type</label>
                     <div class="flex gap-2" id="type-buttons"></div>
@@ -68,7 +68,7 @@
                         <input id="search-input" type="text" placeholder="Search TMDB..." 
                                class="flex-1 bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
                         <button onclick="performSearch()" 
-                                class="bg-[#00a4bd] hover:bg-[#008a9e] px-8 rounded-2xl font-medium">Search</button>
+                                class="bg-[#00a4bd] hover:bg-[#008a9e] px-8 rounded-2xl font-medium transition-colors">Search</button>
                     </div>
                 </div>
 
@@ -77,13 +77,13 @@
                 <form id="media-form" onsubmit="generateStructure(event)">
                     <div class="space-y-6">
                         <div>
-                            <label class="block text-sm text-gray-400 mb-2">Title</label>
+                            <label class="block text-sm text-gray-400 mb-2">Target Title</label>
                             <input id="title" type="text" required
                                    class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
                         </div>
 
-                        <div class="grid grid-cols-3 gap-4">
-                            <div>
+                        <div class="grid grid-cols-4 gap-4">
+                            <div class="col-span-1">
                                 <label class="block text-sm text-gray-400 mb-2">Year</label>
                                 <input id="year" type="text" placeholder="2024"
                                        class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
@@ -93,60 +93,85 @@
                                 <input id="tmdb-id" type="text" placeholder="e.g. 1399"
                                        class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
                             </div>
-                        </div>
-
-                        <div id="author-field" class="hidden">
-                            <label class="block text-sm text-gray-400 mb-2">Author (books/audiobooks)</label>
-                            <input id="author" type="text" placeholder="Andy Weir"
-                                   class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
+                            <div class="col-span-1">
+                                <label class="block text-sm text-gray-400 mb-2">Extension</label>
+                                <select id="target-ext" class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-3 py-4 focus:outline-none focus:border-[#00a4bd] text-white">
+                                    <option value=".mkv">.mkv</option>
+                                    <option value=".mp4">.mp4</option>
+                                    <option value=".avi">.avi</option>
+                                    <option value=".m4v">.m4v</option>
+                                    <option value=".ts">.ts</option>
+                                    <option value=".webm">.webm</option>
+                                    <option value=".mov">.mov</option>
+                                    <option value=".wmv">.wmv</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div id="seasons-field" class="hidden">
-                            <label class="block text-sm text-gray-400 mb-2">Pre-create Seasons</label>
+                            <label class="block text-sm text-gray-400 mb-2">Empty Seasons to Create (if no files selected)</label>
                             <input id="seasons" type="number" value="5" min="1" max="30"
                                    class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
                         </div>
 
-                        <div>
-                            <label class="block text-sm text-gray-400 mb-2">Base Output Directory</label>
-                            <input id="output-dir" type="text" placeholder="/media/Jellyfin/Movies" value="/media/Jellyfin"
-                                   class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-[#00a4bd]">
+                        <div class="pt-4 border-t border-gray-800">
+                            <label class="block text-sm text-emerald-400 font-medium mb-1">Destination: Jellyfin Library Path</label>
+                            <input id="dest-path" type="text" required placeholder="e.g. E:\Media\Jellyfin\TV Shows" value="E:\Media\Jellyfin\TV Shows"
+                                   class="w-full bg-gray-950 border border-gray-700 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500 mb-4">
+                        </div>
+
+                        <div class="p-5 border border-[#00a4bd] rounded-2xl bg-gray-950/50">
+                            <label class="block text-sm text-[#00a4bd] font-medium mb-1">Source: Scan & Move Local Files</label>
+                            <p class="text-xs text-gray-400 mb-3">1. Select the folder so we can read the file names.</p>
+                            <input type="file" id="local-folder" webkitdirectory directory multiple
+                                   class="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer mb-4">
+                            
+                            <p class="text-xs text-gray-400 mb-2">2. Paste the exact absolute path to that folder (Browser hides this for security).</p>
+                            <input id="source-path" type="text" placeholder="e.g. C:\Downloads\My Messy Show"
+                                   class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-[#00a4bd] text-sm">
                         </div>
 
                         <button type="submit"
-                                class="w-full py-5 bg-[#00a4bd] hover:bg-[#008a9e] rounded-3xl text-lg font-semibold mt-4">
-                            Generate Structure
+                                class="w-full py-5 bg-[#00a4bd] hover:bg-[#008a9e] rounded-3xl text-lg font-semibold mt-4 transition-colors">
+                            Process & Generate Script
                         </button>
                     </div>
                 </form>
             </div>
 
-            <div class="lg:col-span-7">
-                <div class="bg-gray-900 rounded-3xl p-8 h-full flex flex-col">
-                    <h2 class="text-xl font-medium mb-6">Preview</h2>
-                    
-                    <div id="preview-tree" class="folder-tree bg-gray-950 border border-gray-700 rounded-2xl p-6 flex-1 overflow-auto text-sm mb-6"></div>
-
-                    <div class="mt-auto">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="font-medium">README Preview</h3>
-                        </div>
-                        <pre id="readme-preview" class="bg-gray-950 border border-gray-700 rounded-2xl p-5 text-xs overflow-auto max-h-80 text-gray-300"></pre>
+            <div class="lg:col-span-7 flex flex-col gap-6">
+                <div class="bg-gray-900 rounded-3xl p-8 flex-1 flex flex-col shadow-lg">
+                    <h2 class="text-xl font-medium mb-4">Folder Structure Preview</h2>
+                    <div id="preview-tree" class="folder-tree bg-gray-950 border border-gray-700 rounded-2xl p-6 overflow-auto text-sm flex-1 text-gray-500">
+                        Waiting for generation...
                     </div>
+                </div>
+
+                <div class="bg-gray-900 rounded-3xl p-8 flex-1 flex flex-col shadow-lg h-64">
+                    <h2 class="text-xl font-medium mb-4">Renaming Action Log</h2>
+                    <div id="rename-log" class="bg-gray-950 border border-gray-700 rounded-2xl p-5 overflow-auto text-xs font-mono text-gray-400 flex-1 whitespace-pre-wrap">No local files selected. (Will generate empty folders).</div>
                 </div>
             </div>
         </div>
 
-        <div id="download-section" class="hidden mt-8 bg-gray-900 rounded-3xl p-8">
-            <h3 class="font-medium mb-4">Ready to create folders on your computer?</h3>
+        <div id="download-section" class="hidden mt-8 bg-gray-900 rounded-3xl p-8 border border-emerald-900/50">
+            <h3 class="font-medium mb-2 text-emerald-400">✅ Script Ready!</h3>
+            <p class="text-sm text-gray-400 mb-6" id="download-instruction">
+                Because absolute paths are baked in, you can run this script from <strong>anywhere</strong> on your computer. 
+                <br><br><em>Note: If `.bat` is blocked by Windows Admin policies, download the <strong>Python (.py)</strong> script instead—it easily bypasses restrictive batch file blocks.</em>
+            </p>
             <div class="flex gap-4">
-                <button onclick="downloadShellScript()" 
-                        class="flex-1 py-4 border border-gray-700 hover:border-gray-400 rounded-2xl flex items-center justify-center gap-3">
-                    📥 Download .sh (macOS / Linux)
+                <button onclick="downloadScript('py')" 
+                        class="flex-1 py-4 bg-[#3776ab] hover:bg-[#2a5b84] border border-[#3776ab] rounded-2xl flex items-center justify-center gap-3 transition-colors text-white font-medium">
+                    🐍 Download .py (Python)
                 </button>
-                <button onclick="downloadBatScript()" 
-                        class="flex-1 py-4 border border-gray-700 hover:border-gray-400 rounded-2xl flex items-center justify-center gap-3">
+                <button onclick="downloadScript('bat')" 
+                        class="flex-1 py-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-400 rounded-2xl flex items-center justify-center gap-3 transition-colors">
                     📥 Download .bat (Windows)
+                </button>
+                <button onclick="downloadScript('sh')" 
+                        class="flex-1 py-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-400 rounded-2xl flex items-center justify-center gap-3 transition-colors">
+                    📥 Download .sh (Mac/Linux)
                 </button>
             </div>
         </div>
@@ -157,221 +182,299 @@
             tailwind.config = { content: [] }
         }
 
-        let currentType = "tv"
-        let tmdbKey = localStorage.getItem("tmdbKey") || ""
-        let tmdbConfig = null   
+        let currentType = "tv";
+        let tmdbKey = localStorage.getItem("tmdbKey") || "";
+        let tmdbConfig = null;   
 
         const mediaTypes = [
             { id: "tv", label: "📺 TV Show", value: "tv" },
-            { id: "movie", label: "🎬 Movie", value: "movie" },
-            { id: "audiobook", label: "🎧 Audiobook", value: "audiobook" },
-            { id: "book", label: "📖 Book", value: "book" }
-        ]
+            { id: "movie", label: "🎬 Movie", value: "movie" }
+        ];
 
         function renderTypeButtons() {
-            const container = document.getElementById("type-buttons")
+            const container = document.getElementById("type-buttons");
             container.innerHTML = mediaTypes.map(type => `
-                <button onclick="selectType('${type.value}')" 
-                        class="flex-1 py-4 rounded-2xl font-medium transition-all ${currentType === type.value ? 'bg-[#00a4bd] text-white shadow-lg' : 'bg-gray-800 hover:bg-gray-700'}">
+                <button onclick="selectType('${type.value}')" type="button"
+                        class="flex-1 py-4 rounded-2xl font-medium transition-all ${currentType === type.value ? 'bg-[#00a4bd] text-white shadow-lg' : 'bg-gray-800 hover:bg-gray-700 text-gray-300'}">
                     ${type.label}
                 </button>
-            `).join("")
+            `).join("");
         }
 
         function selectType(type) {
-            currentType = type
-            renderTypeButtons()
-            document.getElementById("seasons-field").classList.toggle("hidden", type !== "tv")
-            document.getElementById("author-field").style.display = (type === "audiobook" || type === "book") ? "block" : "none"
-            document.getElementById("search-results").classList.add("hidden")
+            currentType = type;
+            renderTypeButtons();
+            document.getElementById("seasons-field").classList.toggle("hidden", type !== "tv");
+            document.getElementById("search-results").classList.add("hidden");
         }
 
         async function fetchTMDBConfig() {
-            if (!tmdbKey) return false
-            const statusEl = document.getElementById("config-status")
-            statusEl.innerHTML = `<span class="text-amber-400">Loading TMDB configuration...</span>`
+            if (!tmdbKey) return false;
+            const statusEl = document.getElementById("config-status");
+            statusEl.innerHTML = `<span class="text-amber-400">Verifying API key...</span>`;
             
             try {
-                const url = `https://api.themoviedb.org/3/configuration?api_key=${tmdbKey}`
-                const res = await fetch(url)
-                if (!res.ok) throw new Error("Failed")
-                tmdbConfig = await res.json()
-                statusEl.innerHTML = `<span class="text-emerald-400">✅ Config loaded successfully.</span>`
-                return true
+                const url = `https://api.themoviedb.org/3/configuration?api_key=${tmdbKey}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Failed");
+                tmdbConfig = await res.json();
+                statusEl.innerHTML = `<span class="text-emerald-400">✅ Config loaded successfully. Secure image base ready.</span>`;
+                return true;
             } catch (e) {
-                statusEl.innerHTML = `<span class="text-red-400">❌ Failed to verify API key.</span>`
-                return false
+                statusEl.innerHTML = `<span class="text-red-400">❌ Failed to verify API key.</span>`;
+                return false;
             }
         }
 
         async function saveApiKeysAndFetchConfig() {
-            tmdbKey = document.getElementById("tmdb-key").value.trim()
-            if (!tmdbKey) return alert("Please enter a valid key")
-            localStorage.setItem("tmdbKey", tmdbKey)
-            await fetchTMDBConfig()
+            tmdbKey = document.getElementById("tmdb-key").value.trim();
+            if (!tmdbKey) return alert("Please enter a valid TMDB key");
+            localStorage.setItem("tmdbKey", tmdbKey);
+            await fetchTMDBConfig();
         }
 
         async function performSearch() {
-            const query = document.getElementById("search-input").value.trim()
-            if (!query || !tmdbKey) return alert("Missing title or API key")
+            const query = document.getElementById("search-input").value.trim();
+            if (!query || !tmdbKey) return alert("Missing Search Title or TMDB API Key");
 
-            if (!tmdbConfig) await fetchTMDBConfig()
+            if (!tmdbConfig) await fetchTMDBConfig();
 
-            const resultsContainer = document.getElementById("search-results")
-            resultsContainer.innerHTML = `<p class="text-gray-400">Searching...</p>`
-            resultsContainer.classList.remove("hidden")
+            const resultsContainer = document.getElementById("search-results");
+            resultsContainer.innerHTML = `<p class="text-gray-400">Searching...</p>`;
+            resultsContainer.classList.remove("hidden");
 
-            const mediaType = currentType === "tv" ? "tv" : "movie"
-            const url = `https://api.themoviedb.org/3/search/${mediaType}?api_key=${tmdbKey}&query=${encodeURIComponent(query)}&language=en-US`
+            const url = `https://api.themoviedb.org/3/search/${currentType}?api_key=${tmdbKey}&query=${encodeURIComponent(query)}&language=en-US`;
 
             try {
-                const res = await fetch(url)
-                const data = await res.json()
+                const res = await fetch(url);
+                const data = await res.json();
 
                 if (data.results && data.results.length > 0) {
-                    let html = `<div class="grid grid-cols-1 gap-3 max-h-80 overflow-auto pr-2">`
+                    let html = `<div class="grid grid-cols-1 gap-3 max-h-80 overflow-auto pr-2">`;
                     data.results.slice(0, 10).forEach(item => {
-                        const title = item.title || item.name || "Untitled"
-                        const year = (item.release_date || item.first_air_date || "").split("-")[0] || "—"
-                        const posterPath = item.poster_path
+                        const title = item.title || item.name || "Untitled";
+                        const year = (item.release_date || item.first_air_date || "").split("-")[0] || "—";
+                        const posterPath = item.poster_path;
                         let posterHTML = posterPath && tmdbConfig 
                             ? `<img src="${tmdbConfig.images.secure_base_url}w92${posterPath}" class="poster">`
-                            : `<div class="w-12 h-16 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-400">N/A</div>`
+                            : `<div class="w-12 h-16 bg-gray-800 rounded flex items-center justify-center text-xs text-gray-500">No Image</div>`;
 
                         html += `
                             <div onclick='selectSearchResult(${JSON.stringify(item).replace(/'/g, "&apos;")})' 
                                  class="result-card cursor-pointer bg-gray-800 hover:bg-gray-700 border border-gray-700 p-4 rounded-2xl flex gap-4 items-center">
                                 ${posterHTML}
                                 <div class="flex-1 min-w-0">
-                                    <div class="font-medium truncate">${title}</div>
-                                    <div class="text-xs text-gray-400">${year} • ID: ${item.id}</div>
-                                    <div class="text-xs text-gray-400 line-clamp-2 mt-1">${item.overview || ""}</div>
+                                    <div class="font-medium truncate text-gray-100">${title}</div>
+                                    <div class="text-xs text-emerald-400 font-medium mb-1">${year} • ID: ${item.id}</div>
+                                    <div class="text-xs text-gray-400 line-clamp-2">${item.overview || "No description available."}</div>
                                 </div>
-                            </div>`
-                    })
-                    html += `</div>`
-                    resultsContainer.innerHTML = html
+                            </div>`;
+                    });
+                    html += `</div>`;
+                    resultsContainer.innerHTML = html;
                 } else {
-                    resultsContainer.innerHTML = `<p class="text-gray-400">No results found.</p>`
+                    resultsContainer.innerHTML = `<p class="text-gray-400">No results found.</p>`;
                 }
             } catch (e) {
-                resultsContainer.innerHTML = `<p class="text-red-400">Search error.</p>`
+                resultsContainer.innerHTML = `<p class="text-red-400">Search error. Check network or API key.</p>`;
             }
         }
 
         function selectSearchResult(item) {
-            document.getElementById("title").value = item.title || item.name || ""
+            document.getElementById("title").value = item.title || item.name || "";
+            const year = (item.release_date || item.first_air_date || "").split("-")[0];
+            if (year) document.getElementById("year").value = year;
+            if (item.id) document.getElementById("tmdb-id").value = item.id;
             
-            const year = (item.release_date || item.first_air_date || "").split("-")[0]
-            if (year) document.getElementById("year").value = year
-            
-            // NEW: Capture the TMDB ID
-            if (item.id) document.getElementById("tmdb-id").value = item.id
-            
-            document.getElementById("search-results").classList.add("hidden")
+            document.getElementById("search-results").classList.add("hidden");
+        }
+
+        function standardizePath(path, osType) {
+            if (!path) return "";
+            if (osType === 'bat' || osType === 'py') return path.replace(/\//g, '\\');
+            return path.replace(/\\/g, '/');
         }
 
         function generateStructure(e) {
-            e.preventDefault()
+            e.preventDefault();
             
-            const title = document.getElementById("title").value.trim()
-            if (!title) return alert("Title required")
+            const title = document.getElementById("title").value.trim();
+            if (!title) return alert("Title required");
             
-            const year = document.getElementById("year").value.trim()
-            const id = document.getElementById("tmdb-id").value.trim()
-            const author = document.getElementById("author").value.trim()
-            const seasons = currentType === "tv" ? parseInt(document.getElementById("seasons").value) || 5 : 0
-            const outputDir = document.getElementById("output-dir").value.trim() || "/media/Jellyfin"
+            const year = document.getElementById("year").value.trim();
+            const id = document.getElementById("tmdb-id").value.trim();
+            const targetExt = document.getElementById("target-ext").value;
+            const destPathBase = document.getElementById("dest-path").value.trim();
+            let sourcePathBase = document.getElementById("source-path").value.trim();
+            const emptySeasonsCount = parseInt(document.getElementById("seasons").value) || 5;
             
-            // Smart Folder Naming with ID
-            let folderName = title
-            if (year) folderName += ` (${year})`
-            if (id) folderName += ` [tmdbid-${id}]`
-            
-            let treeHTML = `<div class="text-emerald-400 font-medium">📁 ${folderName}</div>`
-            
-            if (currentType === "tv") {
-                treeHTML += `<div class="ml-6">📁 Season 00</div>`
-                for (let i = 1; i <= seasons; i++) {
-                    treeHTML += `<div class="ml-6">📁 Season ${i.toString().padStart(2, '0')}</div>`
-                }
-            } else if (currentType === "movie") {
-                // If it's a movie, the file itself should ideally match the folder name
-                treeHTML += `<div class="ml-6 text-emerald-400">📄 ${folderName}.mkv</div>`
-            } else if (currentType === "audiobook" || currentType === "book") {
-                if (author) treeHTML = `<div class="text-emerald-400">📁 ${author}</div><div class="ml-6">📁 ${folderName}</div>`
-                treeHTML += `<div class="ml-12 text-emerald-400">📄 ${folderName}.m4b</div>`
-            }
-            
-            document.getElementById("preview-tree").innerHTML = treeHTML
+            const fileInput = document.getElementById("local-folder");
+            const files = Array.from(fileInput.files);
 
-            const readmeContent = generateREADME(title, year, id, author, currentType)
-            document.getElementById("readme-preview").textContent = readmeContent
+            if (files.length > 0 && !sourcePathBase) {
+                return alert("You selected files to scan, but did not provide the absolute Source Path. Please paste where those files are located.");
+            }
+
+            // Clean trailing slashes
+            let cleanDestBase = destPathBase.replace(/[\\\/]+$/, "");
+            sourcePathBase = sourcePathBase.replace(/[\\\/]+$/, "");
+
+            let folderName = title;
+            if (year) folderName += ` (${year})`;
+            if (id) folderName += ` [tmdbid-${id}]`;
+
+            let treeHTML = `<div class="text-[#00a4bd] font-medium">📁 ${folderName}</div>`;
+            let logHTML = "";
+            let generatedCommands = { sh: [], bat: [], py_dirs: [], py_moves: [] };
+            let requiredFolders = new Set();
+            
+            const fullDestPathBat = standardizePath(`${cleanDestBase}/${folderName}`, 'bat');
+            const fullDestPathSh = standardizePath(`${cleanDestBase}/${folderName}`, 'sh');
+
+            generatedCommands.sh.push(`echo "Creating directories..."`);
+            generatedCommands.bat.push(`echo Creating directories...`);
+            generatedCommands.sh.push(`mkdir -p "${fullDestPathSh}"`);
+            generatedCommands.bat.push(`mkdir "${fullDestPathBat}" 2>nul`);
+            generatedCommands.py_dirs.push(`    os.makedirs(r"${fullDestPathBat}", exist_ok=True)`);
+
+            // SCENARIO 1: Local files processed
+            if (files.length > 0) {
+                const videoExts = ['.mp4', '.mkv', '.avi', '.m4v', '.ts', '.webm', '.mov', '.wmv', '.flv'];
+                if (!videoExts.includes(targetExt)) videoExts.push(targetExt);
+                
+                let movedCount = 0;
+                generatedCommands.sh.push(`echo "Moving files..."`);
+                generatedCommands.bat.push(`echo Moving files...`);
+
+                files.forEach(file => {
+                    const originalPath = file.webkitRelativePath;
+                    const ext = originalPath.substring(originalPath.lastIndexOf('.')).toLowerCase();
+                    if (!videoExts.includes(ext)) return;
+
+                    const slashIndex = originalPath.indexOf('/');
+                    const innerRelativePath = slashIndex !== -1 ? originalPath.substring(slashIndex + 1) : originalPath;
+
+                    const absoluteSourceBat = standardizePath(`${sourcePathBase}/${innerRelativePath}`, 'bat');
+                    const absoluteSourceSh = standardizePath(`${sourcePathBase}/${innerRelativePath}`, 'sh');
+
+                    if (currentType === "movie") {
+                        const newName = `${folderName}${ext}`;
+                        treeHTML += `<div class="ml-6 text-emerald-400">📄 ${newName}</div>`;
+                        logHTML += `MOVING: ${innerRelativePath}\n  TO: ${folderName}\\${newName}\n\n`;
+                        
+                        generatedCommands.sh.push(`mv "${absoluteSourceSh}" "${fullDestPathSh}/${newName}"`);
+                        generatedCommands.bat.push(`move "${absoluteSourceBat}" "${fullDestPathBat}\\${newName}"`);
+                        generatedCommands.py_moves.push(`    shutil.move(r"${absoluteSourceBat}", r"${fullDestPathBat}\\${newName}")`);
+                        movedCount++;
+                    } else {
+                        const regex = /(?:s|season\s*)?(\d{1,2})[ex\-_]+(?:e|ep|episode\s*)?(\d{1,2})/i;
+                        const match = file.name.match(regex);
+                        
+                        if (match) {
+                            const sNum = parseInt(match[1]);
+                            const eNum = parseInt(match[2]);
+                            const sStr = sNum.toString().padStart(2, '0');
+                            const eStr = eNum.toString().padStart(2, '0');
+                            
+                            const seasonFolder = `Season ${sStr}`;
+                            const newName = `${title} S${sStr}E${eStr}${ext}`;
+                            requiredFolders.add(seasonFolder);
+                            
+                            logHTML += `MOVING: ${innerRelativePath}\n  TO: ${folderName}\\${seasonFolder}\\${newName}\n\n`;
+                            
+                            generatedCommands.sh.push(`mv "${absoluteSourceSh}" "${fullDestPathSh}/Season ${sStr}/${newName}"`);
+                            generatedCommands.bat.push(`move "${absoluteSourceBat}" "${fullDestPathBat}\\Season ${sStr}\\${newName}"`);
+                            generatedCommands.py_moves.push(`    shutil.move(r"${absoluteSourceBat}", r"${fullDestPathBat}\\Season ${sStr}\\${newName}")`);
+                            movedCount++;
+                        } else {
+                            logHTML += `<span class="text-amber-500">SKIPPED (No Season/Ep detected): ${innerRelativePath}</span>\n\n`;
+                        }
+                    }
+                });
+
+                if (currentType === "tv") {
+                    Array.from(requiredFolders).sort().forEach(sf => {
+                        generatedCommands.sh.splice(2, 0, `mkdir -p "${fullDestPathSh}/${sf}"`);
+                        generatedCommands.bat.splice(2, 0, `mkdir "${fullDestPathBat}\\${sf}" 2>nul`);
+                        generatedCommands.py_dirs.push(`    os.makedirs(r"${fullDestPathBat}\\${sf}", exist_ok=True)`);
+                        treeHTML += `<div class="ml-6">📁 ${sf}</div><div class="ml-12 text-gray-500 text-xs italic">...episodes...</div>`;
+                    });
+                }
+
+                if (movedCount === 0) logHTML = `<span class="text-red-400">No video files found or matched in the selected folder.</span>`;
+
+            } else {
+                // SCENARIO 2: Empty directories
+                logHTML = `No local folder selected. Generating empty directory structure at:\n${fullDestPathBat}`;
+                
+                if (currentType === "tv") {
+                    treeHTML += `<div class="ml-6">📁 Season 00</div>`;
+                    generatedCommands.sh.push(`mkdir -p "${fullDestPathSh}/Season 00"`);
+                    generatedCommands.bat.push(`mkdir "${fullDestPathBat}\\Season 00" 2>nul`);
+                    generatedCommands.py_dirs.push(`    os.makedirs(r"${fullDestPathBat}\\Season 00", exist_ok=True)`);
+                    
+                    for (let i = 1; i <= emptySeasonsCount; i++) {
+                        const sStr = i.toString().padStart(2, '0');
+                        treeHTML += `<div class="ml-6">📁 Season ${sStr}</div>`;
+                        generatedCommands.sh.push(`mkdir -p "${fullDestPathSh}/Season ${sStr}"`);
+                        generatedCommands.bat.push(`mkdir "${fullDestPathBat}\\Season ${sStr}" 2>nul`);
+                        generatedCommands.py_dirs.push(`    os.makedirs(r"${fullDestPathBat}\\Season ${sStr}", exist_ok=True)`);
+                    }
+                } else if (currentType === "movie") {
+                    treeHTML += `<div class="ml-6 text-gray-500 italic">Place your ${folderName}${targetExt} here</div>`;
+                }
+            }
+
+            document.getElementById("preview-tree").innerHTML = treeHTML;
+            document.getElementById("rename-log").innerHTML = logHTML;
+
+            // Generate Python Script Body
+            const pythonScript = `import os
+import shutil
+
+def organize_jellyfin_media():
+    print("Creating folder structures...")
+${generatedCommands.py_dirs.join('\n')}
+
+    print("Moving files...")
+${generatedCommands.py_moves.length > 0 ? generatedCommands.py_moves.join('\n') : "    pass # No files to move"}
+
+    print("✅ Jellyfin Organization Complete!")
+
+if __name__ == "__main__":
+    try:
+        organize_jellyfin_media()
+    except Exception as e:
+        print(f"\\n❌ An error occurred: {e}")
+    input("\\nPress Enter to exit...")
+`;
 
             window.lastGenerated = {
-                type: currentType,
-                folderName: folderName,
-                seasons: seasons,
-                outputDir: outputDir,
-                readmeContent: readmeContent,
-                author: author
-            }
-            
-            document.getElementById("download-section").classList.remove("hidden")
+                sh: `#!/bin/bash\n\n${generatedCommands.sh.join('\n')}\necho "✅ Jellyfin Organization Complete!"\n`,
+                bat: `@echo off\nchcp 65001 >nul\n\n${generatedCommands.bat.join('\n')}\necho.\necho ✅ Jellyfin Organization Complete!\npause\n`,
+                py: pythonScript
+            };
+
+            document.getElementById("download-section").classList.remove("hidden");
         }
 
-        function generateREADME(title, year, id, author, type) {
-            let fullTitle = title
-            if (year) fullTitle += ` (${year})`
-            if (id) fullTitle += ` [tmdbid-${id}]`
-            
-            let content = `# Jellyfin Target: ${title}\n`
-            if (id) content += `Metadata Provider ID: tmdbid-${id}\n`
-            content += `\n`
-            
-            if (type === "tv") {
-                content += `Episodes should be named: ${title} S01E01.mkv\n`
-            } else if (type === "movie") {
-                content += `Main file: ${fullTitle}.mkv\n`
-            }
-            return content
-        }
-
-        function downloadShellScript() {
-            if (!window.lastGenerated) return
-            const data = window.lastGenerated
-            let script = `#!/bin/bash\nmkdir -p "${data.outputDir}/${data.folderName}"\ncd "${data.outputDir}/${data.folderName}"\n`
-            
-            if (data.type === "tv") {
-                script += `mkdir -p "Season 00"\n`
-                for (let i = 1; i <= data.seasons; i++) script += `mkdir -p "Season ${i.toString().padStart(2, '0')}"\n`
-            }
-            script += `cat > "README_Jellyfin_Naming.txt" << 'EOF'\n${data.readmeContent}\nEOF\n`
-            
-            const blob = new Blob([script], { type: "text/plain" })
-            const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "create_folders.sh"; a.click()
-        }
-
-        function downloadBatScript() {
-            if (!window.lastGenerated) return
-            const data = window.lastGenerated
-            let script = `@echo off\nmkdir "${data.outputDir}\\${data.folderName}" 2>nul\ncd /d "${data.outputDir}\\${data.folderName}"\n`
-            
-            if (data.type === "tv") {
-                script += `mkdir "Season 00" 2>nul\n`
-                for (let i = 1; i <= data.seasons; i++) script += `mkdir "Season ${i.toString().padStart(2, '0')}" 2>nul\n`
-            }
-            script += `echo ${data.readmeContent.replace(/\n/g, "^\n")} > README_Jellyfin_Naming.txt\n`
-            
-            const blob = new Blob([script], { type: "text/plain" })
-            const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "create_folders.bat"; a.click()
+        function downloadScript(os) {
+            if (!window.lastGenerated) return;
+            const content = window.lastGenerated[os];
+            const blob = new Blob([content], { type: "text/plain" });
+            const a = document.createElement("a"); 
+            a.href = URL.createObjectURL(blob); 
+            a.download = `jellyfin_organize.${os}`; 
+            a.click();
         }
 
         window.onload = async function() {
-            initTailwind(); renderTypeButtons(); selectType("tv")
+            initTailwind(); 
+            renderTypeButtons(); 
+            selectType("tv");
             if (tmdbKey) {
-                document.getElementById("tmdb-key").value = tmdbKey
-                await fetchTMDBConfig()
+                document.getElementById("tmdb-key").value = tmdbKey;
+                await fetchTMDBConfig();
             }
         }
     </script>
