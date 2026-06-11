@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Line Visualization Error Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --primary: #0ea5e9;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .title-font {
+            font-family: 'Space Grotesk', 'Inter', system_ui, sans-serif;
+            font-weight: 700;
+            letter-spacing: -.025em;
+        }
+
+        .ocean-bg {
+            background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+        }
+
+        canvas {
+            image-rendering: crisp-edges;
+        }
+
+        .depth-ruler text {
+            font-feature-settings: "tnum";
+        }
+
+        .status-detected {
+            animation: popIn 0.3s ease-out;
+        }
+
+        .lead-rope {
+            filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.3));
+        }
+
+        .seafloor-glow {
+            filter: drop-shadow(0 0 8px rgb(163 163 172 / 0.4));
+        }
+
+        .metric {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 ocean-bg min-h-screen">
+    <div class="max-w-[1280px] mx-auto px-6 pt-8 pb-12">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-x-4">
+                <div class="w-14 h-14 bg-sky-600 rounded-2xl flex items-center justify-center shadow-inner">
+                    <i class="fa-solid fa-anchor text-white text-4xl"></i>
+                </div>
+                <div>
+                    <h1 class="title-font text-4xl font-bold tracking-tighter">Lead Line Visualization</h1>
+                    <p class="text-sky-400 text-lg -mt-1">Error Tool</p>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center gap-x-2 text-sm px-4 py-2 bg-slate-900 rounded-3xl border border-slate-800">
+                <div class="flex items-center gap-x-1.5">
+                    <i class="fa-solid fa-water text-sky-400"></i>
+                    <span class="text-slate-400">Hydrographic Visualization</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- LEFT CONTROLS -->
+            <div class="lg:col-span-3 space-y-6">
+                
+                <!-- Depth Control -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                    <div class="flex items-center gap-x-3 mb-4">
+                        <div class="w-9 h-9 bg-sky-600/20 text-sky-400 rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-ruler-vertical text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-xl tracking-tight">Water Depth</h3>
+                            <p class="text-xs text-slate-400">Actual seafloor depth</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <!-- Slider -->
+                        <div>
+                            <input type="range" id="depthSlider" 
+                                   class="w-full accent-sky-500 bg-slate-800" 
+                                   min="0" max="2000" step="1" value="500">
+                        </div>
+                        
+                        <!-- Number input -->
+                        <div class="flex items-center gap-x-3">
+                            <div class="flex-1">
+                                <input type="number" id="depthInput" 
+                                       class="w-full bg-slate-950 border border-slate-700 focus:border-sky-500 transition-colors text-3xl font-semibold metric px-4 py-3 rounded-2xl text-center outline-none"
+                                       min="0" max="2000" step="1" value="500">
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-400">METERS</div>
+                                <div id="depthReadout" 
+                                     class="font-mono text-sky-400 text-sm font-medium">500 m</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2 flex justify-between text-[10px] text-slate-500 px-1">
+                        <div>0 m</div>
+                        <div>2000 m</div>
+                    </div>
+                </div>
+
+                <!-- Lead Line Input -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                    <div class="flex items-center gap-x-3 mb-4">
+                        <div class="w-9 h-9 bg-amber-600/20 text-amber-400 rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-link text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-xl tracking-tight">Lead Line Length</h3>
+                            <p class="text-xs text-slate-400">Total line you can pay out</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-x-3">
+                        <div class="flex-1">
+                            <input type="number" id="leadInput" 
+                                   class="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 transition-colors text-4xl font-semibold metric px-5 py-4 rounded-2xl text-center outline-none"
+                                   min="0" max="10000" step="1" value="750">
+                        </div>
+                        <div class="text-right pr-1">
+                            <div class="text-xs text-slate-400">METERS</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 text-center">
+                        <div class="inline-flex items-center text-[10px] px-3 py-1 rounded-2xl bg-slate-800 text-slate-400">
+                            <i class="fa-solid fa-info-circle mr-1.5"></i>
+                            <span>Enter total available line</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="space-y-3 pt-2">
+                    <button onclick="runAnalysis()" id="runBtn"
+                            class="w-full flex items-center justify-center gap-x-3 bg-teal-600 hover:bg-teal-500 active:bg-teal-700 transition-all text-white font-bold text-xl py-5 rounded-3xl shadow-lg shadow-teal-900/30">
+                        <i class="fa-solid fa-play mr-1"></i>
+                        <span>RUN ERROR ANALYSIS</span>
+                    </button>
+                    
+                    <button onclick="resetVisualization()" 
+                            class="w-full flex items-center justify-center gap-x-2 text-sm py-3.5 rounded-3xl border border-slate-700 hover:bg-slate-900 transition-colors text-slate-300">
+                        <i class="fa-solid fa-undo mr-2"></i>
+                        <span>Reset Visualization</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CENTER VISUALIZATION (GIANT BOX) -->
+            <div class="lg:col-span-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl">
+                    <div class="flex items-center justify-between mb-3 px-2">
+                        <div>
+                            <span class="font-semibold tracking-tight">Visualization</span>
+                            <span class="ml-2 text-xs px-2.5 py-0.5 rounded bg-slate-800 text-slate-400">Live seafloor</span>
+                        </div>
+                        <div class="flex items-center gap-x-2 text-xs">
+                            <div class="px-3 py-1 bg-slate-950 rounded-2xl border border-slate-700 flex items-center gap-x-1.5">
+                                <i class="fa-solid fa-water text-sky-400"></i>
+                                <span id="vizDepthLabel" class="font-mono text-sky-300">500 m</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- THE GIANT CANVAS BOX -->
+                    <div class="relative rounded-2xl overflow-hidden border border-slate-700 shadow-inner bg-slate-950">
+                        <canvas id="vizCanvas" width="620" height="720" 
+                                class="w-full max-w-full block"></canvas>
+                    </div>
+                    
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-2 px-3">
+                        <div class="flex items-center gap-x-1">
+                            <i class="fa-solid fa-ship text-xs"></i>
+                            <span>SURFACE (0 m)</span>
+                        </div>
+                        <div class="flex items-center gap-x-1 text-amber-300">
+                            <i class="fa-solid fa-mountain text-xs"></i>
+                            <span>SEAFLOOR</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT STATUS PANEL -->
+            <div class="lg:col-span-3">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 h-full flex flex-col">
+                    <div class="mb-4">
+                        <h3 class="font-semibold text-xl tracking-tight flex items-center gap-x-2">
+                            <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                            <span>Analysis Result</span>
+                        </h3>
+                    </div>
+                    
+                    <!-- Status Box -->
+                    <div id="statusPanel" 
+                         class="flex-1 flex flex-col items-center justify-center text-center bg-slate-950 border border-slate-700 rounded-2xl p-7 transition-all">
+                        
+                        <div id="statusIcon" class="text-7xl mb-5 text-slate-400">
+                            <i class="fa-solid fa-anchor"></i>
+                        </div>
+                        
+                        <div id="statusText" 
+                             class="text-6xl font-black tracking-tighter text-slate-300">READY</div>
+                        
+                        <div id="statusSub" 
+                             class="mt-4 text-sm text-slate-400 max-w-[210px] leading-snug">
+                            Adjust depth &amp; lead line length, then run the analysis to see if the lead line reaches the seafloor.
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <div class="text-[10px] text-slate-500">
+                            Detected = lead line ≥ actual depth<br>
+                            <span class="text-emerald-400">Green = success</span> • <span class="text-rose-400">Red = error</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Footer note -->
+        <div class="mt-8 text-center">
+            <p class="text-xs text-slate-500 max-w-md mx-auto">
+                This is an educational visualization / joke tool demonstrating the importance of sufficient lead line length. 
+                In real hydrography, always use more line than the expected depth.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#0ea5e9');
+        }
+
+        // Canvas setup
+        const canvas = document.getElementById('vizCanvas');
+        const ctx = canvas.getContext('2d', { alpha: true });
+
+        // Constants
+        const SURFACE_Y = 95;
+        const RULER_X = 52;
+        const CENTER_X = canvas.width / 2;
+        const MAX_VISUAL_DEPTH = 2500;
+        let scaleFactor = 0;
+
+        // State variables
+        let depth = 500;
+        let leadLineLength = 750;
+        let leadWeightDepth = 0;
+        let isAnimating = false;
+        let detectedState = null;
+        let animationFrameId = null;
+
+        function calculateScale() {
+            scaleFactor = (canvas.height - SURFACE_Y - 45) / MAX_VISUAL_DEPTH;
+        }
+
+        function drawVisualization() {
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // === TOP DECK / VESSEL AREA ===
+            ctx.fillStyle = '#1e2937';
+            ctx.fillRect(0, 0, canvas.width, SURFACE_Y);
+
+            // Subtle deck gradient
+            const deckGrad = ctx.createLinearGradient(0, 0, 0, SURFACE_Y);
+            deckGrad.addColorStop(0, '#334155');
+            deckGrad.addColorStop(1, '#1e2937');
+            ctx.fillStyle = deckGrad;
+            ctx.fillRect(0, 0, canvas.width, SURFACE_Y);
+
+            // Water surface line
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.moveTo(15, SURFACE_Y);
+            ctx.lineTo(canvas.width - 15, SURFACE_Y);
+            ctx.stroke();
+
+            // Simple boat / deployment point
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(CENTER_X - 55, SURFACE_Y - 22, 110, 14);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(CENTER_X - 22, SURFACE_Y - 38, 44, 17);
+
+            // === WATER ===
+            const waterGrad = ctx.createLinearGradient(0, SURFACE_Y, 0, canvas.height);
+            waterGrad.addColorStop(0, '#0369a1');
+            waterGrad.addColorStop(0.25, '#075985');
+            waterGrad.addColorStop(0.7, '#0c4a6e');
+            waterGrad.addColorStop(1, '#020617');
+            ctx.fillStyle = waterGrad;
+            ctx.fillRect(0, SURFACE_Y, canvas.width, canvas.height - SURFACE_Y);
+
+            // === DEPTH RULER (LEFT) ===
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1.5;
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '11px ui-monospace, monospace';
+            ctx.textAlign = 'right';
+
+            const tickInterval = 250;
+            for (let d = 0; d <= MAX_VISUAL_DEPTH; d += tickInterval) {
+                const y = SURFACE_Y + (d * scaleFactor);
+                if (y > canvas.height - 25) break;
+
+                const isMajor = (d % 500 === 0);
+                const tickLength = isMajor ? 22 : 9;
+
+                ctx.beginPath();
+                ctx.moveTo(RULER_X - tickLength, y);
+                ctx.lineTo(RULER_X, y);
+                ctx.stroke();
+
+                if (isMajor) {
+                    ctx.fillText(d + ' m', RULER_X - 28, y + 4);
+                }
+            }
+
+            // === SEAFLOOR ===
+            const seafloorY = SURFACE_Y + (depth * scaleFactor);
+
+            // Seabed sediment
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(0, seafloorY, canvas.width, canvas.height - seafloorY + 20);
+
+            // Main seafloor line (thick)
+            ctx.strokeStyle = '#854d0e';
+            ctx.lineWidth = 11;
+            ctx.beginPath();
+            ctx.moveTo(12, seafloorY);
+            ctx.lineTo(canvas.width - 12, seafloorY);
+            ctx.stroke();
+
+            // Lighter top edge
+            ctx.strokeStyle = '#a16207';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(12, seafloorY - 2);
+            ctx.lineTo(canvas.width - 12, seafloorY - 2);
+            ctx.stroke();
+
+            // Seafloor label
+            ctx.fillStyle = '#fef08c';
+            ctx.font = 'bold 13px Inter, system-ui, sans-serif';
+            ctx.textAlign = 'left';
+            const labelX = canvas.width - 168;
+            ctx.fillText('SEAFLOOR', labelX, seafloorY - 22);
+            ctx.font = 'bold 17px ui-monospace, monospace';
+            ctx.fillText(depth + ' m', labelX, seafloorY - 2);
+
+            // === LEAD LINE (if active) ===
+            if (leadWeightDepth > 0 || isAnimating) {
+                const leadY = SURFACE_Y + (leadWeightDepth * scaleFactor);
+
+                // Rope
+                ctx.strokeStyle = '#713f12';
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(CENTER_X, SURFACE_Y + 8);
+                ctx.lineTo(CENTER_X, leadY);
+                ctx.stroke();
+
+                // Rope highlight
+                ctx.strokeStyle = '#854d0e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(CENTER_X - 1.5, SURFACE_Y + 8);
+                ctx.lineTo(CENTER_X - 1.5, leadY);
+                ctx.stroke();
+
+                // Lead weight
+                let weightFill = '#374151';
+                let weightStroke = '#1f2937';
+
+                if (!isAnimating && detectedState !== null) {
+                    if (detectedState === true) {
+                        weightFill = '#16a34a';
+                        weightStroke = '#166534';
+                    } else {
+                        weightFill = '#6b7280';
+                        weightStroke = '#374151';
+                    }
+                }
+
+                ctx.fillStyle = weightFill;
+                ctx.strokeStyle = weightStroke;
+                ctx.lineWidth = 2.5;
+
+                // Classic lead weight shape (elongated ellipse)
+                ctx.beginPath();
+                ctx.ellipse(CENTER_X, leadY, 11, 16, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Attachment ring
+                ctx.strokeStyle = '#9ca3af';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(CENTER_X, leadY - 19, 5.5, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Current paid-out label
+                ctx.fillStyle = isAnimating ? '#fcd34d' : '#e0f2fe';
+                ctx.font = '13px ui-monospace, monospace';
+                ctx.textAlign = 'left';
+                
+                let paidText = isAnimating ? 'LOWERING...' : leadLineLength + ' m';
+                ctx.fillText(paidText, CENTER_X + 24, leadY - 8);
+
+                if (!isAnimating && detectedState !== null) {
+                    if (detectedState === true) {
+                        ctx.fillStyle = '#4ade80';
+                        ctx.fillText('ON BOTTOM ✓', CENTER_X + 24, leadY + 14);
+                    } else {
+                        ctx.fillStyle = '#fda4af';
+                        ctx.fillText('SHORT!', CENTER_X + 24, leadY + 14);
+                    }
+                }
+            }
+
+            // Header label
+            ctx.fillStyle = '#64748b';
+            ctx.font = '600 11px Inter, system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('LEAD LINE DEPLOYMENT ZONE', CENTER_X, 38);
+
+            ctx.restore();
+        }
+
+        function updateDepthReadout() {
+            document.getElementById('depthReadout').textContent = depth + ' m';
+            document.getElementById('vizDepthLabel').textContent = depth + ' m';
+        }
+
+        function updateDepth(newDepth) {
+            depth = Math.max(0, Math.min(2000, parseFloat(newDepth) || 0));
+            
+            // Sync inputs
+            document.getElementById('depthSlider').value = depth;
+            document.getElementById('depthInput').value = depth;
+            
+            updateDepthReadout();
+
+            // Clear any existing lead line visualization when depth changes
+            if (leadWeightDepth > 0 && !isAnimating) {
+                clearLeadLine();
+            }
+
+            drawVisualization();
+        }
+
+        function updateLeadLine(newVal) {
+            leadLineLength = Math.max(0, Math.min(10000, parseFloat(newVal) || 0));
+            document.getElementById('leadInput').value = leadLineLength;
+
+            // Clear visualization if lead line is currently shown
+            if (leadWeightDepth > 0 && !isAnimating) {
+                clearLeadLine();
+            }
+        }
+
+        function clearLeadLine() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            isAnimating = false;
+            leadWeightDepth = 0;
+            detectedState = null;
+            
+            const runBtn = document.getElementById('runBtn');
+            runBtn.disabled = false;
+            runBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            drawVisualization();
+            updateStatusToReady();
+        }
+
+        function updateStatusToReady() {
+            const panel = document.getElementById('statusPanel');
+            const text = document.getElementById('statusText');
+            const sub = document.getElementById('statusSub');
+            const iconContainer = document.getElementById('statusIcon');
+
+            panel.className = `flex-1 flex flex-col items-center justify-center text-center bg-slate-950 border border-slate-700 rounded-2xl p-7 transition-all`;
+            
+            text.textContent = 'READY';
+            text.className = `text-6xl font-black tracking-tighter text-slate-300`;
+            
+            sub.innerHTML = `Adjust depth &amp; lead line length,<br>then run the analysis to see if the lead line reaches the seafloor.`;
+            
+            iconContainer.innerHTML = `<i class="fa-solid fa-anchor"></i>`;
+            iconContainer.className = `text-7xl mb-5 text-slate-400`;
+        }
+
+        function finalizeAnalysis(didDetect) {
+            detectedState = didDetect;
+            isAnimating = false;
+            
+            const panel = document.getElementById('statusPanel');
+            const text = document.getElementById('statusText');
+            const sub = document.getElementById('statusSub');
+            const iconContainer = document.getElementById('statusIcon');
+
+            const runBtn = document.getElementById('runBtn');
+            runBtn.disabled = false;
+            runBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            if (didDetect) {
+                // DETECTED
+                panel.className = `flex-1 flex flex-col items-center justify-center text-center bg-emerald-950/60 border border-emerald-500 rounded-2xl p-7 transition-all status-detected`;
+                
+                text.textContent = 'DETECTED';
+                text.className = `text-6xl font-black tracking-tighter text-emerald-400`;
+                
+                sub.innerHTML = `Bottom reached!<br>
+                    Seafloor at <span class="font-mono font-semibold">${depth}</span> m<br>
+                    You had <span class="font-mono font-semibold">${leadLineLength}</span> m of line.`;
+                
+                iconContainer.innerHTML = `<i class="fa-solid fa-check-circle"></i>`;
+                iconContainer.className = `text-7xl mb-5 text-emerald-400`;
+            } else {
+                // NOT DETECTED
+                panel.className = `flex-1 flex flex-col items-center justify-center text-center bg-rose-950/60 border border-rose-500 rounded-2xl p-7 transition-all`;
+                
+                text.textContent = 'NOT DETECTED';
+                text.className = `text-5xl font-black tracking-tighter text-rose-400`;
+                
+                const shortfall = depth - leadLineLength;
+                sub.innerHTML = `Lead line too short.<br>
+                    You paid out all <span class="font-mono font-semibold">${leadLineLength}</span> m<br>
+                    Seafloor is <span class="font-mono font-semibold">${shortfall}</span> m deeper.`;
+                
+                iconContainer.innerHTML = `<i class="fa-solid fa-times-circle"></i>`;
+                iconContainer.className = `text-7xl mb-5 text-rose-400`;
+            }
+
+            drawVisualization();
+        }
+
+        function startLeadLineAnimation() {
+            if (isAnimating) return;
+
+            isAnimating = true;
+            leadWeightDepth = 0;
+            detectedState = null;
+
+            // Update status to "lowering"
+            const panel = document.getElementById('statusPanel');
+            const text = document.getElementById('statusText');
+            const sub = document.getElementById('statusSub');
+            const iconContainer = document.getElementById('statusIcon');
+
+            panel.className = `flex-1 flex flex-col items-center justify-center text-center bg-slate-950 border border-amber-500/40 rounded-2xl p-7`;
+            
+            text.textContent = 'LOWERING...';
+            text.className = `text-5xl font-bold tracking-tight text-amber-400`;
+            sub.textContent = 'Simulating lead line descent into the water column...';
+            iconContainer.innerHTML = `<i class="fa-solid fa-arrow-down"></i>`;
+            iconContainer.className = `text-7xl mb-5 text-amber-400`;
+
+            const runBtn = document.getElementById('runBtn');
+            runBtn.disabled = true;
+            runBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            drawVisualization();
+
+            const meterStep = 22; // nice visual speed
+
+            function animationStep() {
+                if (!isAnimating) return;
+
+                leadWeightDepth += meterStep;
+
+                const effectiveTarget = Math.min(leadLineLength, depth);
+
+                if (leadWeightDepth >= effectiveTarget) {
+                    leadWeightDepth = effectiveTarget;
+                    isAnimating = false;
+
+                    const didDetect = (leadLineLength >= depth);
+                    finalizeAnalysis(didDetect);
+                    return;
+                }
+
+                drawVisualization();
+                animationFrameId = requestAnimationFrame(animationStep);
+            }
+
+            animationFrameId = requestAnimationFrame(animationStep);
+        }
+
+        function runAnalysis() {
+            if (isAnimating) return;
+
+            const leadInput = parseFloat(document.getElementById('leadInput').value);
+            if (!leadInput || leadInput <= 0) {
+                alert("Please enter a lead line length greater than 0 meters.");
+                return;
+            }
+
+            // Use current values
+            leadLineLength = leadInput;
+
+            startLeadLineAnimation();
+        }
+
+        function resetVisualization() {
+            clearLeadLine();
+        }
+
+        // Initialize everything
+        function initializeApp() {
+            initializeTailwind();
+            calculateScale();
+
+            // Set initial values
+            depth = 500;
+            leadLineLength = 750;
+
+            const slider = document.getElementById('depthSlider');
+            const depthInput = document.getElementById('depthInput');
+            const leadInput = document.getElementById('leadInput');
+
+            // Set initial input values
+            slider.value = depth;
+            depthInput.value = depth;
+            leadInput.value = leadLineLength;
+
+            updateDepthReadout();
+
+            // Event listeners - Depth
+            slider.addEventListener('input', (e) => {
+                updateDepth(e.target.value);
+            });
+
+            depthInput.addEventListener('input', (e) => {
+                updateDepth(e.target.value);
+            });
+
+            depthInput.addEventListener('change', (e) => {
+                updateDepth(e.target.value);
+            });
+
+            // Event listeners - Lead line
+            leadInput.addEventListener('input', (e) => {
+                updateLeadLine(e.target.value);
+            });
+
+            leadInput.addEventListener('change', (e) => {
+                updateLeadLine(e.target.value);
+            });
+
+            // Initial draw
+            updateStatusToReady();
+            drawVisualization();
+
+            // Keyboard support: press Enter on lead input to run
+            leadInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    runAnalysis();
+                }
+            });
+
+            // Make canvas clickable to run (nice UX)
+            canvas.addEventListener('click', () => {
+                if (!isAnimating && leadWeightDepth === 0) {
+                    const leadVal = parseFloat(leadInput.value);
+                    if (leadVal > 0) {
+                        runAnalysis();
+                    }
+                }
+            });
+
+            // Easter egg: double click canvas to reset
+            canvas.addEventListener('dblclick', () => {
+                resetVisualization();
+            });
+
+            console.log('%c[Lead Line Tool] Visualization initialized successfully.', 'color:#64748b');
+        }
+
+        // Boot the app
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
