@@ -21,7 +21,7 @@
                 <h1 class="text-4xl font-semibold flex items-center gap-3">
                     <span class="text-[#00a4bd]">Jellyfin</span> Universal Organizer
                 </h1>
-                <p class="text-gray-400 mt-1">Structure & Auto-Copy: Video, Audio, Music, Books, & Audiobooks</p>
+                <p class="text-gray-400 mt-1">Structure & Auto-Process: Video, Audio, Music, Books, & Audiobooks</p>
             </div>
             <div class="flex gap-3 text-xs">
                 <a href="https://jellyfin.org/docs/general/server/media/books/" target="_blank" class="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 rounded-xl">📖 Books Guide</a>
@@ -110,13 +110,27 @@
                         </div>
 
                         <div class="p-5 border border-[#00a4bd] rounded-2xl bg-gray-950/50">
-                            <label class="block text-sm text-[#00a4bd] font-medium mb-1">Source: Scan Local Folder Files (Copy Only)</label>
+                            <label class="block text-sm text-[#00a4bd] font-medium mb-4">Source: Scan Local Folder Files</label>
                             
-                            <p class="text-xs text-gray-400 mb-2 mt-2">1. Select folder to analyze existing file lists.</p>
+                            <div class="mb-5 bg-gray-900 p-3 rounded-xl border border-gray-700">
+                                <label class="block text-xs text-gray-400 mb-2 font-medium">File Action</label>
+                                <div class="flex gap-4">
+                                    <label class="flex items-center gap-2 text-sm text-gray-200 cursor-pointer">
+                                        <input type="radio" name="file-action" value="copy" checked class="accent-[#00a4bd] w-4 h-4"> 
+                                        <span>Copy <span class="text-gray-500 text-xs">(Safer)</span></span>
+                                    </label>
+                                    <label class="flex items-center gap-2 text-sm text-gray-200 cursor-pointer">
+                                        <input type="radio" name="file-action" value="move" class="accent-[#00a4bd] w-4 h-4"> 
+                                        <span>Move <span class="text-gray-500 text-xs">(Cut & Paste)</span></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <p class="text-xs text-gray-400 mb-2">1. Select folder to analyze existing file lists.</p>
                             <input type="file" id="local-folder" webkitdirectory directory multiple
                                    class="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer mb-2">
                             
-                            <div id="smart-parse-container" class="flex items-center gap-2 mb-4">
+                            <div id="smart-parse-container" class="flex items-center gap-2 mb-4 mt-2">
                                 <input type="checkbox" id="folder-season-fallback" checked class="w-4 h-4 accent-[#00a4bd] bg-gray-900 border-gray-700 rounded">
                                 <label for="folder-season-fallback" class="text-xs text-emerald-400">Smart Parse: Extract Season from parent folder if filename only has Episode #</label>
                             </div>
@@ -143,7 +157,7 @@
                 </div>
 
                 <div class="bg-gray-900 rounded-3xl p-8 flex-1 flex flex-col shadow-lg h-64">
-                    <h2 class="text-xl font-medium mb-4">Copy Action Log</h2>
+                    <h2 class="text-xl font-medium mb-4">File Action Log</h2>
                     <div id="rename-log" class="bg-gray-950 border border-gray-700 rounded-2xl p-5 overflow-auto text-xs font-mono text-gray-400 flex-1 whitespace-pre-wrap">Empty structural logic will deploy if no folder matching criteria loaded.</div>
                 </div>
             </div>
@@ -319,7 +333,6 @@
 
         function standardizePath(path, osType) {
             if (!path) return "";
-            // If exporting for Windows BAT, use backslashes. Otherwise, force forward slashes for Ubuntu/Mac/Python
             if (osType === 'bat') return path.replace(/\//g, '\\');
             return path.replace(/\\/g, '/');
         }
@@ -335,6 +348,10 @@
             const destPathBase = document.getElementById("dest-path").value.trim().replace(/[\\\/]+$/, "");
             let sourcePathBase = document.getElementById("source-path").value.trim().replace(/[\\\/]+$/, "");
             const useFolderFallback = document.getElementById("folder-season-fallback")?.checked;
+            
+            // Get selected action: 'copy' or 'move'
+            const fileAction = document.querySelector('input[name="file-action"]:checked').value;
+            const logPrefix = fileAction === 'copy' ? 'COPY' : 'MOVE';
             
             const fileInput = document.getElementById("local-folder");
             const files = Array.from(fileInput.files);
@@ -363,12 +380,12 @@
 
             let treeHTML = `<div class="text-[#00a4bd] font-medium">📁 ${targetSubdirStructure.replace(/\//g, ' ➔ 📁 ')}</div>`;
             let logHTML = "";
-            let cmds = { sh: [], bat: [], py_dirs: [], py_copies: [] };
+            let cmds = { sh: [], bat: [], py_dirs: [], py_actions: [] };
             let addedSubdirs = new Set();
 
             cmds.sh.push(`mkdir -p "${fullDestPathSh}"`);
             cmds.bat.push(`mkdir "${fullDestPathBat}" 2>nul`);
-            cmds.py_dirs.push(`    os.makedirs(r"${fullDestPathSh}", exist_ok=True)`); // Python loves forward slashes on both Ubuntu and Win
+            cmds.py_dirs.push(`    os.makedirs(r"${fullDestPathSh}", exist_ok=True)`);
 
             if (files.length > 0) {
                 const allowedExtensions = extensionPresets[currentType];
@@ -458,15 +475,23 @@
                         treeHTML += `<div class="ml-12 text-emerald-500 text-xs">📄 ${resolvedFilename}</div>`;
                     }
 
-                    logHTML += `COPY: ${innerRelativePath}\n ➔ ${resolvedFilename}\n\n`;
-                    cmds.sh.push(`cp "${srcFileSh}" "${finalDestSh}/${resolvedFilename}"`);
-                    cmds.bat.push(`copy "${srcFileBat}" "${finalDestBat}\\${resolvedFilename}"`);
-                    cmds.py_copies.push(`    shutil.copy2(r"${srcFileSh}", r"${fullDestPathSh}/${resolvedFilename}")`);
+                    logHTML += `${logPrefix}: ${innerRelativePath}\n ➔ ${resolvedFilename}\n\n`;
+                    
+                    if (fileAction === 'copy') {
+                        cmds.sh.push(`cp "${srcFileSh}" "${finalDestSh}/${resolvedFilename}"`);
+                        cmds.bat.push(`copy "${srcFileBat}" "${finalDestBat}\\${resolvedFilename}"`);
+                        cmds.py_actions.push(`    shutil.copy2(r"${srcFileSh}", r"${fullDestPathSh}/${resolvedFilename}")`);
+                    } else {
+                        cmds.sh.push(`mv "${srcFileSh}" "${finalDestSh}/${resolvedFilename}"`);
+                        cmds.bat.push(`move "${srcFileBat}" "${finalDestBat}\\${resolvedFilename}"`);
+                        cmds.py_actions.push(`    shutil.move(r"${srcFileSh}", r"${fullDestPathSh}/${resolvedFilename}")`);
+                    }
+                    
                     processedCounter++;
                 });
 
                 if (processedCounter === 0) logHTML = "Zero target match variables captured.";
-                document.getElementById("download-instruction").innerHTML = `Because absolute paths are baked into the execution files, you can place and run these scripts anywhere on your Ubuntu/Linux machine.`;
+                document.getElementById("download-instruction").innerHTML = `Target script mapped to execute within path matrices securely. Use Python for zero restriction execution parameters context.`;
             } else {
                 logHTML = `Generating framework arrays under absolute reference mapping parameters:\n${fullDestPathSh}`;
                 if (currentType === "tv") {
@@ -487,7 +512,6 @@
             document.getElementById("preview-tree").innerHTML = treeHTML;
             document.getElementById("rename-log").innerHTML = logHTML;
 
-            // Notice the #!/usr/bin/env python3 shebang explicitly for Ubuntu compatibility
             const pythonScript = `#!/usr/bin/env python3
 import os
 import shutil
@@ -496,8 +520,8 @@ def run_jellyfin_cleaner():
     print("Allocating namespace folders...")
 ${cmds.py_dirs.join('\n')}
 
-    print("Executing asset copies...")
-${cmds.py_copies.length > 0 ? cmds.py_copies.join('\n') : "    pass"}
+    print("Executing asset actions...")
+${cmds.py_actions.length > 0 ? cmds.py_actions.join('\n') : "    pass"}
     print("✅ Complete!")
 
 if __name__ == "__main__":
