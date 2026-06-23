@@ -133,6 +133,11 @@
                         <i class="fa-solid fa-book mr-1.5"></i>
                         <span>Full Timeline Wiki</span>
                     </a>
+                    <a href="logh_ipod_timeline.html" 
+                       class="inline-flex items-center gap-x-2 px-5 py-2 rounded-3xl bg-gradient-to-r from-amber-400 to-yellow-500 text-zinc-950 font-semibold text-sm shadow-inner hover:brightness-105 active:scale-[0.985] transition-all">
+                        <i class="fa-solid fa-headphones mr-1.5"></i>
+                        <span>iPod Timeline Reel</span>
+                    </a>
                     <div class="px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-3xl text-xs flex items-center gap-x-2">
                         <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
                         <span class="font-mono text-emerald-400">LIVE</span>
@@ -444,7 +449,12 @@
             let html = '';
             
             if (exactEvents.length > 0) {
-                // Exact match - ON THIS DAY
+                // Exact match - ON THIS DAY + also show this month events
+                const otherMonthEvents = monthEvents.filter(ev => {
+                    const dayMatch = ev.date.match(/\d+/);
+                    return !dayMatch || parseInt(dayMatch[0]) !== tDay;
+                });
+                
                 html = `
                     <div class="flex items-start gap-x-4">
                         <div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-inner">
@@ -457,7 +467,7 @@
                             </div>
                             <h3 class="text-2xl font-semibold tracking-tight mb-3">Significant events in LOGH history</h3>
                             
-                            <div class="space-y-4">
+                            <div class="space-y-4 mb-8">
                                 ${exactEvents.map(ev => `
                                     <div class="event-card rounded-2xl p-5">
                                         <div class="flex items-center justify-between mb-2">
@@ -474,6 +484,35 @@
                                     </div>
                                 `).join('')}
                             </div>
+                            
+                            ${otherMonthEvents.length > 0 ? `
+                            <div class="border-t border-zinc-700 pt-6">
+                                <div class="flex items-center gap-x-2 mb-3">
+                                    <span class="px-3 py-0.5 text-xs font-bold tracking-widest bg-zinc-700 text-zinc-300 rounded-3xl">ALSO THIS MONTH</span>
+                                    <span class="text-xs text-zinc-400 font-mono">${getMonthName(tMonth)}</span>
+                                </div>
+                                <div class="grid gap-3">
+                                    ${otherMonthEvents.map(ev => {
+                                        const dayMatch = ev.date.match(/\d+/);
+                                        const dayNum = dayMatch ? dayMatch[0] : '';
+                                        return `
+                                            <div class="flex gap-x-4 bg-zinc-950/70 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-colors">
+                                                <div class="w-9 h-9 flex-shrink-0 rounded-xl bg-zinc-900 flex items-center justify-center text-xs font-mono text-amber-400 border border-zinc-700">
+                                                    ${dayNum || '—'}
+                                                </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex items-center gap-x-2">
+                                                        <span class="font-semibold">${ev.event}</span>
+                                                        <span class="text-[10px] px-2 py-px bg-zinc-800 rounded text-zinc-400">${ev.category}</span>
+                                                    </div>
+                                                    <p class="text-xs text-zinc-400 mt-0.5 line-clamp-2">${ev.description}</p>
+                                                    <a href="${ev.wiki_link}" target="_blank" class="inline-block mt-1.5 text-[10px] text-amber-400 hover:underline">View on Gineipaedia →</a>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>` : ''}
                         </div>
                     </div>
                 `;

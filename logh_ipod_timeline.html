@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOGH • iPod Timeline Reel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .title-font {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .ipod-frame {
+            background: linear-gradient(145deg, #e2e8f0, #cbd5e1, #94a3b8);
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4),
+                        inset 0 1px 0 white,
+                        inset 0 -1px 0 #64748b,
+                        0 0 0 12px #1e2937;
+            border: 8px solid #1e2937;
+            border-radius: 3rem;
+            max-width: 380px;
+            margin: 0 auto;
+        }
+
+        .ipod-screen {
+            background: #0f172a;
+            border: 6px solid #1e2937;
+            box-shadow: inset 0 4px 12px rgb(0 0 0 / 0.6),
+                        0 0 0 1px #64748b;
+            border-radius: 1.25rem;
+            overflow: hidden;
+        }
+
+        .ipod-header {
+            background: #1e2937;
+            color: #94a3b8;
+            font-size: 10px;
+            letter-spacing: 1.5px;
+        }
+
+        .timeline-screen {
+            min-height: 320px;
+            background: linear-gradient(#0f172a, #1e2937);
+            color: white;
+            padding: 1.25rem;
+            position: relative;
+        }
+
+        .date-ticker {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 13px;
+            letter-spacing: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .event-year {
+            font-size: 2.75rem;
+            line-height: 1;
+            font-weight: 700;
+            letter-spacing: -3px;
+            color: #d4af37;
+        }
+
+        .event-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            line-height: 1.3;
+            color: #f1e7d2;
+        }
+
+        .click-wheel {
+            width: 210px;
+            height: 210px;
+            background: radial-gradient(circle at 40% 30%, #f1e7d2, #cbd5e1 40%, #64748b 70%, #475569);
+            border-radius: 9999px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3),
+                        inset 0 8px 12px rgb(255 255 255 / 0.6),
+                        inset 0 -10px 15px rgb(0 0 0 / 0.25);
+            position: relative;
+            margin: 0 auto;
+            cursor: grab;
+            user-select: none;
+            border: 6px solid #1e2937;
+        }
+
+        .click-wheel:active {
+            cursor: grabbing;
+        }
+
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 68px;
+            height: 68px;
+            background: linear-gradient(#475569, #1e2937);
+            border-radius: 9999px;
+            box-shadow: inset 0 4px 6px rgb(0 0 0 / 0.4),
+                        0 0 0 1px #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d4af37;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .wheel-label {
+            position: absolute;
+            font-size: 9px;
+            font-weight: 700;
+            color: #1e2937;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+            letter-spacing: 0.5px;
+        }
+
+        .wheel-label.prev { top: 18px; left: 50%; transform: translateX(-50%); }
+        .wheel-label.next { bottom: 18px; left: 50%; transform: translateX(-50%); }
+        .wheel-label.menu { left: 22px; top: 50%; transform: translateY(-50%); }
+        .wheel-label.select { right: 22px; top: 50%; transform: translateY(-50%); }
+
+        .ipod-bezel {
+            background: #1e2937;
+            color: #64748b;
+        }
+
+        .logh-gold {
+            color: #d4af37;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 28px;
+            top: 60px;
+            bottom: 40px;
+            width: 2px;
+            background: linear-gradient(transparent, #d4af37, transparent);
+            opacity: 0.3;
+        }
+
+        .event-card-ipod {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #475569;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200 min-h-screen py-8">
+    <div class="max-w-[420px] mx-auto px-4">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6 px-2">
+            <div>
+                <div class="flex items-center gap-x-3">
+                    <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center shadow-inner">
+                        <i class="fa-solid fa-galaxy text-zinc-950 text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="title-font text-2xl font-semibold tracking-tighter">LOGH iPod</div>
+                        <div class="text-[10px] text-zinc-500 -mt-1">TIMELINE REEL • GINEIPAEDIA</div>
+                    </div>
+                </div>
+            </div>
+            <a href="today_in_logh.html" 
+               class="text-xs px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-3xl flex items-center gap-x-2 transition-colors">
+                <i class="fa-solid fa-calendar-day"></i>
+                <span class="font-medium">Today’s Update</span>
+            </a>
+        </div>
+
+        <!-- iPod Frame -->
+        <div class="ipod-frame p-5 pb-7 mx-auto">
+            
+            <!-- Top Status Bar -->
+            <div class="ipod-header rounded-t-3xl px-4 py-1.5 flex items-center justify-between text-[10px] font-mono tracking-[1.5px]">
+                <div class="flex items-center gap-x-1.5">
+                    <i class="fa-solid fa-wifi text-emerald-400"></i>
+                    <span>LOGH ARCHIVE</span>
+                </div>
+                <div class="flex items-center gap-x-2">
+                    <span id="current-time-top">07:58</span>
+                    <i class="fa-solid fa-battery-full text-emerald-400"></i>
+                </div>
+            </div>
+
+            <!-- Main Screen -->
+            <div class="ipod-screen mx-auto mt-1 rounded-3xl overflow-hidden shadow-inner" style="width: 100%; max-width: 320px;">
+                
+                <!-- Date Ticker (scrolls by on top) -->
+                <div class="bg-zinc-900 px-4 py-2 border-b border-zinc-700 flex items-center">
+                    <div class="flex-1 overflow-hidden">
+                        <div id="date-ticker" 
+                             class="date-ticker text-amber-400 font-medium flex items-center gap-x-3 whitespace-nowrap">
+                            <!-- Populated by JS: scrolling or updating years -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Central Screen Content -->
+                <div id="ipod-screen-content" 
+                     class="timeline-screen px-5 py-6 text-white min-h-[310px] flex flex-col">
+                    
+                    <div id="event-display" class="flex-1">
+                        <!-- JS injected current event -->
+                    </div>
+                    
+                    <div class="mt-auto pt-4 border-t border-zinc-700 flex items-center justify-between text-[10px] text-zinc-400">
+                        <div>
+                            <span id="event-index"></span> / <span id="total-events"></span>
+                        </div>
+                        <div class="flex items-center gap-x-1">
+                            <i class="fa-solid fa-history text-xs"></i>
+                            <span class="font-mono text-[9px]">SCROLL WHEEL</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Click Wheel -->
+            <div class="mt-5 relative mx-auto" style="width: 210px; height: 210px;">
+                <div id="click-wheel" 
+                     class="click-wheel mx-auto"
+                     onmousedown="startWheelDrag(event)"
+                     ontouchstart="startWheelDrag(event)">
+                    
+                    <!-- Labels -->
+                    <div class="wheel-label prev text-center">PREV</div>
+                    <div class="wheel-label next text-center">NEXT</div>
+                    <div class="wheel-label menu text-center">MENU</div>
+                    <div class="wheel-label select text-center">SELECT</div>
+                    
+                    <!-- Center button -->
+                    <div onclick="selectCurrentEvent()" 
+                         class="wheel-center text-[10px] font-bold cursor-pointer active:scale-95 transition-transform">
+                        SELECT
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wheel Instructions -->
+            <div class="text-center mt-3">
+                <div class="text-[9px] text-zinc-400 tracking-widest">DRAG THE WHEEL • ARROW KEYS • MOUSE WHEEL</div>
+            </div>
+
+        </div>
+
+        <!-- Footer controls -->
+        <div class="mt-6 flex justify-center gap-x-3 text-xs">
+            <button onclick="prevEvent()" 
+                    class="px-5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-3xl flex items-center gap-x-2 active:scale-[0.985] transition-all">
+                <i class="fa-solid fa-chevron-left"></i>
+                <span>PREV</span>
+            </button>
+            
+            <button onclick="nextEvent()" 
+                    class="px-5 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-3xl flex items-center gap-x-2 active:scale-[0.985] transition-all">
+                <span>NEXT</span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            
+            <button onclick="jumpToRandom()" 
+                    class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-3xl text-amber-400 flex items-center gap-x-2 text-xs active:scale-[0.985]">
+                <i class="fa-solid fa-random"></i>
+                <span>RANDOM</span>
+            </button>
+        </div>
+
+        <div class="text-center mt-5 text-[10px] text-zinc-500">
+            Inspired by the original iPod click wheel • Full LOGH Timeline from <a href="https://gineipaedia.com/wiki/Timeline" target="_blank" class="text-amber-400 hover:underline">Gineipaedia</a>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind
+        function initTailwind() {
+            // already via CDN
+        }
+
+        // Full Timeline Data (compiled from Gineipaedia + Fandom Timeline)
+        const timelineEvents = [
+            { year: 2039, era: "Hegemonic Earth Era", date: "—", event: "The Thirteen Day War", desc: "Massive nuclear war between the United States of Eurafrica and the Northern Condominium destroys major cities on Earth. Human population reduced to 1 billion.", category: "Cataclysm" },
+            { year: 2129, era: "Hegemonic Earth Era", date: "—", event: "United Earth Government Formed", desc: "After 90 years of chaos, Earth's nations unite under the UEG with capital in Brisbane, Australia. Ministry of Space established.", category: "Politics" },
+            { year: 2391, era: "Hegemonic Earth Era", date: "—", event: "Warp Drive Perfected", desc: "Safe faster-than-light travel becomes possible, ushering in the age of interstellar colonization.", category: "Technology" },
+            { year: 2691, era: "Interregnum Era", date: "February 28", event: "Black Fleet Formed at Prosperina", desc: "Carle Palmgren, Winslow Kennes Townshent, Joliot Frankul and Chao Yuiling meet and establish the Black Fleet — leaders of the Anti-Earth Movement.", category: "Rebellion" },
+            { year: 2704, era: "Interregnum Era", date: "—", event: "Battle of Sol & Fall of Earth", desc: "Black Fleet blockades and assaults Earth. Earth's population reduced again; surface laid waste.", category: "War" },
+            { year: 2801, era: "Galactic Federation Era", date: "—", event: "Galactic Federation Founded (1 UC)", desc: "New Universal Calendar begins. Golden Age of Humanity starts with capital on Theoria in Aldebaran Starzone.", category: "Foundation" },
+            { year: 3110, era: "Early Imperial Era", date: "—", event: "Galactic Empire Founded (1 IC)", desc: "Rudolf von Goldenbaum declares himself Emperor, ends the Federation, and starts the Imperial Calendar and Goldenbaum Dynasty.", category: "Empire" },
+            { year: 3118, era: "Early Imperial Era", date: "—", event: "Inferior Genes Exclusion Act", desc: "Kaiser Rudolf mandates sterilization of the handicapped and execution of the mentally ill. Aristocratic class of High Nobles created.", category: "Oppression" },
+            { year: 3327, era: "Free Planets Alliance", date: "—", event: "Free Planets Alliance Founded", desc: "Refugees led by Arle Heinnesen settle Heinessen after the Long March. Democratic republic established, reviving Space Era calendar.", category: "Foundation" },
+            { year: 3596, era: "Reinhard Era (UC 796)", date: "January 1", event: "Battle of Astarte", desc: "Reinhard von Lohengramm leads Imperial fleet to crushing victory over the Alliance. Yang Wen-li promoted and given the 13th Fleet.", category: "Battle" },
+            { year: 3596, era: "Reinhard Era (UC 796)", date: "May 14", event: "Capture of Iserlohn Fortress", desc: "Yang Wen-li’s 13th Fleet, with Rosen Ritter aid, captures the supposedly impregnable Iserlohn Fortress from the Empire.", category: "Battle" },
+            { year: 3596, era: "Reinhard Era (UC 796)", date: "October 15", event: "Battle of Amritsar", desc: "Alliance invasion crushed. Only Yang’s 13th Fleet escapes intact. Job Trunicht rises in Alliance politics.", category: "Battle" },
+            { year: 3597, era: "Reinhard Era (UC 797)", date: "April", event: "Imperial & Alliance Civil Wars Begin", desc: "Lippstadt League rebellion vs Reinhard. National Salvation Military Council coup on Heinessen. Kircheis plays key role.", category: "Civil War" },
+            { year: 3597, era: "Reinhard Era (UC 797)", date: "September", event: "Westerland Massacre", desc: "Otho von Braunschweig launches nuclear attack on rebellious peasants, killing millions. Reinhard uses it politically.", category: "Atrocity" },
+            { year: 3597, era: "Reinhard Era (UC 797)", date: "Late", event: "Death of Siegfried Kircheis", desc: "Reinhard’s closest friend and right-hand man is killed during an assassination attempt on Reinhard (implicating Lichtenlade).", category: "Death" },
+            { year: 3598, era: "Reinhard Era (UC 798)", date: "January 1", event: "Reinhard Begins Social Reforms", desc: "Reinhard, now with supreme power, starts sweeping reforms across the Empire.", category: "Politics" },
+            { year: 3598, era: "Reinhard Era (UC 798)", date: "September 20", event: "Katharin Kätchen Crowned Kaiserin", desc: "Infant daughter (or relative) of the Lohengramm line crowned at only 8 months old amid transition.", category: "Politics" },
+            { year: 3598, era: "Reinhard Era (UC 798)", date: "November 20", event: "Ninth Battle of Iserlohn", desc: "Oskar von Reuenthal assaults Iserlohn with 36,000 ships. Major engagement in the corridor.", category: "Battle" },
+            { year: 3599, era: "Reinhard Era (UC 799)", date: "May", event: "Battle of Vermilion & Surrender", desc: "Yang Wen-li’s final stand. Alliance surrenders unconditionally. Treaty of Ba‘alat ends the First Alliance–Imperial War.", category: "War End" },
+            { year: 3599, era: "Reinhard Era (UC 799)", date: "June 20", event: "Reinhard Becomes Emperor", desc: "Katharin Kätchen abdicates. Reinhard founds the Goldenlöwe Dynasty and initiates the New Imperial Calendar (NIC).", category: "Empire" },
+            { year: 3599, era: "Reinhard Era (UC 799)", date: "July", event: "Terraist Suppression Expedition", desc: "August Samuel Wahlen leads fleet to Terra to crush Terraists after assassination attempt on Reinhard.", category: "Terrorism" },
+            { year: 3600, era: "Reinhard Era (UC 800)", date: "January", event: "Second Alliance–Imperial War Begins", desc: "Reinhard declares the Alliance breached the treaty and launches full subjugation campaign.", category: "War" },
+            { year: 3601, era: "Final Chapter (UC 801)", date: "July 26", event: "Death of Reinhard von Lohengramm", desc: "After galactic conquest and beginning constitutional reforms, Reinhard dies young. Leaves the New Galactic Empire to his wife Hildegard and loyal officers.", category: "Death" },
+            { year: 3601, era: "Final Chapter (UC 801)", date: "—", event: "End of an Era", desc: "The saga concludes with the galaxy forever changed by the rivalry between Reinhard von Lohengramm and Yang Wen-li — two legends who shaped history.", category: "Legacy" }
+        ];
+
+        let currentIndex = 0;
+        let isDragging = false;
+        let lastAngle = 0;
+
+        function updateDateTicker() {
+            const ticker = document.getElementById('date-ticker');
+            const ev = timelineEvents[currentIndex];
+            
+            let html = '';
+            // Create a scrolling feel with previous + current + next
+            const prev = timelineEvents[(currentIndex - 1 + timelineEvents.length) % timelineEvents.length];
+            const next = timelineEvents[(currentIndex + 1) % timelineEvents.length];
+            
+            html = `
+                <span class="opacity-40 mx-3">${prev.year} ${prev.date !== '—' ? '• ' + prev.date : ''}</span>
+                <span class="font-bold text-lg mx-2">${ev.year} ${ev.date !== '—' ? '• ' + ev.date : ''}</span>
+                <span class="opacity-40 mx-3">${next.year} ${next.date !== '—' ? '• ' + next.date : ''}</span>
+            `;
+            ticker.innerHTML = html;
+        }
+
+        function renderCurrentEvent() {
+            const container = document.getElementById('event-display');
+            const ev = timelineEvents[currentIndex];
+            
+            const categoryColor = {
+                'Battle': 'text-red-400',
+                'Death': 'text-zinc-400',
+                'Politics': 'text-amber-400',
+                'Empire': 'text-yellow-400',
+                'War': 'text-orange-400',
+                'Foundation': 'text-emerald-400'
+            }[ev.category] || 'text-zinc-300';
+
+            container.innerHTML = `
+                <div class="mb-1">
+                    <span class="text-xs px-3 py-px rounded-full bg-zinc-800 ${categoryColor} font-medium tracking-wider">${ev.category}</span>
+                    <span class="ml-2 text-xs text-zinc-400">${ev.era}</span>
+                </div>
+                
+                <div class="event-year">${ev.year}</div>
+                
+                ${ev.date !== '—' ? `<div class="text-amber-400 text-sm font-mono tracking-[1px] mb-1">${ev.date.toUpperCase()}</div>` : ''}
+                
+                <div class="event-title mb-4 leading-tight">${ev.event}</div>
+                
+                <div class="text-sm text-zinc-300 leading-relaxed pr-1">
+                    ${ev.desc}
+                </div>
+                
+                <div class="mt-5 pt-4 border-t border-zinc-700 flex items-center justify-between">
+                    <a href="https://gineipaedia.com/wiki/Timeline" target="_blank" 
+                       class="text-xs flex items-center gap-x-1.5 text-amber-400 hover:text-amber-300 transition-colors">
+                        <span>VIEW FULL ENTRY</span> 
+                        <i class="fa-solid fa-external-link-alt text-xs"></i>
+                    </a>
+                    
+                    <div onclick="copyEventToClipboard()" class="cursor-pointer text-xs flex items-center gap-x-1 text-zinc-400 hover:text-zinc-200">
+                        <i class="fa-regular fa-copy"></i>
+                        <span class="text-[10px]">COPY</span>
+                    </div>
+                </div>
+            `;
+            
+            // Update index counter
+            document.getElementById('event-index').textContent = (currentIndex + 1).toString().padStart(2, '0');
+            document.getElementById('total-events').textContent = timelineEvents.length.toString().padStart(2, '0');
+            
+            updateDateTicker();
+        }
+
+        function nextEvent() {
+            currentIndex = (currentIndex + 1) % timelineEvents.length;
+            renderCurrentEvent();
+            // subtle wheel animation hint
+            animateWheelTick(1);
+        }
+
+        function prevEvent() {
+            currentIndex = (currentIndex - 1 + timelineEvents.length) % timelineEvents.length;
+            renderCurrentEvent();
+            animateWheelTick(-1);
+        }
+
+        function jumpToRandom() {
+            currentIndex = Math.floor(Math.random() * timelineEvents.length);
+            renderCurrentEvent();
+            animateWheelTick(0);
+        }
+
+        function selectCurrentEvent() {
+            const ev = timelineEvents[currentIndex];
+            // Fun interaction: flash the screen or show a modal with more info
+            const screen = document.getElementById('ipod-screen-content');
+            screen.style.transition = 'all 0.1s';
+            screen.style.boxShadow = '0 0 0 4px #d4af37';
+            
+            setTimeout(() => {
+                screen.style.boxShadow = 'inset 0 4px 12px rgb(0 0 0 / 0.6), 0 0 0 1px #64748b';
+            }, 280);
+            
+            // Could open wiki in new tab
+            // window.open('https://gineipaedia.com/wiki/Timeline', '_blank');
+        }
+
+        function animateWheelTick(direction) {
+            const wheel = document.getElementById('click-wheel');
+            if (!wheel) return;
+            
+            wheel.style.transition = 'transform 0.2s cubic-bezier(0.23, 1, 0.32, 1)';
+            const currentRot = parseFloat(wheel.style.transform?.replace('rotate(', '') || '0');
+            const newRot = currentRot + (direction * 18);
+            wheel.style.transform = `rotate(${newRot}deg)`;
+            
+            setTimeout(() => {
+                wheel.style.transition = '';
+            }, 200);
+        }
+
+        // Click Wheel Drag Logic (iPod style)
+        let startY = 0;
+        let currentRotation = 0;
+
+        function startWheelDrag(e) {
+            e.preventDefault();
+            isDragging = true;
+            const wheel = document.getElementById('click-wheel');
+            
+            const rect = wheel.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            function onMove(moveEvent) {
+                if (!isDragging) return;
+                
+                const clientY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
+                const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                
+                const angle = Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI);
+                
+                if (lastAngle !== 0) {
+                    let delta = angle - lastAngle;
+                    // Handle wrap around
+                    if (delta > 180) delta -= 360;
+                    if (delta < -180) delta += 360;
+                    
+                    currentRotation += delta;
+                    wheel.style.transform = `rotate(${currentRotation}deg)`;
+                    
+                    // Scroll timeline based on drag direction and amount
+                    if (Math.abs(delta) > 8) {
+                        if (delta > 0) {
+                            nextEvent();
+                        } else {
+                            prevEvent();
+                        }
+                        // reset rotation a bit for continuous feel
+                        currentRotation = currentRotation % 360;
+                    }
+                }
+                lastAngle = angle;
+            }
+            
+            function onEnd() {
+                isDragging = false;
+                lastAngle = 0;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+                
+                // Snap wheel back to neutral
+                setTimeout(() => {
+                    if (wheel) wheel.style.transition = 'transform 0.4s ease';
+                    wheel.style.transform = `rotate(0deg)`;
+                    setTimeout(() => {
+                        if (wheel) wheel.style.transition = '';
+                    }, 400);
+                }, 120);
+            }
+            
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchmove', onMove, {passive: false});
+            document.addEventListener('touchend', onEnd);
+        }
+
+        // Keyboard support (arrow keys + space)
+        function setupKeyboardControls() {
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                    nextEvent();
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                    prevEvent();
+                    e.preventDefault();
+                } else if (e.key.toLowerCase() === 'r') {
+                    jumpToRandom();
+                } else if (e.key === ' ' || e.key === 'Enter') {
+                    selectCurrentEvent();
+                    e.preventDefault();
+                }
+            });
+            
+            // Mouse wheel on the wheel area
+            const wheel = document.getElementById('click-wheel');
+            wheel.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                if (e.deltaY > 0) {
+                    nextEvent();
+                } else {
+                    prevEvent();
+                }
+            }, { passive: false });
+        }
+
+        function updateClock() {
+            const clock = document.getElementById('current-time-top');
+            function tick() {
+                const now = new Date();
+                clock.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            }
+            tick();
+            setInterval(tick, 30000);
+        }
+
+        function copyEventToClipboard() {
+            const ev = timelineEvents[currentIndex];
+            const text = `${ev.year} ${ev.date} — ${ev.event}\n\n${ev.desc}\n\nSource: Gineipaedia Timeline`;
+            navigator.clipboard.writeText(text).then(() => {
+                const origText = event.currentTarget ? event.currentTarget.innerHTML : '';
+                // simple toast
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 bg-zinc-800 text-xs px-4 py-2 rounded-3xl border border-zinc-600 flex items-center gap-x-2';
+                toast.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> <span>Copied to clipboard</span>`;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 1600);
+            }).catch(() => {
+                alert('Event copied:\n' + text);
+            });
+        }
+
+        function initializeIPodTimeline() {
+            initTailwind();
+            
+            // Set initial event (start near the main story or first)
+            currentIndex = 9; // Battle of Astarte - good starting point
+            renderCurrentEvent();
+            
+            setupKeyboardControls();
+            updateClock();
+            
+            // Easter egg: click the iPod logo area to jump to today-related if possible
+            const header = document.querySelector('.ipod-header');
+            if (header) {
+                header.addEventListener('click', () => {
+                    // Try to find July 26 or a recent one
+                    const julyIndex = timelineEvents.findIndex(e => e.date.includes('July 26'));
+                    if (julyIndex !== -1) {
+                        currentIndex = julyIndex;
+                        renderCurrentEvent();
+                    } else {
+                        jumpToRandom();
+                    }
+                });
+            }
+            
+            // Initial hint
+            setTimeout(() => {
+                const wheel = document.getElementById('click-wheel');
+                if (wheel) {
+                    wheel.style.transition = 'transform 0.6s ease';
+                    wheel.style.transform = 'rotate(12deg)';
+                    setTimeout(() => {
+                        if (wheel) {
+                            wheel.style.transform = 'rotate(0deg)';
+                            wheel.style.transition = '';
+                        }
+                    }, 650);
+                }
+            }, 1800);
+            
+            console.log('%c[LOGH iPod] Scroll reel timeline initialized. Drag the wheel or use arrows.', 'color:#64748b');
+        }
+
+        window.onload = initializeIPodTimeline;
+    </script>
+</body>
+</html>
