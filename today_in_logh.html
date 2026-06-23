@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Today in Legend of the Galactic Heroes • Gineipaedia Timeline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --gold: #d4af37;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .title-font {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .space-bg {
+            background: radial-gradient(circle at center, #1a2332 0%, #0f172a 100%);
+        }
+
+        .gold-accent {
+            color: #d4af37;
+        }
+
+        .logh-card {
+            background: #1e2937;
+            border: 1px solid #334155;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .logh-card:hover {
+            border-color: #d4af37;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .event-card {
+            background: #0f172a;
+            border-left: 4px solid #d4af37;
+        }
+
+        .section-header {
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .calendar-day {
+            transition: all 0.1s ease;
+            aspect-ratio: 1;
+        }
+        
+        .calendar-day:hover {
+            background-color: #334155;
+            transform: scale(1.05);
+        }
+        
+        .calendar-day.has-event {
+            background-color: #1e2937;
+            border: 1px solid #d4af37;
+            position: relative;
+        }
+        
+        .calendar-day.has-event::after {
+            content: '★';
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 9px;
+            color: #d4af37;
+        }
+        
+        .calendar-day.today {
+            background-color: #334155;
+            border: 2px solid #60a5fa;
+            font-weight: 700;
+        }
+        
+        .calendar-day.selected {
+            background-color: #d4af37 !important;
+            color: #0f172a !important;
+            font-weight: 700;
+            border: 2px solid #d4af37;
+        }
+
+        .timeline-link {
+            color: #d4af37;
+            transition: color 0.2s;
+        }
+        
+        .timeline-link:hover {
+            color: #f59e0b;
+            text-decoration: underline;
+        }
+
+        .logh-header {
+            background: linear-gradient(90deg, #0f172a, #1e2937);
+            border-bottom: 1px solid #334155;
+        }
+
+        .metric {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200 space-bg min-h-screen">
+    <!-- Header -->
+    <header class="logh-header sticky top-0 z-50">
+        <div class="max-w-screen-xl mx-auto px-6 py-5">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-x-4">
+                    <div class="w-11 h-11 flex items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-600 shadow-inner">
+                        <i class="fa-solid fa-galaxy text-zinc-950 text-3xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="title-font text-3xl font-semibold tracking-tighter">TODAY IN<br>LEGEND OF THE GALACTIC HEROES</h1>
+                        <p class="text-xs text-zinc-400 -mt-1">A fan tribute powered by the Gineipaedia Timeline</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-x-3">
+                    <a href="https://gineipaedia.com/wiki/Timeline" target="_blank" 
+                       class="inline-flex items-center gap-x-2 px-4 py-2 rounded-3xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-sm font-medium transition-colors">
+                        <i class="fa-solid fa-book mr-1.5"></i>
+                        <span>Full Timeline Wiki</span>
+                    </a>
+                    <div class="px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-3xl text-xs flex items-center gap-x-2">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="font-mono text-emerald-400">LIVE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-screen-xl mx-auto px-6 pt-8 pb-16">
+        
+        <!-- Current Date Banner -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <div class="flex items-center gap-x-3">
+                    <div id="current-date-display" 
+                         class="text-2xl font-semibold tracking-tight text-white"></div>
+                    <div class="px-3 py-1 bg-zinc-900 border border-zinc-700 text-xs rounded-2xl font-mono flex items-center">
+                        <i class="fa-regular fa-clock mr-1.5"></i>
+                        <span id="current-time"></span>
+                    </div>
+                </div>
+                <p class="text-zinc-400 text-sm mt-0.5">Real-world date • In-universe events shown by month/day</p>
+            </div>
+            
+            <button onclick="resetToToday()" 
+                    class="flex items-center gap-x-2 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-950 transition-all border border-zinc-700 rounded-3xl text-sm font-medium">
+                <i class="fa-solid fa-sync-alt mr-2"></i>
+                <span>Reset to Today</span>
+            </button>
+        </div>
+
+        <!-- TODAY'S UPDATE SECTION -->
+        <div class="mb-10">
+            <div class="flex items-center gap-x-3 mb-4">
+                <div class="section-header text-amber-400 flex items-center gap-x-2">
+                    <i class="fa-solid fa-calendar-day"></i>
+                    <span>TODAY'S LOGH UPDATE</span>
+                </div>
+                <div class="flex-1 h-px bg-zinc-800"></div>
+            </div>
+            
+            <div id="today-update-card" 
+                 class="logh-card rounded-3xl p-7 shadow-xl">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- INTERACTIVE CALENDAR EXPLORER -->
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <div class="section-header text-amber-400 flex items-center gap-x-2">
+                    <i class="fa-solid fa-calendar-alt"></i>
+                    <span>EXPLORE THE TIMELINE CALENDAR</span>
+                </div>
+                <div class="text-xs text-zinc-500">Click any day to see events • All dates are month/day only</div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Calendar Controls + Grid -->
+                <div class="lg:col-span-7 bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
+                    <div class="flex items-center justify-between mb-5">
+                        <div class="flex items-center gap-x-3">
+                            <label class="text-sm font-medium text-zinc-400">Month</label>
+                            <select id="month-select" onchange="updateCalendarGrid()"
+                                    class="bg-zinc-950 border border-zinc-700 text-white rounded-2xl px-4 py-2 text-sm focus:outline-none focus:border-amber-400">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        
+                        <div onclick="selectRandomDate()" 
+                             class="cursor-pointer flex items-center gap-x-2 text-xs px-3 py-1.5 bg-zinc-950 hover:bg-zinc-800 border border-zinc-700 rounded-2xl transition-colors">
+                            <i class="fa-solid fa-dice"></i>
+                            <span class="font-medium">Random Date</span>
+                        </div>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div id="calendar-grid" 
+                         class="grid grid-cols-7 gap-1 text-center text-sm">
+                        <!-- JS generated days -->
+                    </div>
+                    
+                    <div class="flex items-center justify-center gap-x-6 mt-4 text-[10px] text-zinc-500">
+                        <div class="flex items-center gap-x-1.5">
+                            <div class="w-3 h-3 border border-amber-400 rounded"></div>
+                            <span>Has Event</span>
+                        </div>
+                        <div class="flex items-center gap-x-1.5">
+                            <div class="w-3 h-3 bg-sky-400 rounded"></div>
+                            <span>Today</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Date Details Panel -->
+                <div class="lg:col-span-5 bg-zinc-900 border border-zinc-800 rounded-3xl p-6 flex flex-col">
+                    <div class="mb-4">
+                        <div class="text-xs uppercase tracking-[1px] text-zinc-500 mb-1">SELECTED DATE</div>
+                        <div id="selected-date-header" 
+                             class="text-3xl font-semibold tracking-tighter text-white">—</div>
+                    </div>
+                    
+                    <div id="selected-events-panel" class="flex-1 overflow-auto pr-1 custom-scroll">
+                        <!-- Populated dynamically by JS -->
+                        <div class="text-zinc-400 text-sm italic">Select a day from the calendar above to view events.</div>
+                    </div>
+                    
+                    <div class="pt-4 mt-auto border-t border-zinc-800 text-[10px] text-zinc-500">
+                        Events sourced from <a href="https://gineipaedia.com/wiki/Timeline" target="_blank" class="timeline-link">Gineipaedia Timeline</a>. 
+                        Character birthdays from official &amp; fan resources.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Footer -->
+        <div class="mt-10 pt-8 border-t border-zinc-800 text-center">
+            <div class="max-w-md mx-auto">
+                <p class="text-xs text-zinc-400 leading-relaxed">
+                    This interactive page uses month and day from the rich <strong>Legend of the Galactic Heroes</strong> timeline. 
+                    Most historical entries in the saga are tied to specific years (UC / IC); here we celebrate recurring anniversaries and key dated moments.
+                    For the complete year-by-year chronicle including countless battles and political events without fixed month/day, 
+                    visit the <a href="https://gineipaedia.com/wiki/Timeline" target="_blank" class="timeline-link font-medium">official Gineipaedia Timeline</a>.
+                </p>
+                <div class="mt-4 text-[10px] text-zinc-500 flex items-center justify-center gap-x-2">
+                    <span>Made with love for LOGH fans</span> 
+                    <span class="text-amber-400">•</span> 
+                    <span>June 2026</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent-gold', '#d4af37');
+        }
+
+        // Timeline Data - embedded from logh_timeline_events.json for standalone use
+        const timelineData = {
+            "01-14": [
+                {
+                    "date": "January 14",
+                    "year_context": "Imperial Calendar (~467 IC / SE 776)",
+                    "event": "Birth of Siegfried Kircheis",
+                    "description": "Siegfried Kircheis, the steadfast and loyal friend, confidant, and right-hand man to Reinhard von Lohengramm, is born on the planet Odin in the Galactic Empire. He would later play a pivotal role in Reinhard's rise to power.",
+                    "category": "Birth",
+                    "wiki_link": "https://gineipaedia.com/wiki/Siegfried_Kircheis"
+                }
+            ],
+            "02-19": [
+                {
+                    "date": "February 19",
+                    "year_context": "Universal Calendar / Imperial Calendar era",
+                    "event": "Birth of Frederica Greenhill",
+                    "description": "Frederica Greenhill (later Frederica Greenhill Yang), brilliant staff officer and eventual wife of Yang Wen-li, is born. She serves as a key advisor and plays a crucial role in the Alliance's military and later in the democratic resistance.",
+                    "category": "Birth",
+                    "wiki_link": "https://gineipaedia.com/wiki/Frederica_Greenhill"
+                }
+            ],
+            "02-28": [
+                {
+                    "date": "February 28",
+                    "year_context": "2691 CE (Interregnum Era)",
+                    "event": "Formation of the Black Fleet",
+                    "description": "Carle Palmgren, Winslow Kennes Townshent, Joliot Frankul, and Chao Yuiling meet at the colony of Prosperina in the Proxima Starzone. They become the leaders of the Anti-Earth Movement and formally establish the Black Fleet — a pivotal moment leading to the Earth-Sirius War and the eventual fall of Earth's dominance.",
+                    "category": "Historical Event",
+                    "wiki_link": "https://gineipaedia.com/wiki/Timeline"
+                }
+            ],
+            "03-14": [
+                {
+                    "date": "March 14",
+                    "year_context": "Imperial Calendar 467 IC (SE 776)",
+                    "event": "Birth of Reinhard von Lohengramm",
+                    "description": "Reinhard von Lohengramm (born Reinhard von Müsel), the charismatic military genius and future Kaiser who would unify the galaxy under the New Galactic Empire, is born on Odin. His ambition to end the corrupt Goldenbaum Dynasty and create a merit-based empire drives the central conflict of the saga.",
+                    "category": "Birth",
+                    "wiki_link": "https://gineipaedia.com/wiki/Reinhard_von_Lohengramm"
+                }
+            ],
+            "03-25": [
+                {
+                    "date": "March 25",
+                    "year_context": "Universal Calendar era",
+                    "event": "Birth of Julian Mintz",
+                    "description": "Julian Mintz, the young ward and adopted son of Yang Wen-li, is born. He grows up to become a skilled officer, pilot of the iconic ship Leda II, and a key figure in the Iserlohn Republic and the fight for democracy.",
+                    "category": "Birth",
+                    "wiki_link": "https://gineipaedia.com/wiki/Julian_Mintz"
+                }
+            ],
+            "04-04": [
+                {
+                    "date": "April 4",
+                    "year_context": "Universal Calendar (~776 UC)",
+                    "event": "Birth of Yang Wen-li",
+                    "description": "Yang Wen-li, the reluctant military genius known as the 'Miracle Worker' or 'Yang the Magician', defender of democracy and the Free Planets Alliance, is born on Heinessen. His tactical brilliance and philosophical opposition to autocracy make him Reinhard's greatest rival and counterpart.",
+                    "category": "Birth",
+                    "wiki_link": "https://gineipaedia.com/wiki/Yang_Wen-li"
+                }
+            ],
+            "05-05": [
+                {
+                    "date": "May 5",
+                    "year_context": "Imperial Calendar era",
+                    "event": "Birth of Paul von Oberstein",
+                    "description": "Paul von Oberstein, the cold, calculating strategic genius with cybernetic eyes, is born. He becomes one of Reinhard von Lohengramm's most trusted (and feared) advisors, playing a crucial behind-the-scenes role in the Empire's campaigns and later governance.",
+                    "category": "Birth",
+                    "wiki_link": "https://gineipaedia.com/wiki/Paul_von_Oberstein"
+                }
+            ],
+            "07-26": [
+                {
+                    "date": "July 26",
+                    "year_context": "Universal Calendar 801 (Neue Reich Calendar 3)",
+                    "event": "Death of Reinhard von Lohengramm",
+                    "description": "After achieving his dream of galactic conquest and beginning to implement constitutional reforms, Reinhard von Lohengramm dies at a young age. He leaves the future of the New Galactic Empire in the hands of his wife, Empress Hildegard, and his loyal subordinates. His death marks the end of an era.",
+                    "category": "Death / Major Event",
+                    "wiki_link": "https://gineipaedia.com/wiki/Reinhard_von_Lohengramm"
+                }
+            ],
+            "09-20": [
+                {
+                    "date": "September 20",
+                    "year_context": "Universal Calendar 801 era",
+                    "event": "Coronation of Kaiserin Katharin Kätchen",
+                    "description": "The infant Katharin Kätchen is crowned as Kaiserin of the Galactic Empire at only 8 months old, symbolizing the continuation of the Lohengramm line amid the turbulent transition following major events in the saga.",
+                    "category": "Political Event",
+                    "wiki_link": "https://gineipaedia.com/wiki/Timeline"
+                }
+            ]
+        };
+
+        // Helper functions
+        function pad(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        function getMonthName(month) {
+            const months = ["January", "February", "March", "April", "May", "June", 
+                           "July", "August", "September", "October", "November", "December"];
+            return months[month - 1];
+        }
+
+        function getDaysInMonth(month, year = 2026) {
+            return new Date(year, month, 0).getDate();
+        }
+
+        function getEventsForDate(month, day) {
+            const key = `${pad(month)}-${pad(day)}`;
+            return timelineData[key] || [];
+        }
+
+        function getEventsForMonth(month) {
+            const prefix = pad(month) + "-";
+            let results = [];
+            Object.keys(timelineData).forEach(key => {
+                if (key.startsWith(prefix)) {
+                    results = results.concat(timelineData[key]);
+                }
+            });
+            return results;
+        }
+
+        function findNextEventFrom(month, day) {
+            const keys = Object.keys(timelineData).sort();
+            const currentKey = `${pad(month)}-${pad(day)}`;
+            
+            // Find first key >= currentKey
+            for (let key of keys) {
+                if (key >= currentKey) {
+                    const [m, d] = key.split('-').map(Number);
+                    return { month: m, day: d, events: timelineData[key] };
+                }
+            }
+            // Wrap to first event next year
+            if (keys.length > 0) {
+                const firstKey = keys[0];
+                const [m, d] = firstKey.split('-').map(Number);
+                return { month: m, day: d, events: timelineData[firstKey], isNextYear: true };
+            }
+            return null;
+        }
+
+        function getDaysUntil(month, day) {
+            const today = new Date();
+            let target = new Date(today.getFullYear(), month - 1, day);
+            
+            if (target.getTime() < today.getTime()) {
+                target.setFullYear(today.getFullYear() + 1);
+            }
+            
+            const diffTime = target.getTime() - today.getTime();
+            return Math.ceil(diffTime / (1000 * 3600 * 24));
+        }
+
+        // Render Today's Update
+        function renderTodaysUpdate() {
+            const today = new Date();
+            const tMonth = today.getMonth() + 1;
+            const tDay = today.getDate();
+            
+            const exactEvents = getEventsForDate(tMonth, tDay);
+            const monthEvents = getEventsForMonth(tMonth);
+            const card = document.getElementById('today-update-card');
+            
+            let html = '';
+            
+            if (exactEvents.length > 0) {
+                // Exact match - ON THIS DAY
+                html = `
+                    <div class="flex items-start gap-x-4">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-inner">
+                            <i class="fa-solid fa-star text-3xl text-zinc-950"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-x-2 mb-1">
+                                <span class="px-3 py-0.5 text-xs font-bold tracking-widest bg-amber-400 text-zinc-950 rounded-3xl">ON THIS DAY</span>
+                                <span class="text-xs text-amber-400 font-mono">${getMonthName(tMonth)} ${tDay}</span>
+                            </div>
+                            <h3 class="text-2xl font-semibold tracking-tight mb-3">Significant events in LOGH history</h3>
+                            
+                            <div class="space-y-4">
+                                ${exactEvents.map(ev => `
+                                    <div class="event-card rounded-2xl p-5">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div>
+                                                <span class="text-xs px-2.5 py-px rounded bg-zinc-800 text-amber-400 font-medium">${ev.category}</span>
+                                                <span class="ml-2 text-xs text-zinc-400">${ev.year_context}</span>
+                                            </div>
+                                            <a href="${ev.wiki_link}" target="_blank" class="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-x-1">
+                                                WIKI <i class="fa-solid fa-external-link-alt text-[10px]"></i>
+                                            </a>
+                                        </div>
+                                        <div class="font-semibold text-xl tracking-tight mb-1.5">${ev.event}</div>
+                                        <p class="text-sm text-zinc-300 leading-relaxed">${ev.description}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (monthEvents.length > 0) {
+                // This month events
+                html = `
+                    <div class="flex items-start gap-x-4">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center">
+                            <i class="fa-solid fa-calendar-week text-3xl text-amber-400"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-x-2 mb-1">
+                                <span class="px-3 py-0.5 text-xs font-bold tracking-widest bg-zinc-700 text-zinc-300 rounded-3xl">THIS MONTH</span>
+                                <span class="text-xs text-zinc-400 font-mono">${getMonthName(tMonth)}</span>
+                            </div>
+                            <h3 class="text-2xl font-semibold tracking-tight mb-4">Events recorded in ${getMonthName(tMonth)} across LOGH history</h3>
+                            
+                            <div class="grid gap-3">
+                                ${monthEvents.map(ev => {
+                                    const dayMatch = ev.date.match(/\d+/);
+                                    const dayNum = dayMatch ? dayMatch[0] : '';
+                                    return `
+                                        <div class="flex gap-x-4 bg-zinc-950/70 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-colors">
+                                            <div class="w-9 h-9 flex-shrink-0 rounded-xl bg-zinc-900 flex items-center justify-center text-xs font-mono text-amber-400 border border-zinc-700">
+                                                ${dayNum || '—'}
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-x-2">
+                                                    <span class="font-semibold">${ev.event}</span>
+                                                    <span class="text-[10px] px-2 py-px bg-zinc-800 rounded text-zinc-400">${ev.category}</span>
+                                                </div>
+                                                <p class="text-xs text-zinc-400 mt-0.5 line-clamp-2">${ev.description}</p>
+                                                <a href="${ev.wiki_link}" target="_blank" class="inline-block mt-1.5 text-[10px] text-amber-400 hover:underline">View on Gineipaedia →</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Nothing this month - show next upcoming
+                const next = findNextEventFrom(tMonth, tDay);
+                if (next) {
+                    const daysLeft = getDaysUntil(next.month, next.day);
+                    const nextDateStr = `${getMonthName(next.month)} ${next.day}${next.isNextYear ? ' (next year)' : ''}`;
+                    
+                    html = `
+                        <div class="flex items-start gap-x-4">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center">
+                                <i class="fa-solid fa-hourglass-half text-3xl text-zinc-400"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="mb-1">
+                                    <span class="px-3 py-0.5 text-xs font-bold tracking-widest bg-zinc-700 text-zinc-300 rounded-3xl">NO EVENTS TODAY OR THIS MONTH</span>
+                                </div>
+                                <h3 class="text-2xl font-semibold tracking-tight mb-1">The saga continues...</h3>
+                                <p class="text-zinc-400 mb-5">No specific month/day events found for today or ${getMonthName(tMonth)} in the curated timeline.</p>
+                                
+                                <div class="bg-zinc-950 border border-zinc-800 rounded-3xl p-5">
+                                    <div class="flex items-baseline gap-x-3 mb-3">
+                                        <div>
+                                            <div class="text-xs text-zinc-400">NEXT EVENT IN</div>
+                                            <div class="text-6xl font-bold tracking-tighter metric text-amber-400">${daysLeft}</div>
+                                        </div>
+                                        <div class="text-sm">
+                                            <div class="font-semibold">DAYS</div>
+                                            <div class="text-xs text-zinc-400">${nextDateStr}</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="pt-4 border-t border-zinc-800">
+                                        ${next.events.map(ev => `
+                                            <div>
+                                                <div class="font-semibold text-lg">${ev.event}</div>
+                                                <p class="text-sm text-zinc-300 mt-1">${ev.description}</p>
+                                                <div class="mt-3 flex items-center gap-x-3 text-xs">
+                                                    <span class="px-2.5 py-px bg-zinc-800 rounded">${ev.category}</span>
+                                                    <a href="${ev.wiki_link}" target="_blank" class="text-amber-400 hover:underline flex items-center gap-x-1">Full details on wiki <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html = `<div class="p-6 text-center text-zinc-400">No upcoming events found in the dataset. Visit the full timeline for more.</div>`;
+                }
+            }
+            
+            card.innerHTML = html;
+        }
+
+        // Calendar Grid
+        let currentSelectedMonth = null;
+        let currentSelectedDay = null;
+
+        function updateCalendarGrid() {
+            const select = document.getElementById('month-select');
+            const month = parseInt(select.value);
+            currentSelectedMonth = month;
+            
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            
+            // Day headers
+            const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            dayNames.forEach(name => {
+                const header = document.createElement('div');
+                header.className = 'text-[10px] font-medium text-zinc-500 py-1';
+                header.textContent = name;
+                grid.appendChild(header);
+            });
+            
+            const daysInMonth = getDaysInMonth(month);
+            const today = new Date();
+            const realMonth = today.getMonth() + 1;
+            const realDay = today.getDate();
+            
+            // Empty cells for start of month alignment (simple version: start on Sunday)
+            const firstDay = new Date(2026, month - 1, 1).getDay();
+            for (let i = 0; i < firstDay; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'calendar-day';
+                grid.appendChild(empty);
+            }
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = `calendar-day flex items-center justify-center text-sm font-medium cursor-pointer rounded-2xl border border-transparent hover:border-zinc-600`;
+                
+                const hasEvent = getEventsForDate(month, day).length > 0;
+                const isToday = (month === realMonth && day === realDay);
+                const isSelected = (currentSelectedMonth === month && currentSelectedDay === day);
+                
+                if (hasEvent) dayEl.classList.add('has-event');
+                if (isToday) dayEl.classList.add('today');
+                if (isSelected) dayEl.classList.add('selected');
+                
+                dayEl.innerHTML = `<span class="${isSelected ? 'text-zinc-950' : ''}">${day}</span>`;
+                
+                dayEl.onclick = () => {
+                    selectDayInCalendar(month, day);
+                };
+                
+                grid.appendChild(dayEl);
+            }
+            
+            // If a day was previously selected in this month, keep it highlighted
+            if (currentSelectedDay && currentSelectedMonth === month) {
+                // already handled in loop
+            }
+        }
+
+        function selectDayInCalendar(month, day) {
+            currentSelectedDay = day;
+            currentSelectedMonth = month;
+            
+            // Re-render grid to update selection highlight
+            updateCalendarGrid();
+            
+            // Update details panel
+            renderSelectedDateDetails(month, day);
+        }
+
+        function renderSelectedDateDetails(month, day) {
+            const header = document.getElementById('selected-date-header');
+            const panel = document.getElementById('selected-events-panel');
+            
+            header.innerHTML = `${getMonthName(month)} ${day}`;
+            
+            const exact = getEventsForDate(month, day);
+            const monthEv = getEventsForMonth(month);
+            
+            let content = '';
+            
+            if (exact.length > 0) {
+                content = exact.map(ev => `
+                    <div class="event-card mb-4 last:mb-0 rounded-2xl p-5">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <span class="text-xs font-semibold px-3 py-1 rounded-3xl bg-zinc-800 text-amber-400">${ev.category}</span>
+                            </div>
+                            <a href="${ev.wiki_link}" target="_blank" 
+                               class="text-xs px-2.5 py-1 flex items-center gap-x-1 text-amber-400 hover:text-amber-300 transition-colors">
+                                <span>WIKI</span> <i class="fa-solid fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                        <div class="font-bold text-xl tracking-tight mb-2">${ev.event}</div>
+                        <div class="text-xs text-zinc-400 mb-3">${ev.year_context}</div>
+                        <p class="text-sm text-zinc-200 leading-relaxed">${ev.description}</p>
+                    </div>
+                `).join('');
+            } else if (monthEv.length > 0) {
+                content = `
+                    <div class="text-xs uppercase tracking-widest text-zinc-500 mb-3">NO EVENT ON THIS EXACT DAY</div>
+                    <div class="text-sm mb-4 text-zinc-300">Here are other notable events recorded in <strong>${getMonthName(month)}</strong>:</div>
+                    <div class="space-y-3">
+                        ${monthEv.map(ev => {
+                            const dMatch = ev.date.match(/\d+/);
+                            return `
+                                <div onclick="selectDayInCalendar(${month}, ${dMatch ? dMatch[0] : 1}); event.stopImmediatePropagation();" 
+                                     class="cursor-pointer flex gap-3 bg-zinc-950 border border-zinc-800 hover:border-zinc-600 rounded-2xl p-4 transition-all active:scale-[0.985]">
+                                    <div class="font-mono text-xs w-8 text-center pt-0.5 text-amber-400">${dMatch ? dMatch[0] : ''}</div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-semibold text-sm">${ev.event}</div>
+                                        <div class="text-[10px] text-zinc-400 line-clamp-2 mt-0.5">${ev.description.substring(0, 110)}...</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                content = `
+                    <div class="py-8 text-center">
+                        <i class="fa-solid fa-infinity text-4xl text-zinc-700 mb-4"></i>
+                        <p class="text-sm text-zinc-400">No specific dated events found for ${getMonthName(month)} in the curated dataset.</p>
+                        <p class="text-xs mt-3 text-zinc-500">The full LOGH timeline contains hundreds of year-specific entries. <a href="https://gineipaedia.com/wiki/Timeline" target="_blank" class="text-amber-400">Explore the complete wiki →</a></p>
+                    </div>
+                `;
+            }
+            
+            panel.innerHTML = content;
+        }
+
+        function initializeMonthSelect() {
+            const select = document.getElementById('month-select');
+            const today = new Date();
+            const currentMonth = today.getMonth() + 1;
+            
+            for (let m = 1; m <= 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = getMonthName(m);
+                if (m === currentMonth) opt.selected = true;
+                select.appendChild(opt);
+            }
+            
+            // Set initial month to current
+            currentSelectedMonth = currentMonth;
+        }
+
+        function selectRandomDate() {
+            const monthsWithEvents = new Set();
+            Object.keys(timelineData).forEach(key => {
+                const m = parseInt(key.split('-')[0]);
+                monthsWithEvents.add(m);
+            });
+            
+            const availableMonths = Array.from(monthsWithEvents);
+            const randomMonth = availableMonths[Math.floor(Math.random() * availableMonths.length)];
+            
+            // Pick a random day that has event or any day in month
+            const eventsInMonth = getEventsForMonth(randomMonth);
+            let randomDay;
+            
+            if (eventsInMonth.length > 0) {
+                // Prefer a day that has event
+                const randomEvent = eventsInMonth[Math.floor(Math.random() * eventsInMonth.length)];
+                const dayMatch = randomEvent.date.match(/\d+/);
+                randomDay = dayMatch ? parseInt(dayMatch[0]) : Math.ceil(Math.random() * 28);
+            } else {
+                randomDay = Math.ceil(Math.random() * 28);
+            }
+            
+            // Update select
+            document.getElementById('month-select').value = randomMonth;
+            currentSelectedMonth = randomMonth;
+            currentSelectedDay = randomDay;
+            
+            updateCalendarGrid();
+            renderSelectedDateDetails(randomMonth, randomDay);
+            
+            // Scroll to calendar
+            document.getElementById('calendar-grid').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function initializeCalendar() {
+            initializeMonthSelect();
+            updateCalendarGrid();
+            
+            // Set initial selected to today if it has event, else first event day or nothing
+            const today = new Date();
+            const tM = today.getMonth() + 1;
+            const tD = today.getDate();
+            
+            const todayEvents = getEventsForDate(tM, tD);
+            if (todayEvents.length > 0) {
+                currentSelectedMonth = tM;
+                currentSelectedDay = tD;
+                document.getElementById('month-select').value = tM;
+                updateCalendarGrid();
+                renderSelectedDateDetails(tM, tD);
+            } else {
+                // Show first available event month
+                const firstKey = Object.keys(timelineData).sort()[0];
+                if (firstKey) {
+                    const [fm, fd] = firstKey.split('-').map(Number);
+                    currentSelectedMonth = fm;
+                    currentSelectedDay = fd;
+                    document.getElementById('month-select').value = fm;
+                    updateCalendarGrid();
+                    renderSelectedDateDetails(fm, fd);
+                }
+            }
+            
+            // Initial grid click hint
+            setTimeout(() => {
+                const grid = document.getElementById('calendar-grid');
+                if (grid && !currentSelectedDay) {
+                    // nothing
+                }
+            }, 1200);
+        }
+
+        function updateCurrentDateTime() {
+            const dateEl = document.getElementById('current-date-display');
+            const timeEl = document.getElementById('current-time');
+            
+            function update() {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'long', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+                dateEl.textContent = dateStr;
+                
+                const timeStr = now.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+                timeEl.textContent = timeStr;
+            }
+            
+            update();
+            setInterval(update, 30000); // update every 30s
+        }
+
+        function resetToToday() {
+            const today = new Date();
+            const tM = today.getMonth() + 1;
+            const tD = today.getDate();
+            
+            // Update today's card (in case)
+            renderTodaysUpdate();
+            
+            // Update calendar to today
+            document.getElementById('month-select').value = tM;
+            currentSelectedMonth = tM;
+            currentSelectedDay = tD;
+            
+            updateCalendarGrid();
+            renderSelectedDateDetails(tM, tD);
+            
+            // Scroll to top of explorer
+            document.querySelector('.lg\\:col-span-7').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize everything
+        function initializeApp() {
+            initializeTailwind();
+            
+            // Render today's update immediately
+            renderTodaysUpdate();
+            
+            // Current date/time
+            updateCurrentDateTime();
+            
+            // Initialize interactive calendar
+            initializeCalendar();
+            
+            // Keyboard support: press "t" for today
+            document.addEventListener('keydown', function(e) {
+                if (e.key.toLowerCase() === 't' && document.activeElement.tagName === 'BODY') {
+                    resetToToday();
+                }
+            });
+            
+            // Easter egg: click header logo to random date
+            const logo = document.querySelector('.fa-galaxy');
+            if (logo) {
+                logo.parentElement.addEventListener('click', () => {
+                    selectRandomDate();
+                });
+                logo.parentElement.style.cursor = 'pointer';
+            }
+            
+            console.log('%c[LOGH] Today in Legend of the Galactic Heroes page initialized successfully.', 'color:#64748b');
+        }
+
+        // Boot the app
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>

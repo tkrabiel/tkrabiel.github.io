@@ -1,0 +1,99 @@
+{
+  "title": "Legend of the Galactic Heroes - Key Dated Events (Month/Day)",
+  "source": "https://gineipaedia.com/wiki/Timeline (curated extraction of events with specific month/day mentions)",
+  "description": "This JSON provides a reference database of notable events in the Legend of the Galactic Heroes (Ginga Eiyuu Densetsu) universe that have specific month and day dates. It focuses on character birthdays (from fan/official compilations) and major historical events with precise dates from the official timeline wiki. Most timeline entries are year-specific only and omitted here for the 'on this day / this month' feature. The web app uses this data structure.",
+  "last_updated": "2026-06-23",
+  "events_by_date": {
+    "01-14": [
+      {
+        "date": "January 14",
+        "year_context": "Imperial Calendar (~467 IC / SE 776)",
+        "event": "Birth of Siegfried Kircheis",
+        "description": "Siegfried Kircheis, the steadfast and loyal friend, confidant, and right-hand man to Reinhard von Lohengramm, is born on the planet Odin in the Galactic Empire. He would later play a pivotal role in Reinhard's rise to power.",
+        "category": "Birth",
+        "wiki_link": "https://gineipaedia.com/wiki/Siegfried_Kircheis"
+      }
+    ],
+    "02-19": [
+      {
+        "date": "February 19",
+        "year_context": "Universal Calendar / Imperial Calendar era",
+        "event": "Birth of Frederica Greenhill",
+        "description": "Frederica Greenhill (later Frederica Greenhill Yang), brilliant staff officer and eventual wife of Yang Wen-li, is born. She serves as a key advisor and plays a crucial role in the Alliance's military and later in the democratic resistance.",
+        "category": "Birth",
+        "wiki_link": "https://gineipaedia.com/wiki/Frederica_Greenhill"
+      }
+    ],
+    "02-28": [
+      {
+        "date": "February 28",
+        "year_context": "2691 CE (Interregnum Era)",
+        "event": "Formation of the Black Fleet",
+        "description": "Carle Palmgren, Winslow Kennes Townshent, Joliot Frankul, and Chao Yuiling meet at the colony of Prosperina in the Proxima Starzone. They become the leaders of the Anti-Earth Movement and formally establish the Black Fleet, a pivotal moment leading to the Earth-Sirius War and the eventual fall of Earth's dominance.",
+        "category": "Historical Event",
+        "wiki_link": "https://gineipaedia.com/wiki/Timeline"
+      }
+    ],
+    "03-14": [
+      {
+        "date": "March 14",
+        "year_context": "Imperial Calendar 467 IC (SE 776)",
+        "event": "Birth of Reinhard von Lohengramm",
+        "description": "Reinhard von Lohengramm (born Reinhard von Müsel), the charismatic military genius and future Kaiser who would unify the galaxy under the New Galactic Empire, is born on Odin. His ambition to end the corrupt Goldenbaum Dynasty and create a merit-based empire drives the central conflict of the saga.",
+        "category": "Birth",
+        "wiki_link": "https://gineipaedia.com/wiki/Reinhard_von_Lohengramm"
+      }
+    ],
+    "03-25": [
+      {
+        "date": "March 25",
+        "year_context": "Universal Calendar era",
+        "event": "Birth of Julian Mintz",
+        "description": "Julian Mintz, the young ward and adopted son of Yang Wen-li, is born. He grows up to become a skilled officer, pilot of the iconic ship Leda II, and a key figure in the Iserlohn Republic and the fight for democracy.",
+        "category": "Birth",
+        "wiki_link": "https://gineipaedia.com/wiki/Julian_Mintz"
+      }
+    ],
+    "04-04": [
+      {
+        "date": "April 4",
+        "year_context": "Universal Calendar (~776 UC / SE 776?)",
+        "event": "Birth of Yang Wen-li",
+        "description": "Yang Wen-li, the reluctant military genius known as the 'Miracle Worker' or 'Yang the Magician', defender of democracy and the Free Planets Alliance, is born on Heinessen. His tactical brilliance and philosophical opposition to autocracy make him Reinhard's greatest rival and counterpart.",
+        "category": "Birth",
+        "wiki_link": "https://gineipaedia.com/wiki/Yang_Wen-li"
+      }
+    ],
+    "05-05": [
+      {
+        "date": "May 5",
+        "year_context": "Imperial Calendar era",
+        "event": "Birth of Paul von Oberstein",
+        "description": "Paul von Oberstein, the cold, calculating strategic genius with cybernetic eyes, is born. He becomes one of Reinhard von Lohengramm's most trusted (and feared) advisors, playing a crucial behind-the-scenes role in the Empire's campaigns and later governance.",
+        "category": "Birth",
+        "wiki_link": "https://gineipaedia.com/wiki/Paul_von_Oberstein"
+      }
+    ],
+    "07-26": [
+      {
+        "date": "July 26",
+        "year_context": "Universal Calendar 801 (Neue Reich Calendar 3)",
+        "event": "Death of Reinhard von Lohengramm",
+        "description": "After achieving his dream of galactic conquest and beginning to implement constitutional reforms, Reinhard von Lohengramm dies at a young age. He leaves the future of the New Galactic Empire in the hands of his wife, Empress Hildegard, and his loyal subordinates. His death marks the end of an era and the beginning of a new chapter for the galaxy.",
+        "category": "Death / Major Event",
+        "wiki_link": "https://gineipaedia.com/wiki/Reinhard_von_Lohengramm"
+      }
+    ],
+    "09-20": [
+      {
+        "date": "September 20",
+        "year_context": "Universal Calendar 801 era",
+        "event": "Coronation of Kaiserin Katharin Kätchen",
+        "description": "The infant Katharin Kätchen (daughter of Reinhard and Hildegard?) is crowned as Kaiserin of the Galactic Empire at only 8 months old, symbolizing the continuation of the Lohengramm dynasty amid the turbulent transition following major events in the saga.",
+        "category": "Political Event",
+        "wiki_link": "https://gineipaedia.com/wiki/Timeline"
+      }
+    ]
+  },
+  "additional_notes": "These dates are drawn from the Gineipaedia Timeline wiki and cross-referenced fan resources for character birthdays. The in-universe calendars (Universal Calendar for the Alliance, Imperial Calendar for the Empire) use standard month names and roughly align with Gregorian months for 'on this day' purposes. For complete year-by-year details, battles without specific days, and full context, visit the source wiki. This dataset powers the interactive 'Today in LOGH' experience."
+}
