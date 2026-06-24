@@ -217,8 +217,8 @@
     // 1. Fetch JSON on load
     window.onload = async () => {
         try {
-            // Using the complete question bank JSON file generated previously
-            const response = await fetch('USCG_ROTR_Complete_Questions.json');
+            // Using the newly generated JSON file that handles both PDFs
+            const response = await fetch('USCG_ROTR_Complete_Questions_V2.json');
             if (!response.ok) throw new Error("Could not load JSON file.");
             allQuestions = await response.json();
             
@@ -233,7 +233,7 @@
             document.getElementById('max-questions-label').innerText = `(Available: ${allQuestions.length} Questions)`;
             
         } catch (error) {
-            document.getElementById('loading-text').innerText = "Error loading JSON: Please ensure you are running a local web server and 'USCG_ROTR_Complete_Questions.json' is in the exact same folder.";
+            document.getElementById('loading-text').innerText = "Error loading JSON: Please ensure you are running a local web server and 'USCG_ROTR_Complete_Questions_V2.json' is in the exact same folder.";
             document.getElementById('loading-text').style.color = "red";
             console.error(error);
         }
@@ -267,7 +267,7 @@
         // Update Question Text
         document.getElementById('question-text').innerText = `(${q.id}) ${q.question}`;
 
-        // Handle Diagram
+        // Handle Diagram - This dynamically pulls either ROTRDiagram.pdf or ROTRDiagram2.pdf
         const diagramContainer = document.getElementById('diagram-container');
         diagramContainer.innerHTML = '';
         if (q.diagram && q.diagram.referenced) {
@@ -284,14 +284,12 @@
         optionsGrid.innerHTML = '';
         
         Object.entries(q.options).forEach(([letter, text]) => {
-            // Check if the option is not just empty whitespace
             if (!text || text.trim() === "") return; 
             
             const btn = document.createElement('button');
             btn.className = 'option-btn';
             btn.innerText = `${letter}. ${text}`;
             btn.onclick = () => checkAnswer(letter, btn);
-            // Save the letter data attribute for later checking
             btn.dataset.letter = letter; 
             optionsGrid.appendChild(btn);
         });
@@ -308,7 +306,6 @@
         const feedback = document.getElementById('feedback-container');
         const allButtons = document.querySelectorAll('.option-btn');
 
-        // Disable all buttons to prevent multiple clicks
         allButtons.forEach(b => b.disabled = true);
 
         if (selectedLetter === correctLetter) {
@@ -329,10 +326,8 @@
             });
         }
 
-        // Update score display immediately
         document.getElementById('score-text').innerText = `Score: ${score}`;
 
-        // Show Next Button
         const nextBtnContainer = document.getElementById('next-btn-container');
         const nextBtn = document.getElementById('next-btn');
         nextBtnContainer.style.display = 'block';
@@ -367,7 +362,6 @@
         switchScreen('setup-screen');
     }
 
-    // Utility: Switch Active Screen
     function switchScreen(screenId) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
